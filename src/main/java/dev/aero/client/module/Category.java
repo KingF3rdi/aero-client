@@ -15,6 +15,6 @@ public enum Category {
     }
 
     public boolean inSidebar() {
-        return this != PERFORMANCE;
+        return true;
     }
 }

@@ -26,7 +26,8 @@
     "SoundSystemMixin",
     "EndCrystalEntityRendererMixin",
     "LivingEntityRendererMixin",
-    "LivingEntityStatusMixin"
+    "LivingEntityStatusMixin",
+    "PlayerEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 0

@@ -79,6 +79,18 @@ public final class WorldOverlayRenderer {
             int a = Math.min(220, 90 + mc.player.hurtTime * 12);
             int color = (a << 24) | (packed & 0xFFFFFF);
             drawBox(matrices, consumers, mc.player.getBoundingBox().expand(0.04), camPos, color);
+
+            if (cfg.damageTintArmor) {
+                Box body = mc.player.getBoundingBox();
+                double h = body.maxY - body.minY;
+                // Head / chest / legs / boots bands, roughly matching each armor slot's height.
+                double[] bands = {0.86, 0.55, 0.28, 0.0};
+                for (int i = 0; i < bands.length - 1; i++) {
+                    Box band = new Box(body.minX - 0.03, body.minY + h * bands[i + 1], body.minZ - 0.03,
+                            body.maxX + 0.03, body.minY + h * bands[i], body.maxZ + 0.03);
+                    drawBox(matrices, consumers, band, camPos, color);
+                }
+            }
         }
 
         if (cfg.shieldTweaks) {

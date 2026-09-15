@@ -271,11 +271,15 @@ public class ClickGuiScreenLegacy extends Screen {
         UiDraw.menuOpen = true;
         try {
             layoutPanel();
-            context.fill(0, 0, width, height, 0x4A07060E);
+            try {
+                applyBlur(context);
+            } catch (Throwable ignored) {
+            }
+            context.fill(0, 0, width, height, 0x3A07060E);
             if (AeroClient.MODULES == null) {
                 return;
             }
-            UiDraw.glass(context, ox, oy, pw, ph, 0xD416141F);
+            UiDraw.glass(context, ox, oy, pw, ph, 0xC016141F, 16);
             drawTop(context, mouseX, mouseY);
             if (topTab == 1) {
                 drawYou(context, mouseX, mouseY);
@@ -377,10 +381,10 @@ public class ClickGuiScreenLegacy extends Screen {
         sy += 10;
         boolean boundH = inside(mx, my, x0 + 8, sy, SIDE_W - 16, 24);
         if (boundKeysOnly) {
-            context.fill(x0 + 8, sy, x0 + SIDE_W - 8, sy + 24, PILL_ON);
-            context.fill(x0 + 8, sy + 5, x0 + 10, sy + 19, ACCENT);
+            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, 24, 8, PILL_ON);
+            UiDraw.roundRect(context, x0 + 8, sy + 5, 3, 14, 1, ACCENT);
         } else if (boundH) {
-            context.fill(x0 + 8, sy, x0 + SIDE_W - 8, sy + 24, 0xFF14121C);
+            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, 24, 8, 0x8014121C);
         }
         context.drawText(textRenderer, Text.literal("Bound keys"), x0 + 16, sy + 8,
                 boundKeysOnly ? TEXT : MUTED, false);
@@ -396,10 +400,10 @@ public class ClickGuiScreenLegacy extends Screen {
     private void nav(DrawContext context, int mx, int my, int y, Category category, String name, int count, boolean on) {
         boolean h = inside(mx, my, ox + 8, y, SIDE_W - 16, 24);
         if (on) {
-            context.fill(ox + 8, y, ox + SIDE_W - 8, y + 24, PILL_ON);
-            context.fill(ox + 8, y + 5, ox + 10, y + 19, ACCENT);
+            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, 24, 8, PILL_ON);
+            UiDraw.roundRect(context, ox + 8, y + 5, 3, 14, 1, ACCENT);
         } else if (h) {
-            context.fill(ox + 8, y, ox + SIDE_W - 8, y + 24, 0xFF14121C);
+            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, 24, 8, 0x8014121C);
         }
         context.drawText(textRenderer, Text.literal(name), ox + 18, y + 8, on ? TEXT : MUTED, false);
         String n = String.valueOf(count);
@@ -424,7 +428,9 @@ public class ClickGuiScreenLegacy extends Screen {
             boolean h = inside(mx, my, x, y, w, ROW_H - 2);
             boolean sel = module == selected;
             int rowBottom = y + ROW_H - 4;
-            context.fill(x + 6, y, x + w - 6, rowBottom, sel ? 0xAA3A3158 : (h ? 0x4414121C : 0));
+            if (sel || h) {
+                UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 7, sel ? 0xAA3A3158 : 0x4414121C);
+            }
             drawModIcon(context, module, x + 10, y + 7);
             context.drawText(textRenderer, Text.literal(module.name), x + 28, y + 10, TEXT, false);
             drawSwitch(context, x + w - 42, y + 8, module.enabled());
@@ -575,40 +581,42 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private void drawYou(DrawContext context, int mx, int my) {
-        int left = 16;
-        int mid = 210;
-        int right = width - 220;
+        int x0 = ox;
+        int y0 = oy + TOP;
+        int y1 = oy + ph;
+        int left = x0 + 16;
+        int mid = x0 + Math.max(180, pw * 27 / 100);
+        int right = ox + pw - Math.max(160, pw * 22 / 100);
         Cosmetics.Kind kind = Cosmetics.kindForTab(cosTab);
         java.util.List<Cosmetics.Item> items = Cosmetics.of(kind, cosSearch);
         String equipped = Cosmetics.equipped(kind);
 
-        context.fill(0, TOP, mid - 8, height, SIDE);
-        context.fill(right, TOP, width, height, SIDE);
-        UiDraw.scan(context, 0, TOP, mid - 8, height - TOP);
-        UiDraw.scan(context, right, TOP, width - right, height - TOP);
+        UiDraw.innerCard(context, x0 + 4, y0 + 4, mid - 12 - x0, y1 - y0 - 8);
+        UiDraw.innerCard(context, right, y0 + 4, ox + pw - right - 4, y1 - y0 - 8);
 
-        UiDraw.inset(context, 12, TOP + 10, mid - 28, 20, CARD);
-        context.drawText(textRenderer, Text.literal("Look up a player..."), 18, TOP + 16, MUTED, false);
+        UiDraw.inset(context, left - 4, y0 + 10, mid - 20 - left, 20, CARD);
+        context.drawText(textRenderer, Text.literal("Look up a player..."), left + 2, y0 + 16, MUTED, false);
 
         String name = AccountManager.currentName();
-        UiDraw.raised(context, 20, TOP + 42, 24, 24, 0xFFC8A0E8);
-        context.drawText(textRenderer, Text.literal(name), 52, TOP + 44, TEXT, false);
-        context.drawText(textRenderer, Text.literal("Online  ·  Java Edition"), 52, TOP + 56, MUTED, false);
+        UiDraw.raised(context, left + 4, y0 + 42, 24, 24, 0xFFC8A0E8);
+        context.drawText(textRenderer, Text.literal(name), left + 36, y0 + 44, TEXT, false);
+        context.drawText(textRenderer, Text.literal("Online  ·  Java Edition"), left + 36, y0 + 56, MUTED, false);
 
-        context.drawText(textRenderer, Text.literal("Alpha   Staff   Beta"), 20, TOP + 80, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Tester"), 20, TOP + 94, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Playtime"), 20, TOP + 118, MUTED, false);
-        context.drawText(textRenderer, Text.literal("—"), 120, TOP + 118, TEXT, false);
-        context.drawText(textRenderer, Text.literal("First seen"), 20, TOP + 132, MUTED, false);
-        context.drawText(textRenderer, Text.literal("—"), 120, TOP + 132, TEXT, false);
-        context.drawText(textRenderer, Text.literal("Friends"), 20, TOP + 146, MUTED, false);
-        context.drawText(textRenderer, Text.literal(String.valueOf(FriendStore.size())), 120, TOP + 146, TEXT, false);
+        context.drawText(textRenderer, Text.literal("Alpha   Staff   Beta"), left + 4, y0 + 80, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Tester"), left + 4, y0 + 94, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Playtime"), left + 4, y0 + 118, MUTED, false);
+        context.drawText(textRenderer, Text.literal("—"), left + 104, y0 + 118, TEXT, false);
+        context.drawText(textRenderer, Text.literal("First seen"), left + 4, y0 + 132, MUTED, false);
+        context.drawText(textRenderer, Text.literal("—"), left + 104, y0 + 132, TEXT, false);
+        context.drawText(textRenderer, Text.literal("Friends"), left + 4, y0 + 146, MUTED, false);
+        context.drawText(textRenderer, Text.literal(String.valueOf(FriendStore.size())), left + 104, y0 + 146, TEXT, false);
 
-        UiDraw.pill(context, 16, height - 36, mid - 40, 20, inside(mx, my, 16, height - 36, mid - 40, 20));
-        context.drawText(textRenderer, Text.literal("Sign in with Microsoft"), 26, height - 31, TEXT, false);
+        int signInW = mid - 24 - left;
+        UiDraw.pill(context, left, y1 - 30, signInW, 20, inside(mx, my, left, y1 - 30, signInW, 20));
+        context.drawText(textRenderer, Text.literal("Sign in with Microsoft"), left + 10, y1 - 25, TEXT, false);
 
         int tx = mid;
-        int ty = TOP + 12;
+        int ty = y0 + 12;
         for (int i = 0; i < COS_TABS.length; i++) {
             boolean on = cosTab == i;
             int tw = textRenderer.getWidth(COS_TABS[i]) + 12;
@@ -619,7 +627,7 @@ public class ClickGuiScreenLegacy extends Screen {
             tx += tw;
         }
         tx = mid;
-        ty = TOP + 28;
+        ty = y0 + 28;
         for (int i = 0; i < COS_EXTRA.length; i++) {
             boolean on = cosTab == 7 + i;
             int tw = textRenderer.getWidth(COS_EXTRA[i]) + 12;
@@ -630,13 +638,13 @@ public class ClickGuiScreenLegacy extends Screen {
             tx += tw;
         }
 
-        UiDraw.inset(context, mid, TOP + 46, right - mid - 12, 20, CARD);
+        UiDraw.inset(context, mid, y0 + 46, right - mid - 12, 20, CARD);
         String hint = cosSearch.isEmpty() && !cosSearchFocus ? "Search cosmetics..." : cosSearch + (cosSearchFocus ? "_" : "");
-        context.drawText(textRenderer, Text.literal(hint), mid + 8, TOP + 52, cosSearchFocus ? TEXT : MUTED, false);
+        context.drawText(textRenderer, Text.literal(hint), mid + 8, y0 + 52, cosSearchFocus ? TEXT : MUTED, false);
 
         int gx = mid;
-        int gy = TOP + 76;
-        int cell = 86;
+        int gy = y0 + 76;
+        int cell = 70;
         int gap = 10;
         int cols = Math.max(2, (right - mid - 8) / (cell + gap));
         for (int i = 0; i < items.size(); i++) {
@@ -645,56 +653,61 @@ public class ClickGuiScreenLegacy extends Screen {
             int row = i / cols;
             int cx = gx + col * (cell + gap);
             int cy = gy + row * (cell + 22);
-            if (cy + cell > height - 24) {
+            if (cy + cell > y1 - 24) {
                 break;
             }
             boolean sel = equipped.equals(item.id());
             UiDraw.raised(context, cx, cy, cell, cell, item.color());
             if (sel) {
-                UiDraw.frame(context, cx - 1, cy - 1, cell + 2, cell + 2, ACCENT);
-                UiDraw.frame(context, cx, cy, cell, cell, 0x88FFFFFF);
+                UiDraw.roundBorder(context, cx - 1, cy - 1, cell + 2, cell + 2, 6, ACCENT);
             }
             context.drawText(textRenderer, Text.literal(item.name()), cx + 4, cy + cell + 4, MUTED, false);
         }
 
-        context.drawText(textRenderer, Text.literal("Preview"), right + 16, TOP + 14, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Preview"), right + 16, y0 + 14, MUTED, false);
         int px = right + 50;
-        int py = TOP + 40;
-        UiDraw.shadow(context, px + 18, py, 32, 108);
-        context.fill(px + 18, py, px + 50, py + 28, 0xFF6A4A88);
-        context.fill(px + 22, py + 28, px + 46, py + 70, 0xFF4A3068);
-        context.fill(px + 8, py + 32, px + 24, py + 68, 0xFF3A2858);
-        context.fill(px + 44, py + 32, px + 60, py + 68, 0xFF3A2858);
-        context.fill(px + 22, py + 70, px + 34, py + 108, 0xFF2A2048);
-        context.fill(px + 34, py + 70, px + 46, py + 108, 0xFF2A2048);
+        int py = y0 + 40;
+        int scale = Math.min(100, (y1 - py - 24) * 100 / 108);
+        UiDraw.shadow(context, px + 18, py, 32, 108 * scale / 100);
+        context.fill(px + 18, py, px + 50, py + 28 * scale / 100, 0xFF6A4A88);
+        context.fill(px + 22, py + 28 * scale / 100, px + 46, py + 70 * scale / 100, 0xFF4A3068);
+        context.fill(px + 8, py + 32 * scale / 100, px + 24, py + 68 * scale / 100, 0xFF3A2858);
+        context.fill(px + 44, py + 32 * scale / 100, px + 60, py + 68 * scale / 100, 0xFF3A2858);
+        context.fill(px + 22, py + 70 * scale / 100, px + 34, py + 108 * scale / 100, 0xFF2A2048);
+        context.fill(px + 34, py + 70 * scale / 100, px + 46, py + 108 * scale / 100, 0xFF2A2048);
         context.fill(px + 24, py + 8, px + 44, py + 24, 0xFFE8C8F0);
         context.fill(px + 20, py + 2, px + 48, py + 4, 0x33FFFFFF);
-        CosmeticPreview.player(context, right + 110, TOP + 148, 42, mx, my);
+        CosmeticPreview.player(context, right + 110, py + 108 * scale / 100, 42 * scale / 100, mx, my);
 
-        context.drawText(textRenderer, Text.literal("Cape   Wings   Trail"), right + 16, py + 120, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Presets"), right + 16, py + 148, TEXT, false);
-        context.drawText(textRenderer, Text.literal("None yet"), right + 16, py + 162, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Save keeps your setup."), right + 16, py + 174, MUTED, false);
+        int belowPreviewY = Math.min(y1 - 60, py + 108 * scale / 100 + 12);
+        context.drawText(textRenderer, Text.literal("Cape   Wings   Trail"), right + 16, belowPreviewY, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Presets"), right + 16, belowPreviewY + 28, TEXT, false);
+        context.drawText(textRenderer, Text.literal("None yet"), right + 16, belowPreviewY + 42, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Save keeps your setup."), right + 16, belowPreviewY + 54, MUTED, false);
     }
 
     private void drawFriends(DrawContext context, int mx, int my) {
-        int left = 188;
-        context.fill(0, TOP, left, height, SIDE);
-        context.fill(width - 220, TOP, width, height, SIDE);
-        UiDraw.scan(context, 0, TOP, left, height - TOP);
+        int x0 = ox;
+        int y0 = oy + TOP;
+        int y1 = oy + ph;
+        int left = x0 + Math.max(160, pw * 25 / 100);
+        int rightW = Math.max(150, pw * 20 / 100);
+        int rightX = ox + pw - rightW;
+        UiDraw.innerCard(context, x0 + 4, y0 + 4, left - 8 - x0, y1 - y0 - 8);
+        UiDraw.innerCard(context, rightX, y0 + 4, ox + pw - rightX - 4, y1 - y0 - 8);
 
-        UiDraw.inset(context, 10, TOP + 10, left - 20, 20, CARD);
+        UiDraw.inset(context, x0 + 10, y0 + 10, left - 30 - x0, 20, CARD);
         String draft = friendDraft.isEmpty() && !friendFocus ? "Add a friend..." : friendDraft + (friendFocus ? "_" : "");
-        context.drawText(textRenderer, Text.literal(draft), 16, TOP + 16, friendFocus ? TEXT : MUTED, false);
+        context.drawText(textRenderer, Text.literal(draft), x0 + 16, y0 + 16, friendFocus ? TEXT : MUTED, false);
 
-        UiDraw.pill(context, 10, TOP + 36, 72, 16, true);
-        context.drawText(textRenderer, Text.literal("Friends " + FriendStore.size()), 16, TOP + 40, TEXT, false);
-        UiDraw.pill(context, 88, TOP + 36, 80, 16, false);
-        context.drawText(textRenderer, Text.literal("Requests 0"), 94, TOP + 40, MUTED, false);
+        UiDraw.pill(context, x0 + 10, y0 + 36, 72, 16, true);
+        context.drawText(textRenderer, Text.literal("Friends " + FriendStore.size()), x0 + 16, y0 + 40, TEXT, false);
+        UiDraw.pill(context, x0 + 88, y0 + 36, 80, 16, false);
+        context.drawText(textRenderer, Text.literal("Requests 0"), x0 + 94, y0 + 40, MUTED, false);
 
-        int y = TOP + 62 - friendScroll;
+        int y = y0 + 62 - friendScroll;
         for (int i = 0; i < FriendStore.size(); i++) {
-            if (y + 20 < TOP + 58 || y > height - 16) {
+            if (y + 20 < y0 + 58 || y > y1 - 16) {
                 y += 20;
                 continue;
             }
@@ -702,44 +715,44 @@ public class ClickGuiScreenLegacy extends Screen {
             boolean on = FriendStore.online(n);
             boolean sel = friendSel == i;
             if (sel) {
-                UiDraw.raised(context, 8, y, left - 16, 20, PILL);
+                UiDraw.raised(context, x0 + 8, y, left - 24 - x0, 20, PILL);
             }
-            UiDraw.raised(context, 12, y + 4, 10, 10, on ? 0xFFC8A0E8 : 0xFF3A3A44);
-            context.drawText(textRenderer, Text.literal(n), 28, y + 6, TEXT, false);
+            UiDraw.raised(context, x0 + 12, y + 4, 10, 10, on ? 0xFFC8A0E8 : 0xFF3A3A44);
+            context.drawText(textRenderer, Text.literal(n), x0 + 28, y + 6, TEXT, false);
             context.drawText(textRenderer, Text.literal(on ? "online" : "offline"),
-                    left - 52, y + 6, MUTED, false);
+                    left - 60, y + 6, MUTED, false);
             y += 20;
         }
 
         String a = FriendStore.ownName();
         String b = FriendStore.size() > 0 ? FriendStore.get(0) : "HeyMake";
         String c = FriendStore.size() > 1 ? FriendStore.get(1) : "Cloudy";
-        context.drawText(textRenderer, Text.literal("You"), left + 16, TOP + 16, MUTED, false);
-        UiDraw.raised(context, left + 16, TOP + 32, 24, 24, 0xFFE0B0F0);
-        UiDraw.raised(context, left + 52, TOP + 32, 24, 24, 0xFFE8E8F0);
-        UiDraw.raised(context, left + 88, TOP + 32, 24, 24, 0xFF8A70B0);
-        context.drawText(textRenderer, Text.literal(a + "    " + b + "    " + c), left + 16, TOP + 62, MUTED, false);
+        context.drawText(textRenderer, Text.literal("You"), left + 16, y0 + 16, MUTED, false);
+        UiDraw.raised(context, left + 16, y0 + 32, 24, 24, 0xFFE0B0F0);
+        UiDraw.raised(context, left + 52, y0 + 32, 24, 24, 0xFFE8E8F0);
+        UiDraw.raised(context, left + 88, y0 + 32, 24, 24, 0xFF8A70B0);
+        context.drawText(textRenderer, Text.literal(a + "    " + b + "    " + c), left + 16, y0 + 62, MUTED, false);
 
-        UiDraw.pill(context, left + 220, TOP + 36, 64, 16, false);
-        context.drawText(textRenderer, Text.literal("Public"), left + 230, TOP + 40, MUTED, false);
+        UiDraw.pill(context, Math.min(left + 220, rightX - 74), y0 + 36, 64, 16, false);
+        context.drawText(textRenderer, Text.literal("Public"), Math.min(left + 230, rightX - 64), y0 + 40, MUTED, false);
 
-        context.drawText(textRenderer, Text.literal("Public stories"), left + 16, TOP + 92, TEXT, false);
-        context.drawText(textRenderer, Text.literal("From people you have not added"), left + 16, TOP + 104, MUTED, false);
-        UiDraw.raised(context, left + 16, TOP + 124, 24, 24, 0xFF6A5040);
-        UiDraw.raised(context, left + 56, TOP + 124, 24, 24, 0xFFE0A040);
-        context.drawText(textRenderer, Text.literal("Ruhop"), left + 16, TOP + 154, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Foolraven"), left + 56, TOP + 154, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Public stories"), left + 16, y0 + 92, TEXT, false);
+        context.drawText(textRenderer, Text.literal("From people you have not added"), left + 16, y0 + 104, MUTED, false);
+        UiDraw.raised(context, left + 16, y0 + 124, 24, 24, 0xFF6A5040);
+        UiDraw.raised(context, left + 56, y0 + 124, 24, 24, 0xFFE0A040);
+        context.drawText(textRenderer, Text.literal("Ruhop"), left + 16, y0 + 154, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Foolraven"), left + 56, y0 + 154, MUTED, false);
 
         context.drawText(textRenderer, Text.literal("Pick someone on the left to talk."),
-                left + 16, height - 28, MUTED, false);
+                left + 16, y1 - 28, MUTED, false);
 
         if (friendSel >= 0 && friendSel < FriendStore.size()) {
             String picked = FriendStore.get(friendSel);
-            context.drawText(textRenderer, Text.literal(picked), width - 204, TOP + 16, TEXT, false);
-            wrap(context, "Pick a friend to see their tiers and badges.", width - 204, TOP + 32, 184, MUTED);
+            context.drawText(textRenderer, Text.literal(picked), rightX + 16, y0 + 16, TEXT, false);
+            wrap(context, "Pick a friend to see their tiers and badges.", rightX + 16, y0 + 32, rightW - 32, MUTED);
         } else {
-            context.drawText(textRenderer, Text.literal("Nobody picked"), width - 204, TOP + 16, TEXT, false);
-            wrap(context, "Pick a friend to see their tiers and badges.", width - 204, TOP + 32, 184, MUTED);
+            context.drawText(textRenderer, Text.literal("Nobody picked"), rightX + 16, y0 + 16, TEXT, false);
+            wrap(context, "Pick a friend to see their tiers and badges.", rightX + 16, y0 + 32, rightW - 32, MUTED);
         }
     }
 
@@ -857,41 +870,50 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private boolean clickYou(int mx, int my) {
-        if (inside(mx, my, 16, height - 36, 170, 20)) {
+        int x0 = ox;
+        int y0 = oy + TOP;
+        int y1 = oy + ph;
+        int left = x0 + 16;
+        int mid = x0 + Math.max(180, pw * 27 / 100);
+        int right = ox + pw - Math.max(160, pw * 22 / 100);
+
+        int signInW = mid - 24 - left;
+        if (inside(mx, my, left, y1 - 30, signInW, 20)) {
             AccountManager.startLogin();
             return true;
         }
-        int tx = 210;
+        int tx = mid;
         for (int i = 0; i < COS_TABS.length; i++) {
             int tw = textRenderer.getWidth(COS_TABS[i]) + 12;
-            if (inside(mx, my, tx, TOP + 8, tw, 16)) {
+            if (inside(mx, my, tx, y0 + 8, tw, 16)) {
                 cosTab = i;
                 return true;
             }
             tx += tw;
         }
-        tx = 210;
+        tx = mid;
         for (int i = 0; i < COS_EXTRA.length; i++) {
             int tw = textRenderer.getWidth(COS_EXTRA[i]) + 12;
-            if (inside(mx, my, tx, TOP + 24, tw, 16)) {
+            if (inside(mx, my, tx, y0 + 24, tw, 16)) {
                 cosTab = 7 + i;
                 return true;
             }
             tx += tw;
         }
-        int mid = 210;
-        int right = width - 220;
-        cosSearchFocus = inside(mx, my, mid, TOP + 46, right - mid - 12, 20);
+        cosSearchFocus = inside(mx, my, mid, y0 + 46, right - mid - 12, 20);
         Cosmetics.Kind kind = Cosmetics.kindForTab(cosTab);
         java.util.List<Cosmetics.Item> items = Cosmetics.of(kind, cosSearch);
-        int cell = 86;
+        int cell = 70;
         int gap = 10;
         int cols = Math.max(2, (right - mid - 8) / (cell + gap));
         for (int i = 0; i < items.size(); i++) {
             int col = i % cols;
             int row = i / cols;
             int cx = mid + col * (cell + gap);
-            int cy = TOP + 76 + row * (cell + 22);
+            int cy = y0 + 76 + row * (cell + 22);
+            if (cy + cell > y1 - 24) {
+                break;
+            }
             if (inside(mx, my, cx, cy, cell, cell)) {
                 Cosmetics.equip(kind, items.get(i).id());
                 cosSel = i;
@@ -902,10 +924,14 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private boolean clickFriends(int mx, int my) {
-        friendFocus = inside(mx, my, 10, TOP + 10, 168, 20);
-        int y = TOP + 62 - friendScroll;
+        int x0 = ox;
+        int y0 = oy + TOP;
+        int y1 = oy + ph;
+        int left = Math.max(160, pw * 25 / 100);
+        friendFocus = inside(mx, my, x0 + 10, y0 + 10, left - 20, 20);
+        int y = y0 + 62 - friendScroll;
         for (int i = 0; i < FriendStore.size(); i++) {
-            if (inside(mx, my, 8, y, 172, 20) && y >= TOP + 58) {
+            if (inside(mx, my, x0 + 8, y, left - 16, 20) && y >= y0 + 58 && y <= y1 - 16) {
                 friendSel = i;
                 return true;
             }
