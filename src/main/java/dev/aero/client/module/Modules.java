@@ -66,29 +66,28 @@ public final class Modules {
                 .setting("Distance", () -> c.renderDistanceValue, v -> c.renderDistanceValue = v, 2, 32));
         add(new Module("Hide Other Players", "Skip rendering everyone except yourself", Category.PERFORMANCE,
                 () -> c.hideOtherPlayers, v -> c.hideOtherPlayers = v));
-        add(new Module("Crystal Optimizer", "Cuts explosion lag from crystal PvP", Category.PERFORMANCE,
-                () -> c.crystalOptimizer, v -> c.crystalOptimizer = v)
-                .setting("Skip Explosion Particles", () -> c.crystalOptimizerParticles, v -> c.crystalOptimizerParticles = v)
-                .setting("Mute Explosion Sound", () -> c.crystalOptimizerSound, v -> c.crystalOptimizerSound = v)
-                .setting("Limit Crystal Render Range", () -> c.crystalOptimizerRange, v -> c.crystalOptimizerRange = v)
-                .setting("Range", () -> c.crystalOptimizerRangeValue, v -> c.crystalOptimizerRangeValue = v, 8, 64));
-        add(new Module("Anchor Optimizer", "Looks snappier and cuts lag from anchor PvP", Category.PERFORMANCE,
-                () -> c.anchorOptimizer, v -> c.anchorOptimizer = v)
-                .setting("Instant Swing", () -> c.anchorOptimizerSwing, v -> c.anchorOptimizerSwing = v)
-                .setting("Skip Explosion Particles", () -> c.anchorOptimizerParticles, v -> c.anchorOptimizerParticles = v)
-                .setting("Mute Explosion Sound", () -> c.anchorOptimizerSound, v -> c.anchorOptimizerSound = v));
-        add(new Module("Pearl Optimizer", "Looks snappier and cuts lag from pearl throws", Category.PERFORMANCE,
-                () -> c.pearlOptimizer, v -> c.pearlOptimizer = v)
-                .setting("Instant Swing", () -> c.pearlOptimizerSwing, v -> c.pearlOptimizerSwing = v)
-                .setting("Skip Trail Particles", () -> c.pearlOptimizerParticles, v -> c.pearlOptimizerParticles = v));
-        add(new Module("Shield Optimizer", "Looks snappier and cuts lag from shield use", Category.PERFORMANCE,
-                () -> c.shieldOptimizer, v -> c.shieldOptimizer = v)
-                .setting("Instant Raise", () -> c.shieldOptimizerInstant, v -> c.shieldOptimizerInstant = v)
-                .setting("Mute Block Sound", () -> c.shieldOptimizerSound, v -> c.shieldOptimizerSound = v));
-        add(new Module("Crossbow Optimizer", "Looks snappier and cuts lag from crossbow use", Category.PERFORMANCE,
-                () -> c.crossbowOptimizer, v -> c.crossbowOptimizer = v)
-                .setting("Instant Swing", () -> c.crossbowOptimizerSwing, v -> c.crossbowOptimizerSwing = v)
-                .setting("Skip Firing Particles", () -> c.crossbowOptimizerParticles, v -> c.crossbowOptimizerParticles = v));
+        add(new Module("Hide Dropped Items", "Skip all dropped item entities", Category.PERFORMANCE,
+                () -> c.hideDroppedItems, v -> c.hideDroppedItems = v));
+        add(new Module("Hide TNT", "Skip primed TNT models", Category.PERFORMANCE,
+                () -> c.hideTnt, v -> c.hideTnt = v));
+        add(new Module("Hide Projectiles", "Skip arrows, pearls, snowballs", Category.PERFORMANCE,
+                () -> c.hideProjectiles, v -> c.hideProjectiles = v));
+        add(new Module("Hide Passive Mobs", "Skip cows, villagers, bees and similar", Category.PERFORMANCE,
+                () -> c.hidePassiveMobs, v -> c.hidePassiveMobs = v));
+        add(new Module("Hide Tile Entities", "Skip chests, signs, banners, skulls", Category.PERFORMANCE,
+                () -> c.hideTileEntities, v -> c.hideTileEntities = v));
+        add(new Module("Hide Sky", "Skip sky, sun and moon", Category.PERFORMANCE,
+                () -> c.hideSky, v -> c.hideSky = v));
+        add(new Module("Hide Stars", "Skip star rendering", Category.PERFORMANCE,
+                () -> c.hideStars, v -> c.hideStars = v));
+        add(new Module("No Break Particles", "Skip block-break dust", Category.PERFORMANCE,
+                () -> c.noBreakParticles, v -> c.noBreakParticles = v));
+        add(new Module("No Potion Particles", "Skip potion swirl particles", Category.PERFORMANCE,
+                () -> c.noPotionParticles, v -> c.noPotionParticles = v));
+        add(new Module("No Enchant Particles", "Skip enchanting-table motes", Category.PERFORMANCE,
+                () -> c.hideEnchantParticles, v -> c.hideEnchantParticles = v));
+        add(new Module("Fast Graphics", "Force Fast graphics for more FPS", Category.PERFORMANCE,
+                () -> c.fastGraphics, v -> c.fastGraphics = v));
 
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
                 () -> c.fullbright, v -> c.fullbright = v)
@@ -162,7 +161,7 @@ public final class Modules {
         add(new Module("Hide Inventory Model", "Hides the player preview in inventory", Category.PLAYER,
                 () -> c.hideInvModel, v -> c.hideInvModel = v)
                 .setting("Transparent", () -> c.hideInvTransparent, v -> c.hideInvTransparent = v));
-        add(new Module("Totem Tweaks", "Resize the totem and its pop", Category.RENDER,
+        add(new Module("Totem Tweaks", "Resize the totem and its pop", Category.PVP,
                 () -> c.totemTweaks, v -> c.totemTweaks = v)
                 .settingF("Totem size", () -> (double) c.totemSize, v -> c.totemSize = (float) v, 0.2, 3)
                 .tabLast("Totem")
@@ -266,23 +265,43 @@ public final class Modules {
                 .settingF("Opacity", () -> (double) c.crossbowOpacity, v -> c.crossbowOpacity = (float) v, 0, 100));
         add(new Module("Crosshair", "Draw your own crosshair", Category.PVP,
                 () -> c.customCrosshair, v -> c.customCrosshair = v)
-                .settingAction("Drawing", "Edit", () -> {
+                .setting("Style", () -> c.crosshairStyle, v -> c.crosshairStyle = v,
+                        "Vanilla", "Cross", "Circle", "Square", "Triangle", "Arrow", "Drawn")
+                .settingAction("Draw own", "Edit", () -> {
                     var mc = net.minecraft.client.MinecraftClient.getInstance();
+                    if (AeroClient.CONFIG != null) {
+                        AeroClient.CONFIG.customCrosshair = true;
+                        AeroClient.CONFIG.crosshairStyle = "Drawn";
+                        AeroClient.CONFIG.crosshairUseDrawing = true;
+                    }
                     mc.setScreen(new dev.aero.client.ui.DrawCrosshairScreen(mc.currentScreen));
                 })
                 .setting("Length", () -> c.crosshairArm, v -> c.crosshairArm = v, 2, 16)
-                .nestLast("Drawing")
                 .setting("Gap", () -> c.crosshairGap, v -> c.crosshairGap = v, 0, 12)
-                .nestLast("Drawing")
+                .settingF("Thickness", () -> (double) c.crosshairThickness, v -> c.crosshairThickness = (float) v, 0.5, 6)
                 .settingColor("Color", () -> c.crosshairColor, v -> c.crosshairColor = v)
-                .nestLast("Drawing")
+                .setting("Outline", () -> c.crosshairOutline, v -> c.crosshairOutline = v)
+                .expandLast()
+                .settingColor("Outline color", () -> c.crosshairOutlineColor, v -> c.crosshairOutlineColor = v)
+                .nestLast("Outline")
+                .setting("Center dot", () -> c.crosshairDot, v -> c.crosshairDot = v)
+                .expandLast()
+                .settingColor("Dot color", () -> c.crosshairDotColor, v -> c.crosshairDotColor = v)
+                .nestLast("Center dot")
+                .setting("Rainbow", () -> c.crosshairRainbow, v -> c.crosshairRainbow = v)
+                .setting("Dynamic attack", () -> c.crosshairDynamicAttack, v -> c.crosshairDynamicAttack = v)
+                .setting("Third person", () -> c.crosshairThirdPerson, v -> c.crosshairThirdPerson = v)
+                .setting("When HUD hidden", () -> c.crosshairWhenHidden, v -> c.crosshairWhenHidden = v)
+                .setting("Cooldown ring", () -> c.crosshairCooldown, v -> c.crosshairCooldown = v)
                 .setting("Player Hover", () -> c.crosshairHover, v -> c.crosshairHover = v)
                 .expandLast()
                 .settingColor("Hover color", () -> c.crosshairHoverColor, v -> c.crosshairHoverColor = v)
                 .nestLast("Player Hover")
                 .settingF("Hover Range", () -> (double) c.crosshairHoverRange, v -> c.crosshairHoverRange = (float) v, 1, 16)
-                .nestLast("Player Hover"));
-        add(new Module("Crosshair Addons", "Extra crosshair markers", Category.PVP,
+                .nestLast("Player Hover")
+                .setting("Hostile highlight", () -> c.crosshairHighlightHostiles, v -> c.crosshairHighlightHostiles = v)
+                .setting("Passive highlight", () -> c.crosshairHighlightPassives, v -> c.crosshairHighlightPassives = v));
+        add(new Module("Crosshair Addons", "Markers only — uses vanilla or the Crosshair module", Category.PVP,
                 () -> c.crosshairAddons, v -> c.crosshairAddons = v)
                 .setting("Icon gap", () -> c.addonGap, v -> c.addonGap = v, 0, 12)
                 .setting("Environment blend", () -> c.addonEnvBlend, v -> c.addonEnvBlend = v)
@@ -314,11 +333,26 @@ public final class Modules {
                 .settingF("Speed", () -> (double) c.damageTintSpeed, v -> c.damageTintSpeed = (float) v, 0.05, 2)
                 .setting("Gradient", () -> c.damageTintGradient, v -> c.damageTintGradient = v)
                 .setting("Armor", () -> c.damageTintArmor, v -> c.damageTintArmor = v));
-        add(new Module("Shield Tweaks", "Cleaner shield overlay", Category.PVP,
+        add(new Module("Optimizer", "All PvP lag cuts in one place", Category.PVP,
+                () -> c.optimizersModule, v -> c.optimizersModule = v)
+                .setting("Skip crystal particles", () -> c.crystalOptimizerParticles, v -> c.crystalOptimizerParticles = v)
+                .setting("Mute crystal sound", () -> c.crystalOptimizerSound, v -> c.crystalOptimizerSound = v)
+                .setting("Limit crystal range", () -> c.crystalOptimizerRange, v -> c.crystalOptimizerRange = v)
+                .setting("Crystal range", () -> c.crystalOptimizerRangeValue, v -> c.crystalOptimizerRangeValue = v, 8, 64)
+                .setting("Anchor instant swing", () -> c.anchorOptimizerSwing, v -> c.anchorOptimizerSwing = v)
+                .setting("Pearl instant swing", () -> c.pearlOptimizerSwing, v -> c.pearlOptimizerSwing = v)
+                .setting("Shield instant raise", () -> c.shieldOptimizerInstant, v -> c.shieldOptimizerInstant = v)
+                .setting("Crossbow instant swing", () -> c.crossbowOptimizerSwing, v -> c.crossbowOptimizerSwing = v));
+        dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.SUPPORTED);
+        add(new Module("Shield Tweaks", "Recolors the shield: green ready, red disabled. Opacity applies to the shield.", Category.PVP,
                 () -> c.shieldTweaks, v -> c.shieldTweaks = v)
-                .setting("Ready", () -> c.shieldReady, v -> c.shieldReady = v)
+                .setting("Ready (green)", () -> c.shieldReady, v -> c.shieldReady = v)
+                .settingColor("Ready color", () -> c.shieldReadyColor, v -> c.shieldReadyColor = v)
+                .nestLast("Ready (green)")
+                .setting("Disabled (red)", () -> c.shieldDisabled, v -> c.shieldDisabled = v)
+                .settingColor("Disabled color", () -> c.shieldDisabledColor, v -> c.shieldDisabledColor = v)
+                .nestLast("Disabled (red)")
                 .setting("Blocking", () -> c.shieldBlocking, v -> c.shieldBlocking = v)
-                .setting("Disabled", () -> c.shieldDisabled, v -> c.shieldDisabled = v)
                 .settingF("Shield opacity", () -> (double) c.shieldOpacity, v -> c.shieldOpacity = (float) v, 0, 100)
                 .setting("Own shield only", () -> c.shieldOwnOnly, v -> c.shieldOwnOnly = v)
                 .setting("Fix blocking animation", () -> c.shieldFixAnim, v -> c.shieldFixAnim = v));
@@ -346,10 +380,12 @@ public final class Modules {
         add(new Module("GUI Tweaks", "Cleaner vanilla GUI spacing", Category.HUD,
                 () -> c.guiTweaks, v -> c.guiTweaks = v)
                 .setting("HUD Tweaks", () -> c.guiHudTweaks, v -> c.guiHudTweaks = v)
+                .settingF("Esc Menu Scale", () -> (double) c.escHudScale, v -> c.escHudScale = (float) v, 0.5, 2.0)
                 .setting("No Item Name", () -> c.guiNoItemName, v -> c.guiNoItemName = v)
                 .setting("Hide Selector", () -> c.guiHideSelector, v -> c.guiHideSelector = v)
                 .setting("Hide Action Bar", () -> c.guiHideActionBar, v -> c.guiHideActionBar = v)
                 .setting("Inventory Tweaks", () -> c.guiInventoryTweaks, v -> c.guiInventoryTweaks = v)
+                .settingF("Inventory Scale", () -> (double) c.guiInventoryScale, v -> c.guiInventoryScale = (float) v, 0.5, 2.0)
                 .setting("Hotbar", () -> c.guiHotbar, v -> c.guiHotbar = v)
                 .setting("Health", () -> c.guiHealth, v -> c.guiHealth = v)
                 .setting("Armor", () -> c.guiArmor, v -> c.guiArmor = v)
@@ -388,7 +424,7 @@ public final class Modules {
                 () -> c.saturationOverlay, v -> c.saturationOverlay = v)
                 .settingF("Opacity", () -> (double) c.satOpacity, v -> c.satOpacity = (float) v, 0, 100)
                 .setting("Hide when full", () -> c.satHideFull, v -> c.satHideFull = v));
-        add(new Module("Watermark", "Larp watermark in the corner", Category.HUD,
+        add(new Module("Watermark", "Icon + name, bottom-right when HUD or a menu is open", Category.HUD,
                 () -> c.watermark, v -> c.watermark = v)
                 .setting("Rainbow", () -> c.watermarkRainbow, v -> c.watermarkRainbow = v)
                 .setting("Background", () -> c.watermarkBg, v -> c.watermarkBg = v)
@@ -401,19 +437,35 @@ public final class Modules {
                 .setting("Show sprinting", () -> c.sprintShowSprint, v -> c.sprintShowSprint = v)
                 .setting("Show sneaking", () -> c.sprintShowSneak, v -> c.sprintShowSneak = v)
                 .setting("Show swimming", () -> c.sprintShowSwim, v -> c.sprintShowSwim = v));
-        add(new Module("Totem Counter", "Counts totems in your inventory", Category.HUD,
+        add(new Module("Totem Counter", "Counts totems in your inventory", Category.PVP,
                 () -> c.totemCounter, v -> c.totemCounter = v)
                 .setting("Show HUD", () -> c.totemHud, v -> c.totemHud = v)
                 .setting("Own Totems", () -> c.totemOwnOnly, v -> c.totemOwnOnly = v)
+                .setting("Use color", () -> c.totemUseColor, v -> c.totemUseColor = v)
+                .settingColor("Count color", () -> c.totemColor, v -> c.totemColor = v)
+                .nestLast("Use color")
                 .setting("Style", () -> c.totemStyle, v -> c.totemStyle = v, "Boxed", "Plain")
                 .setting("Pops next to name", () -> c.totemPopsOnNametag, v -> c.totemPopsOnNametag = v));
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.TOTEM_COUNTER);
-        add(new Module("Item Highlighter", "Marks enchanted hotbar items", Category.HUD,
+        add(new Module("Item Highlighter", "Outline standard PvP items in hotbar and inv", Category.HUD,
                 () -> c.itemHighlighter, v -> c.itemHighlighter = v)
                 .setting("In inventories", () -> c.highlightInventories, v -> c.highlightInventories = v)
                 .setting("In hotbar", () -> c.highlightHotbar, v -> c.highlightHotbar = v)
-                .settingText("Match (comma list, empty = enchanted/totem)",
-                        () -> c.itemHighlighterFilter, v -> c.itemHighlighterFilter = v));
+                .setting("Totem", () -> c.highlightTotem, v -> c.highlightTotem = v)
+                .setting("End crystal", () -> c.highlightCrystal, v -> c.highlightCrystal = v)
+                .setting("Gapple", () -> c.highlightGapple, v -> c.highlightGapple = v)
+                .setting("Pearl", () -> c.highlightPearl, v -> c.highlightPearl = v)
+                .setting("Obsidian", () -> c.highlightObsidian, v -> c.highlightObsidian = v)
+                .setting("XP bottle", () -> c.highlightXp, v -> c.highlightXp = v)
+                .setting("Sword", () -> c.highlightSword, v -> c.highlightSword = v)
+                .setting("Axe", () -> c.highlightAxe, v -> c.highlightAxe = v)
+                .setting("Mace", () -> c.highlightMace, v -> c.highlightMace = v)
+                .setting("Anchor", () -> c.highlightAnchor, v -> c.highlightAnchor = v)
+                .setting("Shield", () -> c.highlightShield, v -> c.highlightShield = v)
+                .setting("Glowstone", () -> c.highlightGlowstone, v -> c.highlightGlowstone = v)
+                .setting("Web", () -> c.highlightWeb, v -> c.highlightWeb = v)
+                .setting("Potion", () -> c.highlightPotion, v -> c.highlightPotion = v)
+                .setting("Any enchanted", () -> c.highlightEnchanted, v -> c.highlightEnchanted = v));
         add(new Module("Chat", "Timestamps and no background", Category.MISC,
                 () -> c.chatTimestamps, v -> c.chatTimestamps = v)
                 .setting("Mention ping", () -> c.chatMentionPing, v -> c.chatMentionPing = v)
@@ -429,10 +481,6 @@ public final class Modules {
                 .setting("Water", () -> c.ambienceWater, v -> c.ambienceWater = v)
                 .setting("Lava", () -> c.ambienceLava, v -> c.ambienceLava = v)
                 .setting("Fire", () -> c.ambienceFire, v -> c.ambienceFire = v));
-        add(new Module("Optimizers", "Client-side crystal and anchor prediction (public MIT mods)", Category.MISC,
-                () -> c.optimizersModule, v -> c.optimizersModule = v)
-                .settingText("Server", () -> dev.aero.client.Visuals.currentServerLabel(), v -> { }));
-        dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.SUPPORTED);
         add(new Module("Emotes", "Hold a key for the emote wheel", Category.PLAYER,
                 () -> c.emotes, v -> c.emotes = v));
         add(new Module("Discord RPC", "Show Larp Launcher on your Discord status", Category.MISC,
@@ -527,6 +575,13 @@ public final class Modules {
         c.noFireworks = true;
         c.hideXpOrbs = true;
         c.soundCut = true;
+        c.hideDroppedItems = true;
+        c.hideTnt = true;
+        c.hideProjectiles = true;
+        c.hideTileEntities = true;
+        c.noBreakParticles = true;
+        c.noPotionParticles = true;
+        c.fastGraphics = true;
         c.renderDistanceOverride = true;
         c.renderDistanceValue = Math.min(c.renderDistanceValue, 8);
         c.hideOtherPlayers = false;

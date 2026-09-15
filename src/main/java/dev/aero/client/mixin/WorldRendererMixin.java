@@ -24,6 +24,21 @@ public class WorldRendererMixin {
         }
     }
 
+    @Inject(method = {"renderSky", "renderSky(Lnet/minecraft/client/util/math/MatrixStack;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;FLnet/minecraft/client/render/Camera;ZLjava/lang/Runnable;)V"},
+            at = @At("HEAD"), cancellable = true, require = 0)
+    private void aero$hideSky(CallbackInfo ci) {
+        if (AeroClient.CONFIG != null && AeroClient.CONFIG.hideSky) {
+            ci.cancel();
+        }
+    }
+
+    @Inject(method = {"renderStars", "renderSkybox"}, at = @At("HEAD"), cancellable = true, require = 0)
+    private void aero$hideStars(CallbackInfo ci) {
+        if (AeroClient.CONFIG != null && (AeroClient.CONFIG.hideSky || AeroClient.CONFIG.hideStars)) {
+            ci.cancel();
+        }
+    }
+
     /**
      * Block Overlay: best-effort hook into the block-outline draw call. The exact vanilla method
      * name/signature for this in the current mappings isn't confirmed against the actual game jar,

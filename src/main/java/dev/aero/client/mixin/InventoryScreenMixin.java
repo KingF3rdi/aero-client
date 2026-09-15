@@ -13,6 +13,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class InventoryScreenMixin {
     @Inject(method = {"drawEntity", "drawPlayer"}, at = @At("HEAD"), cancellable = true, require = 0)
     private static void aero$hideModel(CallbackInfo ci) {
+        if (dev.aero.client.cosmetic.CosmeticPreview.drawing) {
+            return;
+        }
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.hideInvModel
                 && !AeroClient.CONFIG.hideInvTransparent) {
             ci.cancel();

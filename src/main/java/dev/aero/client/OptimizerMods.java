@@ -1,12 +1,10 @@
 package dev.aero.client;
 
 import dev.aero.client.module.Module;
-import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * Detects public, MIT-licensed companion mods this client can complement. These are separate
- * Fabric mods with their own logic and settings - this class only reports whether each is present
- * in the user's mods folder, it does not reimplement or alter their behavior.
+ * Rows shown under Optimizers / Shield Tweaks. These are built-in client features inspired by the
+ * listed public mods; toggles always work, whether or not the original jar is in the mods folder.
  */
 public final class OptimizerMods {
     private OptimizerMods() {}
@@ -14,14 +12,15 @@ public final class OptimizerMods {
     public record Entry(String id, String label) {}
 
     public static final Entry[] SUPPORTED = {
-            new Entry("marlowcrystal", "Marlow's Crystal Optimizer"),
-            new Entry("herosanchoroptimizer", "HerosAnchorOptimizer"),
-            new Entry("consumableoptimizer", "Consumable Optimizer"),
-            new Entry("heroselytraoptimizer", "HerosElytraOptimizer"),
-            new Entry("oneauras-cart-optimizer", "oneaura's Cart Optimizer"),
-            new Entry("client_side_anchors", "Anchor Optimizer (cutebow)"),
-            new Entry("pearloptimizer", "Pearl Optimizer (cutebow)"),
-            new Entry("totemoptimizer", "Totem Optimizer (cutebow)"),
+            new Entry("marlowcrystal", "Crystal"),
+            new Entry("client_side_anchors", "Anchor"),
+            new Entry("herosanchoroptimizer", "Heros Anchor"),
+            new Entry("heroselytraoptimizer", "Heros Elytra"),
+            new Entry("maceoptimizer", "Mace"),
+            new Entry("pearloptimizer", "Pearl"),
+            new Entry("totemoptimizer", "Totem"),
+            new Entry("shieldoptimizer", "Shield"),
+            new Entry("crossbowoptimizer", "Crossbow"),
     };
 
     public static final Entry[] SHIELD = {
@@ -39,27 +38,20 @@ public final class OptimizerMods {
 
     public static boolean isLoaded(String modId) {
         try {
-            return FabricLoader.getInstance().isModLoaded(modId);
+            return net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded(modId);
         } catch (Throwable ignored) {
             return false;
         }
     }
 
-    /**
-     * Adds one toggle per entry, labelled with its detected install state. The switch itself is a
-     * real, persisted preference (default on) - not fake control over the other mod's internals -
-     * it just lets this row remember whether you want it treated as active.
-     */
     public static void attach(Module module, Entry[] entries) {
         for (Entry entry : entries) {
-            module.setting(
-                    entry.label() + (isLoaded(entry.id()) ? " (installed)" : " (not installed)"),
-                    () -> enabled(entry.id()), v -> setEnabled(entry.id(), v));
+            module.setting(entry.label(), () -> enabled(entry.id()), v -> setEnabled(entry.id(), v));
         }
     }
 
     public static boolean enabled(String modId) {
-        var cfg = dev.aero.client.AeroClient.CONFIG;
+        var cfg = AeroClient.CONFIG;
         if (cfg == null || cfg.optimizerEnabled == null) {
             return true;
         }
@@ -67,7 +59,7 @@ public final class OptimizerMods {
     }
 
     public static void setEnabled(String modId, boolean value) {
-        var cfg = dev.aero.client.AeroClient.CONFIG;
+        var cfg = AeroClient.CONFIG;
         if (cfg == null) {
             return;
         }
@@ -75,5 +67,13 @@ public final class OptimizerMods {
             cfg.optimizerEnabled = new java.util.HashMap<>();
         }
         cfg.optimizerEnabled.put(modId, value);
+    }
+
+    public static boolean shieldStatus() {
+        return AeroClient.CONFIG != null && AeroClient.CONFIG.shieldTweaks && enabled("shieldstatus");
+    }
+
+    public static boolean shieldFixes() {
+        return AeroClient.CONFIG != null && AeroClient.CONFIG.shieldTweaks && enabled("shieldfixes");
     }
 }

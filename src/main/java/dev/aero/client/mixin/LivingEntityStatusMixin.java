@@ -17,5 +17,16 @@ public class LivingEntityStatusMixin {
         if (status == EntityStatuses.USE_TOTEM_OF_UNDYING) {
             Visuals.onTotemPop((LivingEntity) (Object) this);
         }
+        if ((Object) this instanceof net.minecraft.entity.player.PlayerEntity player
+                && (status == EntityStatuses.BREAK_OFFHAND || status == EntityStatuses.BREAK_MAINHAND)) {
+            Visuals.markShieldDisabled(player);
+        }
+    }
+
+    @Inject(method = "tick", at = @At("TAIL"), require = 0)
+    private void aero$elytra(CallbackInfo ci) {
+        if ((Object) this instanceof net.minecraft.entity.player.PlayerEntity player) {
+            dev.aero.client.Optimizer.tickElytra(player);
+        }
     }
 }

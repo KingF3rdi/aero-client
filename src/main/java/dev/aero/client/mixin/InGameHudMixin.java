@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(InGameHud.class)
+@Mixin(value = InGameHud.class, priority = 2000)
 public class InGameHudMixin {
     @Inject(method = "render", at = @At("TAIL"), require = 0)
     private void aero$overlay(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
@@ -32,9 +32,14 @@ public class InGameHudMixin {
         }
     }
 
-    @Inject(method = "renderCrosshair", at = @At("HEAD"), cancellable = true, require = 0)
-    private void aero$crosshair(CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.customCrosshair) {
+    @Inject(
+            method = "renderCrosshair(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/render/RenderTickCounter;)V",
+            at = @At("HEAD"),
+            cancellable = true,
+            require = 0
+    )
+    private void aero$crosshair(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        if (dev.aero.client.hud.OverlayHud.hideVanillaCrosshair()) {
             ci.cancel();
         }
     }

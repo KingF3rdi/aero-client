@@ -14,7 +14,7 @@ import java.util.Map;
 public class ClientConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     /** Bump this whenever defaults change in a way that should override an old saved config on disk. */
-    private static final int CURRENT_VERSION = 2;
+    private static final int CURRENT_VERSION = 3;
 
     public int configVersion = CURRENT_VERSION;
 
@@ -141,6 +141,7 @@ public class ClientConfig {
     public boolean totemCounter = false;
     public boolean totemHud = true;
     public boolean totemOwnOnly = true;
+    public boolean totemUseColor = true;
     public int totemColor = -6267649;
     public String totemStyle = "Boxed";
     public boolean totemPopsOnNametag = true;
@@ -163,6 +164,21 @@ public class ClientConfig {
     public boolean itemHighlighter = false;
     public boolean highlightInventories = true;
     public boolean highlightHotbar = true;
+    public boolean highlightTotem = true;
+    public boolean highlightCrystal = true;
+    public boolean highlightGapple = true;
+    public boolean highlightPearl = true;
+    public boolean highlightObsidian = true;
+    public boolean highlightXp = true;
+    public boolean highlightShield = false;
+    public boolean highlightSword = true;
+    public boolean highlightAxe = true;
+    public boolean highlightMace = true;
+    public boolean highlightAnchor = true;
+    public boolean highlightGlowstone = false;
+    public boolean highlightWeb = false;
+    public boolean highlightPotion = false;
+    public boolean highlightEnchanted = false;
     public String itemHighlighterFilter = "";
     public boolean ambience = false;
     public boolean overworldSky = false;
@@ -191,6 +207,23 @@ public class ClientConfig {
     public int crosshairColor = 0xFFF6F2FF;
     public boolean crosshairUseDrawing = false;
     public String crosshairPixels = "";
+    public String crosshairStyle = "Cross";
+    public float crosshairThickness = 1f;
+    public boolean crosshairOutline = true;
+    public int crosshairOutlineColor = 0xCC120E1A;
+    public boolean crosshairDot = false;
+    public int crosshairDotColor = 0xFFF6F2FF;
+    public boolean crosshairRainbow = false;
+    public float crosshairRainbowSpeed = 1f;
+    public boolean crosshairDynamicAttack = false;
+    public boolean crosshairThirdPerson = false;
+    public boolean crosshairWhenHidden = false;
+    public boolean crosshairHighlightHostiles = false;
+    public int crosshairHostileColor = 0xFFE05555;
+    public boolean crosshairHighlightPassives = false;
+    public int crosshairPassiveColor = 0xFF4CD964;
+    public boolean crosshairCooldown = false;
+    public int crosshairCooldownColor = 0x88FFFFFF;
     public boolean addonElytra = true;
     public boolean addonEntity = false;
     public boolean addonEntityShowAll = false;
@@ -235,7 +268,8 @@ public class ClientConfig {
     public boolean guiHideSelector = false;
     public boolean guiHideActionBar = false;
     public boolean guiInventoryTweaks = true;
-    public float guiInventoryScale = 3.0f;
+    public float guiInventoryScale = 1.0f;
+    public float escHudScale = 1.0f;
     public boolean guiHotbar = true;
     public boolean guiHealth = true;
     public boolean guiArmor = true;
@@ -270,8 +304,8 @@ public class ClientConfig {
     public int sprintY = 40;
     public int watermarkX = 4;
     public int watermarkY = 30;
-    public int totemX = 8;
-    public int totemY = 60;
+    public int totemX = 0;
+    public int totemY = 0;
     public int armorHudX = 600;
     public int armorHudY = 649;
     public int keystrokesX = 8;
@@ -309,6 +343,17 @@ public class ClientConfig {
     public boolean noFireworks = false;
     public boolean hideXpOrbs = false;
     public boolean soundCut = false;
+    public boolean hideDroppedItems = false;
+    public boolean hideTnt = false;
+    public boolean hideProjectiles = false;
+    public boolean hidePassiveMobs = false;
+    public boolean hideTileEntities = false;
+    public boolean hideSky = false;
+    public boolean hideStars = false;
+    public boolean noBreakParticles = false;
+    public boolean noPotionParticles = false;
+    public boolean hideEnchantParticles = false;
+    public boolean fastGraphics = false;
 
     public Map<String, Module.ModuleStyle> moduleStyles = new HashMap<>();
 

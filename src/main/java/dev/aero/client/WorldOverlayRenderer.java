@@ -70,47 +70,6 @@ public final class WorldOverlayRenderer {
             drawBox(matrices, consumers, box.expand(0.002), camPos, cfg.blockOverlayColor);
         }
 
-        if (cfg.damageTint && mc.player.hurtTime > 0) {
-            int packed = cfg.damageTintColor;
-            if (cfg.damageTintChroma) {
-                float hue = (System.currentTimeMillis() % 4000L) / 4000f * Math.max(0.05f, cfg.damageTintSpeed) * 4f;
-                packed = 0xFF000000 | (java.awt.Color.HSBtoRGB(hue % 1f, 0.75f, 1f) & 0xFFFFFF);
-            }
-            int a = Math.min(220, 90 + mc.player.hurtTime * 12);
-            int color = (a << 24) | (packed & 0xFFFFFF);
-            drawBox(matrices, consumers, mc.player.getBoundingBox().expand(0.04), camPos, color);
-
-            if (cfg.damageTintArmor) {
-                Box body = mc.player.getBoundingBox();
-                double h = body.maxY - body.minY;
-                // Head / chest / legs / boots bands, roughly matching each armor slot's height.
-                double[] bands = {0.86, 0.55, 0.28, 0.0};
-                for (int i = 0; i < bands.length - 1; i++) {
-                    Box band = new Box(body.minX - 0.03, body.minY + h * bands[i + 1], body.minZ - 0.03,
-                            body.maxX + 0.03, body.minY + h * bands[i], body.maxZ + 0.03);
-                    drawBox(matrices, consumers, band, camPos, color);
-                }
-            }
-        }
-
-        if (cfg.shieldTweaks) {
-            try {
-                boolean firstPerson = mc.options != null && mc.options.getPerspective().isFirstPerson();
-                for (PlayerEntity p : mc.world.getPlayers()) {
-                    if (p == mc.player && firstPerson) {
-                        continue;
-                    }
-                    Integer color = Visuals.shieldStateColor(cfg, p);
-                    if (color != null) {
-                        Box marker = new Box(p.getX() - 0.06, p.getEyeY() + 0.35, p.getZ() - 0.06,
-                                p.getX() + 0.06, p.getEyeY() + 0.47, p.getZ() + 0.06);
-                        drawBox(matrices, consumers, marker, camPos, 0xFF000000 | (color & 0xFFFFFF));
-                    }
-                }
-            } catch (Throwable ignored) {
-            }
-        }
-
         if (cfg.popChams) {
             tickPopChams(mc, cfg);
             drawPopChams(matrices, consumers, camPos, cfg);

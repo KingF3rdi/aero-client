@@ -4,38 +4,51 @@ import dev.aero.client.AeroClient;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.Hand;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(HeldItemRenderer.class)
+@Mixin(value = HeldItemRenderer.class, priority = 2000)
 public class HeldItemRendererMixin {
+    @org.spongepowered.asm.mixin.Unique
+    private net.minecraft.entity.player.PlayerEntity aero$prevShieldHolder;
+    @org.spongepowered.asm.mixin.Unique
+    private boolean aero$pushedShieldHolder;
+
     /** Shield Tweaks "Fix blocking animation": skips the equip-in/out tween while actively
      * blocking, so the shield model doesn't visibly dip/glitch mid-block. */
-    @ModifyVariable(method = "applyEquipOffset", at = @At("HEAD"), argsOnly = true, require = 0)
-    private float aero$fixShieldEquip(float equipProgress, MatrixStack matrices, Hand hand) {
+    @ModifyVariable(
+            method = "applyEquipOffset(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/Arm;F)V",
+            at = @At("HEAD"),
+            argsOnly = true,
+            require = 0
+    )
+    private float aero$fixShieldEquip(float equipProgress) {
         var c = AeroClient.CONFIG;
-        boolean fixAnim = c != null && c.shieldTweaks && c.shieldFixAnim;
-        boolean optimizer = c != null && c.shieldOptimizer && c.shieldOptimizerInstant;
+        boolean fixAnim = c != null && c.shieldTweaks && (c.shieldFixAnim || dev.aero.client.OptimizerMods.shieldFixes());
+        boolean optimizer = c != null && (c.shieldOptimizer && c.shieldOptimizerInstant || dev.aero.client.Optimizer.shield());
         if (c == null || !(fixAnim || optimizer)) {
             return equipProgress;
         }
         var player = net.minecraft.client.MinecraftClient.getInstance().player;
-        if (player == null || !player.isUsingItem() || !player.isBlocking()) {
+        if (player == null || !player.isUsingItem()) {
             return equipProgress;
         }
-        ItemStack stack = hand == Hand.MAIN_HAND ? player.getMainHandStack() : player.getOffHandStack();
-        if (stack.getItem().toString().toLowerCase().contains("shield")) {
-            return 1.0F;
+        if (dev.aero.client.Visuals.isShield(player.getMainHandStack())
+                || dev.aero.client.Visuals.isShield(player.getOffHandStack())) {
+            return 0.0F;
         }
         return equipProgress;
     }
 
-    @Inject(method = "applyEquipOffset", at = @At("TAIL"), require = 0)
-    private void aero$shield(MatrixStack matrices, Hand hand, float equipProgress, CallbackInfo ci) {
+    @Inject(
+            method = "applyEquipOffset(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/util/Arm;F)V",
+            at = @At("TAIL"),
+            require = 0
+    )
+    private void aero$shield(MatrixStack matrices, net.minecraft.util.Arm arm, float equipProgress, CallbackInfo ci) {
         if (AeroClient.CONFIG == null) {
             return;
         }
@@ -43,12 +56,14 @@ public class HeldItemRendererMixin {
         if (player == null) {
             return;
         }
-        ItemStack stack = hand == Hand.MAIN_HAND ? player.getMainHandStack() : player.getOffHandStack();
-        String name = stack.getItem().toString().toLowerCase();
-        if (AeroClient.CONFIG.shieldTweaks && name.contains("shield") && player.isUsingItem()) {
-            matrices.translate(0.0F, -0.18F, -0.22F);
-            matrices.scale(0.72F, 0.72F, 0.72F);
+        ItemStack stack = arm == net.minecraft.util.Arm.RIGHT ? player.getMainHandStack() : player.getOffHandStack();
+        try {
+            if (player.getMainArm() == net.minecraft.util.Arm.LEFT) {
+                stack = arm == net.minecraft.util.Arm.LEFT ? player.getMainHandStack() : player.getOffHandStack();
+            }
+        } catch (Throwable ignored) {
         }
+        String name = stack.getItem().toString().toLowerCase();
         if (AeroClient.CONFIG.crossbowTweaks && (name.contains("crossbow") || name.contains("bow"))
                 && player.isUsingItem()) {
             matrices.translate(0.0F, -0.04F, -0.08F);
@@ -61,7 +76,8 @@ public class HeldItemRendererMixin {
             } else {
                 matrices.translate(c.customX - 0.56F, c.customY + 0.32F, c.customZ + 0.72F);
                 rotate(matrices, c.customPitch, c.customYaw, c.customRoll);
-                if (hand == Hand.MAIN_HAND) {
+                boolean main = arm == player.getMainArm();
+                if (main) {
                     matrices.translate(c.mainX, c.mainY, c.mainZ);
                     rotate(matrices, c.mainPitch, c.mainYaw, c.mainRoll);
                     matrices.scale(c.mainScale, c.mainScale, c.mainScale);
@@ -89,11 +105,15 @@ public class HeldItemRendererMixin {
             return;
         }
         String held = player.getMainHandStack().getItem().toString().toLowerCase();
-        if (c.anchorOptimizer && c.anchorOptimizerSwing && held.contains("respawn_anchor")) {
+        boolean anchors = (c.anchorOptimizer && c.anchorOptimizerSwing) || dev.aero.client.Optimizer.cutebowAnchor();
+        boolean pearls = (c.pearlOptimizer && c.pearlOptimizerSwing) || dev.aero.client.Optimizer.pearl();
+        if (anchors && held.contains("respawn_anchor")) {
             ci.cancel();
-        } else if (c.pearlOptimizer && c.pearlOptimizerSwing && held.contains("ender_pearl")) {
+        } else if (pearls && held.contains("ender_pearl")) {
             ci.cancel();
-        } else if (c.crossbowOptimizer && c.crossbowOptimizerSwing && held.contains("crossbow")) {
+        } else if ((c.crossbowOptimizer && c.crossbowOptimizerSwing || dev.aero.client.Optimizer.crossbow()) && held.contains("crossbow")) {
+            ci.cancel();
+        } else if (dev.aero.client.Optimizer.mace() && held.contains("mace")) {
             ci.cancel();
         }
     }
@@ -110,6 +130,37 @@ public class HeldItemRendererMixin {
             matrices.multiply(y);
             matrices.multiply(z);
         } catch (Throwable ignored) {
+        }
+    }
+
+    @Inject(
+            method = "renderItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V",
+            at = @At("HEAD"),
+            require = 0
+    )
+    private void aero$shieldHolderBegin(net.minecraft.entity.LivingEntity entity, ItemStack stack,
+                                        net.minecraft.item.ItemDisplayContext context,
+                                        MatrixStack matrices, Object queue, int light, CallbackInfo ci) {
+        if (entity instanceof net.minecraft.entity.player.PlayerEntity player
+                && dev.aero.client.Visuals.isShield(stack)) {
+            aero$prevShieldHolder = dev.aero.client.Visuals.currentShieldHolder();
+            aero$pushedShieldHolder = true;
+            dev.aero.client.Visuals.pushShieldHolder(player);
+        }
+    }
+
+    @Inject(
+            method = "renderItem(Lnet/minecraft/entity/LivingEntity;Lnet/minecraft/item/ItemStack;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;I)V",
+            at = @At("RETURN"),
+            require = 0
+    )
+    private void aero$shieldHolderEnd(net.minecraft.entity.LivingEntity entity, ItemStack stack,
+                                      net.minecraft.item.ItemDisplayContext context,
+                                      MatrixStack matrices, Object queue, int light, CallbackInfo ci) {
+        if (aero$pushedShieldHolder) {
+            aero$pushedShieldHolder = false;
+            dev.aero.client.Visuals.popShieldHolder(aero$prevShieldHolder);
+            aero$prevShieldHolder = null;
         }
     }
 

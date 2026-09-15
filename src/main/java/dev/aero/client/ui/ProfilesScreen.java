@@ -46,13 +46,13 @@ public class ProfilesScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        context.fill(0, 0, width, height, BG);
+        context.fill(0, 0, width, height, 0x66000000);
         int x = panelX();
         int y = panelY();
         int w = 280;
         int h = 260;
-        UiDraw.card(context, x, y, w, h, PANEL, true);
-        context.drawText(textRenderer, Text.literal("Profiles"), x + 14, y + 12, TEXT, false);
+        UiDraw.glass(context, x, y, w, h, 0xD414121E, 18);
+        context.drawText(textRenderer, Text.literal("Profiles"), x + 16, y + 14, TEXT, false);
         context.drawText(textRenderer, Text.literal("Save the current setup, or switch to a saved one."),
                 x + 14, y + 26, MUTED, false);
 

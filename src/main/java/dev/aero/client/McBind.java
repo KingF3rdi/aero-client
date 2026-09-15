@@ -16,6 +16,7 @@ public final class McBind {
     private static Double gammaBackup;
     private static Object cloudsBackup;
     private static Object particlesBackup;
+    private static Object graphicsBackup;
     private static Double entityBackup;
     private static Double distortionBackup;
     private static Double fovFxBackup;
@@ -41,6 +42,7 @@ public final class McBind {
             boolean bow = c.crossbowTweaks && usingRanged(mc);
             bindBool(opt, bow || c.noHurtcam || c.noBobbing, "getBobView", false, true);
             bindBool(opt, c.noShadows, "getEntityShadows", false, true);
+            bindEnum(opt, c.fastGraphics, "getGraphicsMode", "FAST", true);
         } catch (Throwable ignored) {
         }
 
@@ -113,6 +115,9 @@ public final class McBind {
             if (backup && getter.contains("Particle") && particlesBackup == null) {
                 particlesBackup = cur;
             }
+            if (backup && getter.contains("Graphics") && graphicsBackup == null) {
+                graphicsBackup = cur;
+            }
             Object off = enumConst(cur, offName);
             if (off != null) {
                 setValue(option, off);
@@ -123,6 +128,9 @@ public final class McBind {
         } else if (getter.contains("Particle") && particlesBackup != null) {
             setValue(option, particlesBackup);
             particlesBackup = null;
+        } else if (getter.contains("Graphics") && graphicsBackup != null) {
+            setValue(option, graphicsBackup);
+            graphicsBackup = null;
         }
     }
 

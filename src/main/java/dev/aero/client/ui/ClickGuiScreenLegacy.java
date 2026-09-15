@@ -2,6 +2,8 @@ package dev.aero.client.ui;
 
 import dev.aero.client.AeroClient;
 import dev.aero.client.auth.AccountManager;
+import dev.aero.client.auth.SavedAccount;
+import dev.aero.client.auth.SkinPreview;
 import dev.aero.client.cosmetic.CosmeticPreview;
 import dev.aero.client.cosmetic.Cosmetics;
 import dev.aero.client.module.Category;
@@ -24,12 +26,12 @@ import java.util.Locale;
  * Aurora-style in-game menu: Client modules, You cosmetics, Friends.
  */
 public class ClickGuiScreenLegacy extends Screen {
-    private static final int BG = 0xCC09080F;
-    private static final int BAR = 0xB80C0B14;
-    private static final int SIDE = 0xB00A0912;
-    private static final int CARD = 0xCC12111A;
-    private static final int PILL = 0xFF262232;
-    private static final int PILL_ON = 0xFF322C44;
+    private static final int BG = 0x4406050C;
+    private static final int BAR = 0xCC12101C;
+    private static final int SIDE = 0x140A0912;
+    private static final int CARD = 0xB012111A;
+    private static final int PILL = 0x88262232;
+    private static final int PILL_ON = 0xAA3A3158;
     private static final int MUTED = 0xFF8E889C;
     private static final int TEXT = 0xFFF3F0F8;
     private static final int ACCENT = 0xFFC4B5FD;
@@ -41,9 +43,9 @@ public class ClickGuiScreenLegacy extends Screen {
     private static final int LINE = 0x14FFFFFF;
 
     private static final int TOP = 36;
-    private static final int SIDE_W = 168;
-    private static final int RIGHT_W = 248;
     private static final int ROW_H = 32;
+    private int SIDE_W = 168;
+    private int RIGHT_W = 248;
 
     private static final String[] COS_TABS = {
             "Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets"
@@ -68,6 +70,8 @@ public class ClickGuiScreenLegacy extends Screen {
     private boolean cosSearchFocus;
     private String friendDraft = "";
     private boolean friendFocus;
+    private String playerLookup = "";
+    private boolean playerLookupFocus;
     private int friendScroll;
     private boolean ambienceReset;
     private final List<Module> visible = new ArrayList<>();
@@ -111,10 +115,19 @@ public class ClickGuiScreenLegacy extends Screen {
     private static boolean lastBoundKeys;
 
     private void layoutPanel() {
-        pw = Math.min(width - 80, 820);
-        ph = Math.min(height - 80, 492);
-        ox = (width - pw) / 2;
-        oy = (height - ph) / 2;
+        int maxW = Math.max(8, width - 24);
+        int maxH = Math.max(8, height - 24);
+        pw = Math.min(maxW, 900);
+        ph = Math.min(maxH, 528);
+        if (pw < 612) {
+            SIDE_W = Math.max(96, pw * 22 / 100);
+            RIGHT_W = Math.max(120, pw * 30 / 100);
+        } else {
+            SIDE_W = 168;
+            RIGHT_W = 248;
+        }
+        ox = Math.max(0, (width - pw) / 2);
+        oy = Math.max(0, (height - ph) / 2);
     }
 
     private boolean inMenu(Module module) {
@@ -259,7 +272,7 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private int listW() {
-        return Math.max(180, pw - SIDE_W - RIGHT_W - 16);
+        return Math.max(80, pw - SIDE_W - RIGHT_W - 16);
     }
 
     private int listH() {
@@ -271,15 +284,11 @@ public class ClickGuiScreenLegacy extends Screen {
         UiDraw.menuOpen = true;
         try {
             layoutPanel();
-            try {
-                applyBlur(context);
-            } catch (Throwable ignored) {
-            }
-            context.fill(0, 0, width, height, 0x3A07060E);
+            context.fill(0, 0, width, height, BG);
             if (AeroClient.MODULES == null) {
                 return;
             }
-            UiDraw.glass(context, ox, oy, pw, ph, 0xC016141F, 16);
+            UiDraw.glass(context, ox, oy, pw, ph, 0xC414121E, 20);
             drawTop(context, mouseX, mouseY);
             if (topTab == 1) {
                 drawYou(context, mouseX, mouseY);
@@ -295,6 +304,8 @@ public class ClickGuiScreenLegacy extends Screen {
                 drawList(context, mouseX, mouseY);
                 drawRight(context, mouseX, mouseY);
             }
+        } catch (Throwable t) {
+            context.drawText(textRenderer, Text.literal("Menu draw failed"), ox + 16, oy + 48, TEXT, false);
         } finally {
             UiDraw.menuOpen = false;
         }
@@ -304,23 +315,23 @@ public class ClickGuiScreenLegacy extends Screen {
         int x0 = ox;
         int y0 = oy;
         int x1 = ox + pw;
-        context.fill(x0, y0, x1, y0 + TOP, BAR);
-        context.fill(x0, y0, x1, y0 + 1, 0x28FFFFFF);
-        context.fill(x0, y0 + TOP - 1, x1, y0 + TOP, 0x66C4B5FD);
+        UiDraw.roundRect(context, x0 + 6, y0 + 5, pw - 12, TOP - 8, 12, BAR);
+        context.fill(x0 + 14, y0 + TOP - 1, x1 - 14, y0 + TOP, 0x22FFFFFF);
 
-        UiDraw.raised(context, x0 + 10, y0 + 8, 18, 18, ACCENT);
-        context.drawText(textRenderer, Text.literal("A"), x0 + 16, y0 + 13, 0xFF1A1024, false);
-        context.drawText(textRenderer, Text.literal("Larp"), x0 + 34, y0 + 13, TEXT, false);
+        UiDraw.roundRect(context, x0 + 12, y0 + 8, 18, 18, 6, ACCENT);
+        context.drawText(textRenderer, Text.literal("L"), x0 + 17, y0 + 13, 0xFF1A1024, false);
+        context.drawText(textRenderer, Text.literal("Larp"), x0 + 34, y0 + 10, TEXT, false);
+        context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 34, y0 + 20, MUTED, false);
 
-        int tabX = x0 + 78;
-        tabPill(context, tabX, y0 + 8, 62, topTab == 0, "Client");
-        tabPill(context, tabX + 66, y0 + 8, 72, topTab == 1, "Wardrobe");
-        tabPill(context, tabX + 142, y0 + 8, 62, topTab == 2, "Friends");
+        int tabX = x0 + 86;
+        tabPill(context, tabX, y0 + 8, 64, topTab == 0, inside(mx, my, tabX, y0 + 8, 64, 20), "Client");
+        tabPill(context, tabX + 68, y0 + 8, 76, topTab == 1, inside(mx, my, tabX + 68, y0 + 8, 76, 20), "Wardrobe");
+        tabPill(context, tabX + 148, y0 + 8, 64, topTab == 2, inside(mx, my, tabX + 148, y0 + 8, 64, 20), "Friends");
 
-        String beta = "Beta " + AeroClient.VERSION;
-        int betaW = textRenderer.getWidth(beta);
-        int betaX = x1 - 34 - betaW;
-        context.drawText(textRenderer, Text.literal(beta), betaX, y0 + 13, MUTED, false);
+        int closeX = x1 - 28;
+        boolean closeH = inside(mx, my, closeX, y0 + 9, 16, 16);
+        UiDraw.roundRect(context, closeX, y0 + 9, 16, 16, 8, closeH ? 0x66E05555 : 0x22FFFFFF);
+        context.drawText(textRenderer, Text.literal("x"), closeX + 5, y0 + 12, closeH ? TEXT : MUTED, false);
 
         int profilesX = profilesButtonX();
         boolean profilesH = inside(mx, my, profilesX, y0 + 8, PROFILES_W, 20);
@@ -330,41 +341,37 @@ public class ClickGuiScreenLegacy extends Screen {
                 profilesX + (PROFILES_W - textRenderer.getWidth(profilesLabel)) / 2, y0 + 14,
                 profilesH ? TEXT : MUTED, false);
 
-        String name = AccountManager.currentName();
+        String name = fit(AccountManager.currentName(), 90);
         int nw = textRenderer.getWidth(name);
-        int nameX = profilesX - 16 - nw;
-        UiDraw.raised(context, nameX - 16, y0 + 10, 12, 12, 0xFFC8A0E8);
-        context.drawText(textRenderer, Text.literal(name), nameX, y0 + 13, TEXT, false);
-
-        boolean closeH = inside(mx, my, x1 - 22, y0 + 10, 14, 14);
-        context.drawText(textRenderer, Text.literal("x"), x1 - 20, y0 + 13, closeH ? TEXT : MUTED, false);
+        int chipW = nw + 26;
+        int nameX = profilesX - 10 - chipW;
+        UiDraw.pill(context, nameX, y0 + 8, chipW, 20, false);
+        UiDraw.roundRect(context, nameX + 4, y0 + 12, 12, 12, 6, 0xFFC8A0E8);
+        context.drawText(textRenderer, Text.literal(name), nameX + 20, y0 + 14, TEXT, false);
     }
 
     private static final int PROFILES_W = 58;
 
     private int profilesButtonX() {
-        String beta = "Beta " + AeroClient.VERSION;
-        int betaX = ox + pw - 34 - textRenderer.getWidth(beta);
-        return betaX - 8 - PROFILES_W;
+        return ox + pw - 28 - 8 - PROFILES_W;
     }
 
-    private void tabPill(DrawContext context, int x, int y, int w, boolean on, String label) {
-        UiDraw.pill(context, x, y, w, 20, on);
+    private void tabPill(DrawContext context, int x, int y, int w, boolean on, boolean hover, String label) {
+        UiDraw.pill(context, x, y, w, 20, on || hover);
         int tw = textRenderer.getWidth(label);
-        context.drawText(textRenderer, Text.literal(label), x + (w - tw) / 2, y + 6, on ? TEXT : MUTED, false);
+        context.drawText(textRenderer, Text.literal(label), x + (w - tw) / 2, y + 6, on || hover ? TEXT : MUTED, false);
     }
 
     private void drawSidebar(DrawContext context, int mx, int my) {
         int x0 = ox;
         int y0 = oy + TOP;
         int y1 = oy + ph;
-        context.fill(x0, y0, x0 + SIDE_W, y1, SIDE);
-        context.fill(x0 + SIDE_W - 1, y0, x0 + SIDE_W, y1, 0x22FFFFFF);
+        context.fill(x0 + SIDE_W - 1, y0 + 8, x0 + SIDE_W, y1 - 8, 0x14FFFFFF);
 
         int sy = y0 + 10;
-        UiDraw.inset(context, x0 + 10, sy, SIDE_W - 20, 20, searchFocus ? 0xFF16141F : CARD);
-        String q = search.isEmpty() && !searchFocus ? "Search" : search + (searchFocus ? "|" : "");
-        context.drawText(textRenderer, Text.literal(q), x0 + 16, sy + 6,
+        UiDraw.field(context, x0 + 10, sy, SIDE_W - 20, 22, searchFocus);
+        String q = search.isEmpty() && !searchFocus ? "Search modules" : search + (searchFocus ? "|" : "");
+        context.drawText(textRenderer, Text.literal(fit(q, SIDE_W - 36)), x0 + 16, sy + 7,
                 search.isEmpty() && !searchFocus ? MUTED : TEXT, false);
 
         sy += 34;
@@ -414,29 +421,58 @@ public class ClickGuiScreenLegacy extends Screen {
         int x = listX();
         int y0 = oy + TOP + 8;
         int w = listW();
-        context.enableScissor(x, y0, x + w, y0 + listH());
-
-        int y = y0 - scroll;
-        Category last = null;
-        for (Module module : visible) {
-            if (module.category != last) {
-                last = module.category;
-                context.drawText(textRenderer, Text.literal(last.title),
-                        x + 8, y + 8, MUTED, false);
-                y += 22;
+        int view = listH();
+        context.enableScissor(x, y0, x + w, y0 + view);
+        try {
+            if (visible.isEmpty()) {
+                context.drawText(textRenderer, Text.literal("No modules match."), x + 12, y0 + 16, MUTED, false);
             }
-            boolean h = inside(mx, my, x, y, w, ROW_H - 2);
-            boolean sel = module == selected;
-            int rowBottom = y + ROW_H - 4;
-            if (sel || h) {
-                UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 7, sel ? 0xAA3A3158 : 0x4414121C);
+            int y = y0 - scroll;
+            Category last = null;
+            int bottom = y0 + view;
+            for (Module module : visible) {
+                if (module.category != last) {
+                    last = module.category;
+                    if (y + 22 >= y0 && y <= bottom) {
+                        context.drawText(textRenderer, Text.literal(last.title.toUpperCase(Locale.ROOT)),
+                                x + 10, y + 8, MUTED, false);
+                    }
+                    y += 22;
+                }
+                if (y + ROW_H < y0) {
+                    y += ROW_H;
+                    continue;
+                }
+                if (y > bottom) {
+                    break;
+                }
+                boolean h = inside(mx, my, x, y, w, ROW_H - 2);
+                boolean sel = module == selected;
+                int rowBottom = y + ROW_H - 4;
+                if (sel) {
+                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x44C4B5FD);
+                    UiDraw.roundRect(context, x + 6, y + 6, 3, rowBottom - y - 12, 1, ACCENT);
+                } else if (h) {
+                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x28FFFFFF);
+                }
+                drawModIcon(context, module, x + 12, y + 7);
+                int nameMax = w - 86;
+                context.drawText(textRenderer, Text.literal(fit(module.name, nameMax)), x + 30, y + 7,
+                        module.enabled() ? TEXT : MUTED, false);
+                int key = module.style().toggleKey;
+                if (key >= 0) {
+                    String kn = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, 0);
+                    String hint = kn == null ? "Key" : kn.toUpperCase(Locale.ROOT);
+                    context.drawText(textRenderer, Text.literal(hint), x + 30, y + 17, MUTED, false);
+                }
+                drawSwitch(context, x + w - 44, y + 8, module.enabled());
+                y += ROW_H;
             }
-            drawModIcon(context, module, x + 10, y + 7);
-            context.drawText(textRenderer, Text.literal(module.name), x + 28, y + 10, TEXT, false);
-            drawSwitch(context, x + w - 42, y + 8, module.enabled());
-            y += ROW_H;
+        } finally {
+            context.disableScissor();
         }
-        context.disableScissor();
+        int content = visible.size() * ROW_H + sectionGaps();
+        UiDraw.scrollbar(context, x + w - 5, y0, view, scroll, content, view);
     }
 
     private void drawRight(DrawContext context, int mx, int my) {
@@ -447,18 +483,19 @@ public class ClickGuiScreenLegacy extends Screen {
         context.fill(x, y0, x + 1, y1, 0);
 
         if (selected == null) {
-            context.drawText(textRenderer, Text.literal("Settings"), x + 14, y0 + 14, TEXT, false);
-            context.drawText(textRenderer, Text.literal("Pick a module."), x + 14, y0 + 30, MUTED, false);
+            context.drawText(textRenderer, Text.literal("Settings"), x + 16, y0 + 16, TEXT, false);
+            context.drawText(textRenderer, Text.literal("Pick a module on the left."), x + 16, y0 + 32, MUTED, false);
             return;
         }
 
-        context.drawText(textRenderer, Text.literal(selected.name), x + 14, y0 + 12, TEXT, false);
+        context.drawText(textRenderer, Text.literal(fit(selected.name, RIGHT_W - 110)), x + 14, y0 + 12, TEXT, false);
         drawSwitch(context, ox + pw - 42, y0 + 10, selected.enabled());
         boolean resetHover = inside(mx, my, ox + pw - 42 - 46, y0 + 9, 40, 16);
         UiDraw.pill(context, ox + pw - 42 - 46, y0 + 9, 40, 16, resetHover);
         context.drawText(textRenderer, Text.literal("Reset"), ox + pw - 42 - 46 + 6, y0 + 13,
                 resetHover ? TEXT : MUTED, false);
-        wrap(context, selected.description, x + 14, y0 + 28, RIGHT_W - 28, MUTED);
+        wrap(context, selected.description, x + 14, y0 + 30, RIGHT_W - 28, MUTED);
+        UiDraw.divider(context, x + 14, settingsStartY() - 8, RIGHT_W - 28);
 
         int y = settingsStartY();
         Module.ModuleStyle style = selected.style();
@@ -577,182 +614,270 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private int settingsStartY() {
-        return oy + TOP + 48;
+        return oy + TOP + 58;
+    }
+
+    private int youLeft() {
+        return ox + 8;
+    }
+
+    private int youMid() {
+        return listX();
+    }
+
+    private int youRight() {
+        return ox + pw - RIGHT_W;
+    }
+
+    private String ownSkinKey() {
+        SavedAccount acc = AccountManager.account;
+        if (acc != null && acc.uuid != null) {
+            return acc.uuid.toString().replace("-", "").toLowerCase();
+        }
+        return AccountManager.currentName().toLowerCase();
+    }
+
+    private String wardrobeSkinKey() {
+        if (!playerLookup.isBlank()) {
+            return playerLookup.trim().toLowerCase();
+        }
+        return ownSkinKey();
     }
 
     private void drawYou(DrawContext context, int mx, int my) {
-        int x0 = ox;
         int y0 = oy + TOP;
         int y1 = oy + ph;
-        int left = x0 + 16;
-        int mid = x0 + Math.max(180, pw * 27 / 100);
-        int right = ox + pw - Math.max(160, pw * 22 / 100);
+        int left = youLeft();
+        int mid = youMid();
+        int right = youRight();
+        int leftW = mid - left - 8;
+        int midW = right - mid - 8;
         Cosmetics.Kind kind = Cosmetics.kindForTab(cosTab);
         java.util.List<Cosmetics.Item> items = Cosmetics.of(kind, cosSearch);
         String equipped = Cosmetics.equipped(kind);
 
-        UiDraw.innerCard(context, x0 + 4, y0 + 4, mid - 12 - x0, y1 - y0 - 8);
-        UiDraw.innerCard(context, right, y0 + 4, ox + pw - right - 4, y1 - y0 - 8);
+        UiDraw.innerCard(context, left, y0 + 6, leftW, ph - TOP - 14);
+        UiDraw.innerCard(context, mid, y0 + 6, midW, ph - TOP - 14);
+        UiDraw.innerCard(context, right + 2, y0 + 6, RIGHT_W - 10, ph - TOP - 14);
 
-        UiDraw.inset(context, left - 4, y0 + 10, mid - 20 - left, 20, CARD);
-        context.drawText(textRenderer, Text.literal("Look up a player..."), left + 2, y0 + 16, MUTED, false);
+        int lx = left + 10;
+        int lw = leftW - 20;
+        UiDraw.field(context, lx, y0 + 16, lw, 22, playerLookupFocus);
+        String look = playerLookup.isEmpty() && !playerLookupFocus ? "Look up a player…" : playerLookup + (playerLookupFocus ? "|" : "");
+        context.drawText(textRenderer, Text.literal(fit(look, lw - 16)), lx + 8, y0 + 22,
+                playerLookup.isEmpty() && !playerLookupFocus ? MUTED : TEXT, false);
 
         String name = AccountManager.currentName();
-        UiDraw.raised(context, left + 4, y0 + 42, 24, 24, 0xFFC8A0E8);
-        context.drawText(textRenderer, Text.literal(name), left + 36, y0 + 44, TEXT, false);
-        context.drawText(textRenderer, Text.literal("Online  ·  Java Edition"), left + 36, y0 + 56, MUTED, false);
+        SkinPreview.requestOwn();
+        if (!playerLookup.isBlank()) {
+            SkinPreview.requestLookup(playerLookup);
+        }
+        String key = wardrobeSkinKey();
+        if (SkinPreview.ready(key)) {
+            SkinPreview.drawHead(context, key, lx, y0 + 48, 28);
+        } else {
+            UiDraw.roundRect(context, lx, y0 + 48, 28, 28, 8, 0xFFC8A0E8);
+        }
+        context.drawText(textRenderer, Text.literal(fit(name, lw - 40)), lx + 36, y0 + 52, TEXT, false);
+        String status = AccountManager.status.get();
+        if (status == null || status.isBlank()) {
+            status = MinecraftClient.getInstance().player != null ? "In world" : "Menu";
+        }
+        context.drawText(textRenderer, Text.literal(fit(status, lw - 40)), lx + 36, y0 + 64, MUTED, false);
 
-        context.drawText(textRenderer, Text.literal("Alpha   Staff   Beta"), left + 4, y0 + 80, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Tester"), left + 4, y0 + 94, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Playtime"), left + 4, y0 + 118, MUTED, false);
-        context.drawText(textRenderer, Text.literal("—"), left + 104, y0 + 118, TEXT, false);
-        context.drawText(textRenderer, Text.literal("First seen"), left + 4, y0 + 132, MUTED, false);
-        context.drawText(textRenderer, Text.literal("—"), left + 104, y0 + 132, TEXT, false);
-        context.drawText(textRenderer, Text.literal("Friends"), left + 4, y0 + 146, MUTED, false);
-        context.drawText(textRenderer, Text.literal(String.valueOf(FriendStore.size())), left + 104, y0 + 146, TEXT, false);
+        int rowY = y0 + 92;
+        context.drawText(textRenderer, Text.literal("Friends"), lx, rowY, MUTED, false);
+        context.drawText(textRenderer, Text.literal(String.valueOf(FriendStore.size())), lx + lw - textRenderer.getWidth(String.valueOf(FriendStore.size())), rowY, TEXT, false);
+        UiDraw.divider(context, lx, rowY + 16, lw);
+        context.drawText(textRenderer, Text.literal("Account"), lx, rowY + 28, MUTED, false);
+        context.drawText(textRenderer, Text.literal(AccountManager.account != null ? "Microsoft" : "Offline"),
+                lx + lw - textRenderer.getWidth(AccountManager.account != null ? "Microsoft" : "Offline"), rowY + 28, TEXT, false);
 
-        int signInW = mid - 24 - left;
-        UiDraw.pill(context, left, y1 - 30, signInW, 20, inside(mx, my, left, y1 - 30, signInW, 20));
-        context.drawText(textRenderer, Text.literal("Sign in with Microsoft"), left + 10, y1 - 25, TEXT, false);
+        boolean signed = AccountManager.account != null;
+        String sign = signed ? "Sign out" : "Sign in with Microsoft";
+        boolean signH = inside(mx, my, lx, y1 - 38, lw, 22);
+        UiDraw.pill(context, lx, y1 - 38, lw, 22, signH);
+        context.drawText(textRenderer, Text.literal(sign),
+                lx + Math.max(8, (lw - textRenderer.getWidth(sign)) / 2), y1 - 32, TEXT, false);
 
-        int tx = mid;
-        int ty = y0 + 12;
-        for (int i = 0; i < COS_TABS.length; i++) {
+        int tabY = y0 + 16;
+        int tx = mid + 10;
+        String[] tabs = new String[COS_TABS.length + COS_EXTRA.length];
+        System.arraycopy(COS_TABS, 0, tabs, 0, COS_TABS.length);
+        System.arraycopy(COS_EXTRA, 0, tabs, COS_TABS.length, COS_EXTRA.length);
+        for (int i = 0; i < tabs.length; i++) {
             boolean on = cosTab == i;
-            int tw = textRenderer.getWidth(COS_TABS[i]) + 12;
-            context.drawText(textRenderer, Text.literal(COS_TABS[i]), tx, ty, on ? TEXT : MUTED, false);
-            if (on) {
-                context.fill(tx, ty + 11, tx + tw - 8, ty + 12, ACCENT);
+            int tw = Math.max(48, textRenderer.getWidth(tabs[i]) + 16);
+            if (tx + tw > mid + midW - 8) {
+                tx = mid + 10;
+                tabY += 22;
             }
-            tx += tw;
-        }
-        tx = mid;
-        ty = y0 + 28;
-        for (int i = 0; i < COS_EXTRA.length; i++) {
-            boolean on = cosTab == 7 + i;
-            int tw = textRenderer.getWidth(COS_EXTRA[i]) + 12;
-            context.drawText(textRenderer, Text.literal(COS_EXTRA[i]), tx, ty, on ? TEXT : MUTED, false);
-            if (on) {
-                context.fill(tx, ty + 11, tx + tw - 8, ty + 12, ACCENT);
-            }
+            boolean h = inside(mx, my, tx, tabY, tw, 20);
+            UiDraw.pill(context, tx, tabY, tw - 4, 20, on || h);
+            context.drawText(textRenderer, Text.literal(tabs[i]),
+                    tx + (tw - 4 - textRenderer.getWidth(tabs[i])) / 2, tabY + 6, on || h ? TEXT : MUTED, false);
             tx += tw;
         }
 
-        UiDraw.inset(context, mid, y0 + 46, right - mid - 12, 20, CARD);
-        String hint = cosSearch.isEmpty() && !cosSearchFocus ? "Search cosmetics..." : cosSearch + (cosSearchFocus ? "_" : "");
-        context.drawText(textRenderer, Text.literal(hint), mid + 8, y0 + 52, cosSearchFocus ? TEXT : MUTED, false);
+        int searchY = tabY + 26;
+        UiDraw.field(context, mid + 10, searchY, midW - 20, 22, cosSearchFocus);
+        String hint = cosSearch.isEmpty() && !cosSearchFocus ? "Search cosmetics…" : cosSearch + (cosSearchFocus ? "|" : "");
+        context.drawText(textRenderer, Text.literal(fit(hint, midW - 36)), mid + 18, searchY + 6,
+                cosSearch.isEmpty() && !cosSearchFocus ? MUTED : TEXT, false);
 
-        int gx = mid;
-        int gy = y0 + 76;
-        int cell = 70;
-        int gap = 10;
-        int cols = Math.max(2, (right - mid - 8) / (cell + gap));
-        for (int i = 0; i < items.size(); i++) {
-            Cosmetics.Item item = items.get(i);
-            int col = i % cols;
-            int row = i / cols;
-            int cx = gx + col * (cell + gap);
-            int cy = gy + row * (cell + 22);
-            if (cy + cell > y1 - 24) {
-                break;
+        int gx = mid + 10;
+        int gy = searchY + 32;
+        int cell = 56;
+        int gap = 8;
+        int cols = Math.max(1, (midW - 20) / (cell + gap));
+        context.enableScissor(mid + 8, gy, mid + midW - 8, y1 - 16);
+        try {
+            for (int i = 0; i < items.size(); i++) {
+                Cosmetics.Item item = items.get(i);
+                int col = i % cols;
+                int row = i / cols;
+                int cx = gx + col * (cell + gap);
+                int cy = gy + row * (cell + 20);
+                if (cy + cell > y1 - 16) {
+                    break;
+                }
+                boolean sel = equipped.equals(item.id());
+                UiDraw.roundRect(context, cx, cy, cell, cell, 8, item.color());
+                if (sel) {
+                    UiDraw.roundBorder(context, cx - 1, cy - 1, cell + 2, cell + 2, 8, ACCENT);
+                }
+                context.drawText(textRenderer, Text.literal(fit(item.name(), cell)), cx + 4, cy + cell + 4, MUTED, false);
             }
-            boolean sel = equipped.equals(item.id());
-            UiDraw.raised(context, cx, cy, cell, cell, item.color());
-            if (sel) {
-                UiDraw.roundBorder(context, cx - 1, cy - 1, cell + 2, cell + 2, 6, ACCENT);
+            if (items.isEmpty()) {
+                context.drawText(textRenderer, Text.literal("Nothing in this tab."), gx, gy + 8, MUTED, false);
             }
-            context.drawText(textRenderer, Text.literal(item.name()), cx + 4, cy + cell + 4, MUTED, false);
+        } finally {
+            context.disableScissor();
         }
 
-        context.drawText(textRenderer, Text.literal("Preview"), right + 16, y0 + 14, MUTED, false);
-        int px = right + 50;
-        int py = y0 + 40;
-        int scale = Math.min(100, (y1 - py - 24) * 100 / 108);
-        UiDraw.shadow(context, px + 18, py, 32, 108 * scale / 100);
-        context.fill(px + 18, py, px + 50, py + 28 * scale / 100, 0xFF6A4A88);
-        context.fill(px + 22, py + 28 * scale / 100, px + 46, py + 70 * scale / 100, 0xFF4A3068);
-        context.fill(px + 8, py + 32 * scale / 100, px + 24, py + 68 * scale / 100, 0xFF3A2858);
-        context.fill(px + 44, py + 32 * scale / 100, px + 60, py + 68 * scale / 100, 0xFF3A2858);
-        context.fill(px + 22, py + 70 * scale / 100, px + 34, py + 108 * scale / 100, 0xFF2A2048);
-        context.fill(px + 34, py + 70 * scale / 100, px + 46, py + 108 * scale / 100, 0xFF2A2048);
-        context.fill(px + 24, py + 8, px + 44, py + 24, 0xFFE8C8F0);
-        context.fill(px + 20, py + 2, px + 48, py + 4, 0x33FFFFFF);
-        CosmeticPreview.player(context, right + 110, py + 108 * scale / 100, 42 * scale / 100, mx, my);
-
-        int belowPreviewY = Math.min(y1 - 60, py + 108 * scale / 100 + 12);
-        context.drawText(textRenderer, Text.literal("Cape   Wings   Trail"), right + 16, belowPreviewY, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Presets"), right + 16, belowPreviewY + 28, TEXT, false);
-        context.drawText(textRenderer, Text.literal("None yet"), right + 16, belowPreviewY + 42, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Save keeps your setup."), right + 16, belowPreviewY + 54, MUTED, false);
+        int rx = right + 14;
+        context.drawText(textRenderer, Text.literal("Preview"), rx, y0 + 16, MUTED, false);
+        int px = rx + 18;
+        int py = y0 + 36;
+        int belowPreviewY = Math.min(y1 - 72, py + 140);
+        context.enableScissor(right + 8, py - 2, ox + pw - 12, belowPreviewY);
+        try {
+            if (SkinPreview.ready(key)) {
+                SkinPreview.drawBody(context, key, px, py, 4);
+            } else if (playerLookup.isBlank() && MinecraftClient.getInstance().player != null) {
+                CosmeticPreview.player(context, right + 70, py + 110, 38, mx, my);
+            } else {
+                UiDraw.roundRect(context, px + 12, py, 48, 120, 12, 0x6614101C);
+                context.drawText(textRenderer, Text.literal("Loading skin…"), px, py + 52, MUTED, false);
+            }
+        } catch (Throwable ignored) {
+        } finally {
+            context.disableScissor();
+        }
+        String eqName = equipped == null || equipped.isBlank() ? "None" : equipped;
+        context.drawText(textRenderer, Text.literal("Equipped"), rx, belowPreviewY + 8, MUTED, false);
+        context.drawText(textRenderer, Text.literal(fit(eqName, RIGHT_W - 36)), rx, belowPreviewY + 20, TEXT, false);
+        context.drawText(textRenderer, Text.literal(kind.name()), rx, belowPreviewY + 34, MUTED, false);
     }
 
     private void drawFriends(DrawContext context, int mx, int my) {
-        int x0 = ox;
         int y0 = oy + TOP;
         int y1 = oy + ph;
-        int left = x0 + Math.max(160, pw * 25 / 100);
-        int rightW = Math.max(150, pw * 20 / 100);
-        int rightX = ox + pw - rightW;
-        UiDraw.innerCard(context, x0 + 4, y0 + 4, left - 8 - x0, y1 - y0 - 8);
-        UiDraw.innerCard(context, rightX, y0 + 4, ox + pw - rightX - 4, y1 - y0 - 8);
+        int left = youLeft();
+        int mid = youMid();
+        int right = youRight();
+        int leftW = mid - left - 8;
+        int midW = right - mid - 8;
 
-        UiDraw.inset(context, x0 + 10, y0 + 10, left - 30 - x0, 20, CARD);
-        String draft = friendDraft.isEmpty() && !friendFocus ? "Add a friend..." : friendDraft + (friendFocus ? "_" : "");
-        context.drawText(textRenderer, Text.literal(draft), x0 + 16, y0 + 16, friendFocus ? TEXT : MUTED, false);
+        UiDraw.innerCard(context, left, y0 + 6, leftW, ph - TOP - 14);
+        UiDraw.innerCard(context, mid, y0 + 6, midW, ph - TOP - 14);
+        UiDraw.innerCard(context, right + 2, y0 + 6, RIGHT_W - 10, ph - TOP - 14);
 
-        UiDraw.pill(context, x0 + 10, y0 + 36, 72, 16, true);
-        context.drawText(textRenderer, Text.literal("Friends " + FriendStore.size()), x0 + 16, y0 + 40, TEXT, false);
-        UiDraw.pill(context, x0 + 88, y0 + 36, 80, 16, false);
-        context.drawText(textRenderer, Text.literal("Requests 0"), x0 + 94, y0 + 40, MUTED, false);
+        int lx = left + 10;
+        int lw = leftW - 20;
+        UiDraw.field(context, lx, y0 + 16, lw, 22, friendFocus);
+        String draft = friendDraft.isEmpty() && !friendFocus ? "Add a friend…" : friendDraft + (friendFocus ? "|" : "");
+        context.drawText(textRenderer, Text.literal(fit(draft, lw - 16)), lx + 8, y0 + 22,
+                friendDraft.isEmpty() && !friendFocus ? MUTED : TEXT, false);
 
-        int y = y0 + 62 - friendScroll;
-        for (int i = 0; i < FriendStore.size(); i++) {
-            if (y + 20 < y0 + 58 || y > y1 - 16) {
-                y += 20;
-                continue;
+        UiDraw.pill(context, lx, y0 + 44, lw, 20, true);
+        String count = "Friends  " + FriendStore.size();
+        context.drawText(textRenderer, Text.literal(count),
+                lx + (lw - textRenderer.getWidth(count)) / 2, y0 + 50, TEXT, false);
+
+        int listTop = y0 + 72;
+        context.enableScissor(left + 6, listTop, left + leftW - 6, y1 - 16);
+        try {
+            int y = listTop - friendScroll;
+            if (FriendStore.size() == 0) {
+                context.drawText(textRenderer, Text.literal("No friends yet."), lx, listTop + 8, MUTED, false);
             }
-            String n = FriendStore.get(i);
-            boolean on = FriendStore.online(n);
-            boolean sel = friendSel == i;
-            if (sel) {
-                UiDraw.raised(context, x0 + 8, y, left - 24 - x0, 20, PILL);
+            for (int i = 0; i < FriendStore.size(); i++) {
+                if (y + ROW_H < listTop) {
+                    y += ROW_H;
+                    continue;
+                }
+                if (y > y1 - 16) {
+                    break;
+                }
+                String n = FriendStore.get(i);
+                boolean on = FriendStore.online(n);
+                boolean sel = friendSel == i;
+                SkinPreview.requestLookup(n);
+                if (sel) {
+                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x44C4B5FD);
+                    UiDraw.roundRect(context, lx - 2, y + 6, 3, ROW_H - 16, 1, ACCENT);
+                } else if (inside(mx, my, lx - 2, y, lw + 4, ROW_H - 4)) {
+                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x28FFFFFF);
+                }
+                if (SkinPreview.ready(n.toLowerCase())) {
+                    SkinPreview.drawHead(context, n.toLowerCase(), lx + 4, y + 6, 16);
+                } else {
+                    UiDraw.roundRect(context, lx + 6, y + 8, 12, 12, 6, on ? 0xFFC8A0E8 : 0xFF3A3A44);
+                }
+                context.drawText(textRenderer, Text.literal(fit(n, lw - 70)), lx + 24, y + 6, TEXT, false);
+                context.drawText(textRenderer, Text.literal(on ? "online" : "offline"), lx + 24, y + 16, MUTED, false);
+                y += ROW_H;
             }
-            UiDraw.raised(context, x0 + 12, y + 4, 10, 10, on ? 0xFFC8A0E8 : 0xFF3A3A44);
-            context.drawText(textRenderer, Text.literal(n), x0 + 28, y + 6, TEXT, false);
-            context.drawText(textRenderer, Text.literal(on ? "online" : "offline"),
-                    left - 60, y + 6, MUTED, false);
-            y += 20;
+        } finally {
+            context.disableScissor();
         }
 
-        String a = FriendStore.ownName();
-        String b = FriendStore.size() > 0 ? FriendStore.get(0) : "HeyMake";
-        String c = FriendStore.size() > 1 ? FriendStore.get(1) : "Cloudy";
-        context.drawText(textRenderer, Text.literal("You"), left + 16, y0 + 16, MUTED, false);
-        UiDraw.raised(context, left + 16, y0 + 32, 24, 24, 0xFFE0B0F0);
-        UiDraw.raised(context, left + 52, y0 + 32, 24, 24, 0xFFE8E8F0);
-        UiDraw.raised(context, left + 88, y0 + 32, 24, 24, 0xFF8A70B0);
-        context.drawText(textRenderer, Text.literal(a + "    " + b + "    " + c), left + 16, y0 + 62, MUTED, false);
+        int mx0 = mid + 12;
+        context.drawText(textRenderer, Text.literal("You"), mx0, y0 + 16, MUTED, false);
+        String own = FriendStore.ownName();
+        SkinPreview.requestOwn();
+        String youKey = ownSkinKey();
+        if (SkinPreview.ready(youKey) || SkinPreview.ready(own.toLowerCase()) || SkinPreview.ready("own")) {
+            String k = SkinPreview.ready(youKey) ? youKey : (SkinPreview.ready(own.toLowerCase()) ? own.toLowerCase() : "own");
+            SkinPreview.drawHead(context, k, mx0, y0 + 34, 36);
+        } else {
+            UiDraw.roundRect(context, mx0, y0 + 34, 36, 36, 10, 0xFFC8A0E8);
+        }
+        context.drawText(textRenderer, Text.literal(fit(own, midW - 60)), mx0 + 46, y0 + 42, TEXT, false);
+        context.drawText(textRenderer, Text.literal("Your list"), mx0 + 46, y0 + 54, MUTED, false);
 
-        UiDraw.pill(context, Math.min(left + 220, rightX - 74), y0 + 36, 64, 16, false);
-        context.drawText(textRenderer, Text.literal("Public"), Math.min(left + 230, rightX - 64), y0 + 40, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Pick a friend on the left."), mx0, y0 + 88, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Enter adds. Delete removes."), mx0, y0 + 102, MUTED, false);
 
-        context.drawText(textRenderer, Text.literal("Public stories"), left + 16, y0 + 92, TEXT, false);
-        context.drawText(textRenderer, Text.literal("From people you have not added"), left + 16, y0 + 104, MUTED, false);
-        UiDraw.raised(context, left + 16, y0 + 124, 24, 24, 0xFF6A5040);
-        UiDraw.raised(context, left + 56, y0 + 124, 24, 24, 0xFFE0A040);
-        context.drawText(textRenderer, Text.literal("Ruhop"), left + 16, y0 + 154, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Foolraven"), left + 56, y0 + 154, MUTED, false);
-
-        context.drawText(textRenderer, Text.literal("Pick someone on the left to talk."),
-                left + 16, y1 - 28, MUTED, false);
-
+        int rx = right + 14;
         if (friendSel >= 0 && friendSel < FriendStore.size()) {
             String picked = FriendStore.get(friendSel);
-            context.drawText(textRenderer, Text.literal(picked), rightX + 16, y0 + 16, TEXT, false);
-            wrap(context, "Pick a friend to see their tiers and badges.", rightX + 16, y0 + 32, rightW - 32, MUTED);
+            SkinPreview.requestLookup(picked);
+            context.drawText(textRenderer, Text.literal(fit(picked, RIGHT_W - 36)), rx, y0 + 16, TEXT, false);
+            context.drawText(textRenderer, Text.literal(FriendStore.online(picked) ? "Online now" : "Offline"), rx, y0 + 30, MUTED, false);
+            if (SkinPreview.ready(picked.toLowerCase())) {
+                SkinPreview.drawBody(context, picked.toLowerCase(), rx + 20, y0 + 50, 3);
+            } else {
+                UiDraw.roundRect(context, rx + 28, y0 + 54, 36, 90, 8, 0x6614101C);
+            }
+            boolean remH = inside(mx, my, rx, y1 - 38, RIGHT_W - 28, 22);
+            UiDraw.pill(context, rx, y1 - 38, RIGHT_W - 28, 22, remH);
+            context.drawText(textRenderer, Text.literal("Remove"),
+                    rx + (RIGHT_W - 28 - textRenderer.getWidth("Remove")) / 2, y1 - 32, remH ? TEXT : MUTED, false);
         } else {
-            context.drawText(textRenderer, Text.literal("Nobody picked"), rightX + 16, y0 + 16, TEXT, false);
-            wrap(context, "Pick a friend to see their tiers and badges.", rightX + 16, y0 + 32, rightW - 32, MUTED);
+            context.drawText(textRenderer, Text.literal("Nobody picked"), rx, y0 + 16, TEXT, false);
+            wrap(context, "Select a friend to preview their skin and remove them.", rx, y0 + 34, RIGHT_W - 32, MUTED);
         }
     }
 
@@ -762,35 +887,135 @@ public class ClickGuiScreenLegacy extends Screen {
         drawSwitch(context, panelX + RIGHT_W - 48, y + 3, on);
     }
 
+    /**
+     * One deliberate glyph per module: a handful of the most-used modules get a bespoke icon by
+     * name, everything else falls back to a fixed glyph for its category. Previously this picked
+     * one of six meaningless blob shapes from module.name.hashCode(), which read as random noise
+     * rather than actual icons.
+     */
     private void drawModIcon(DrawContext context, Module module, int x, int y) {
         int col = switch (module.category) {
             case PVP -> 0xFFC4B5FD;
             case HUD -> 0xFFA78BFA;
             case RENDER -> 0xFFDDD6FE;
             case PLAYER -> 0xFFE9D5FF;
-            default -> 0xFFC4B5FD;
+            case MISC -> 0xFFB8B0C8;
+            case PERFORMANCE -> 0xFF9AE6B4;
         };
-        int t = Math.abs(module.name.hashCode()) % 6;
-        if (t == 0) {
-            context.fill(x + 4, y, x + 7, y + 10, col);
-            context.fill(x + 1, y + 4, x + 10, y + 7, col);
-        } else if (t == 1) {
-            context.fill(x + 3, y + 1, x + 8, y + 10, col);
-            context.fill(x + 1, y + 3, x + 10, y + 8, col);
-        } else if (t == 2) {
-            context.fill(x + 1, y + 2, x + 10, y + 4, col);
-            context.fill(x + 1, y + 6, x + 10, y + 8, col);
-        } else if (t == 3) {
-            context.fill(x + 2, y + 1, x + 9, y + 3, col);
-            context.fill(x + 4, y + 3, x + 7, y + 10, col);
-        } else if (t == 4) {
-            context.fill(x + 1, y + 1, x + 10, y + 10, col);
-            context.fill(x + 3, y + 3, x + 8, y + 8, 0xFF16141F);
-        } else {
-            context.fill(x + 2, y + 8, x + 5, y + 10, col);
-            context.fill(x + 6, y + 4, x + 9, y + 10, col);
-            context.fill(x + 3, y + 1, x + 8, y + 5, col);
+        switch (module.name) {
+            case "FPS" -> iconBolt(context, x, y, col);
+            case "Ping" -> iconBars(context, x, y, col);
+            case "Keystrokes" -> iconKey(context, x, y, col);
+            case "Potion HUD" -> iconFlask(context, x, y, col);
+            case "Crosshair", "Crosshair Addons" -> iconTarget(context, x, y, col);
+            case "Nametags" -> iconTag(context, x, y, col);
+            case "Zoom" -> iconMagnifier(context, x, y, col);
+            case "Watermark" -> UiDraw.larpMark(context, x, y, 10, col);
+            default -> iconForCategory(context, module.category, x, y, col);
         }
+    }
+
+    private static void iconForCategory(DrawContext context, Category category, int x, int y, int col) {
+        switch (category) {
+            case PVP -> iconCross(context, x, y, col);
+            case HUD -> iconMonitor(context, x, y, col);
+            case RENDER -> iconSparkle(context, x, y, col);
+            case PLAYER -> iconPerson(context, x, y, col);
+            case MISC -> iconDots(context, x, y, col);
+            case PERFORMANCE -> iconBars(context, x, y, col);
+        }
+    }
+
+    /** Crossed blades - PvP. */
+    private static void iconCross(DrawContext context, int x, int y, int col) {
+        for (int i = 0; i < 9; i++) {
+            context.fill(x + i, y + i, x + i + 2, y + i + 2, col);
+            context.fill(x + 8 - i, y + i, x + 10 - i, y + i + 2, col);
+        }
+    }
+
+    /** Screen + stand - HUD. */
+    private static void iconMonitor(DrawContext context, int x, int y, int col) {
+        context.fill(x + 1, y + 1, x + 9, y + 2, col);
+        context.fill(x + 1, y + 6, x + 9, y + 7, col);
+        context.fill(x + 1, y + 1, x + 2, y + 7, col);
+        context.fill(x + 8, y + 1, x + 9, y + 7, col);
+        context.fill(x + 4, y + 7, x + 6, y + 9, col);
+    }
+
+    /** Four-point sparkle - Visuals. */
+    private static void iconSparkle(DrawContext context, int x, int y, int col) {
+        context.fill(x + 4, y, x + 6, y + 10, col);
+        context.fill(x, y + 4, x + 10, y + 6, col);
+    }
+
+    /** Head + shoulders - Player. */
+    private static void iconPerson(DrawContext context, int x, int y, int col) {
+        context.fill(x + 3, y, x + 7, y + 4, col);
+        context.fill(x + 2, y + 5, x + 8, y + 10, col);
+    }
+
+    /** Vertical ellipsis - Misc. */
+    private static void iconDots(DrawContext context, int x, int y, int col) {
+        context.fill(x + 3, y + 1, x + 6, y + 3, col);
+        context.fill(x + 3, y + 4, x + 6, y + 6, col);
+        context.fill(x + 3, y + 7, x + 6, y + 9, col);
+    }
+
+    /** Ascending bars - Performance / Ping / signal strength. */
+    private static void iconBars(DrawContext context, int x, int y, int col) {
+        context.fill(x + 1, y + 7, x + 3, y + 10, col);
+        context.fill(x + 4, y + 4, x + 6, y + 10, col);
+        context.fill(x + 7, y + 1, x + 9, y + 10, col);
+    }
+
+    /** Lightning bolt - FPS. */
+    private static void iconBolt(DrawContext context, int x, int y, int col) {
+        context.fill(x + 5, y, x + 8, y + 4, col);
+        context.fill(x + 2, y + 4, x + 8, y + 6, col);
+        context.fill(x + 2, y + 6, x + 5, y + 10, col);
+    }
+
+    /** Single keycap - Keystrokes. */
+    private static void iconKey(DrawContext context, int x, int y, int col) {
+        context.fill(x + 1, y + 1, x + 9, y + 9, col);
+        context.fill(x + 3, y + 3, x + 7, y + 7, 0xFF16141F);
+    }
+
+    /** Flask - Potion HUD. */
+    private static void iconFlask(DrawContext context, int x, int y, int col) {
+        context.fill(x + 4, y, x + 6, y + 3, col);
+        context.fill(x + 2, y + 3, x + 8, y + 4, col);
+        context.fill(x + 1, y + 4, x + 9, y + 10, col);
+    }
+
+    /** Target ring + center dot - Crosshair. */
+    private static void iconTarget(DrawContext context, int x, int y, int col) {
+        for (int a = 0; a < 360; a += 30) {
+            double rad = Math.toRadians(a);
+            int px = x + 5 + (int) Math.round(Math.cos(rad) * 4);
+            int py = y + 5 + (int) Math.round(Math.sin(rad) * 4);
+            context.fill(px, py, px + 2, py + 2, col);
+        }
+        context.fill(x + 4, y + 4, x + 6, y + 6, col);
+    }
+
+    /** Luggage tag - Nametags. */
+    private static void iconTag(DrawContext context, int x, int y, int col) {
+        context.fill(x + 1, y + 2, x + 7, y + 8, col);
+        context.fill(x + 7, y + 3, x + 9, y + 7, col);
+        context.fill(x + 3, y + 4, x + 5, y + 6, 0xFF16141F);
+    }
+
+    /** Magnifying glass - Zoom. */
+    private static void iconMagnifier(DrawContext context, int x, int y, int col) {
+        for (int a = 0; a < 360; a += 30) {
+            double rad = Math.toRadians(a);
+            int px = x + 4 + (int) Math.round(Math.cos(rad) * 3);
+            int py = y + 4 + (int) Math.round(Math.sin(rad) * 3);
+            context.fill(px, py, px + 2, py + 2, col);
+        }
+        context.fill(x + 6, y + 6, x + 9, y + 9, col);
     }
 
     private void wrap(DrawContext context, String text, int x, int y, int max, int color) {
@@ -827,6 +1052,20 @@ public class ClickGuiScreenLegacy extends Screen {
         return mx >= x && my >= y && mx < x + w && my < y + h;
     }
 
+    private String fit(String text, int maxW) {
+        if (text == null) {
+            return "";
+        }
+        if (textRenderer.getWidth(text) <= maxW) {
+            return text;
+        }
+        String cut = text;
+        while (cut.length() > 1 && textRenderer.getWidth(cut + "…") > maxW) {
+            cut = cut.substring(0, cut.length() - 1);
+        }
+        return cut + "…";
+    }
+
     public boolean handleClick(double x, double y, int button) {
         layoutPanel();
         int mx = (int) x;
@@ -834,7 +1073,7 @@ public class ClickGuiScreenLegacy extends Screen {
         if (button != 0) {
             return false;
         }
-        if (inside(mx, my, ox + pw - 22, oy + 10, 14, 14)) {
+        if (inside(mx, my, ox + pw - 28, oy + 9, 16, 16)) {
             closeMenu();
             return true;
         }
@@ -842,21 +1081,22 @@ public class ClickGuiScreenLegacy extends Screen {
             MinecraftClient.getInstance().setScreen(new ProfilesScreen(this));
             return true;
         }
-        if (inside(mx, my, ox + 78, oy + 8, 62, 20)) {
+        if (inside(mx, my, ox + 86, oy + 8, 64, 20)) {
             topTab = 0;
             return true;
         }
-        if (inside(mx, my, ox + 144, oy + 8, 72, 20)) {
+        if (inside(mx, my, ox + 154, oy + 8, 76, 20)) {
             topTab = 1;
             return true;
         }
-        if (inside(mx, my, ox + 220, oy + 8, 62, 20)) {
+        if (inside(mx, my, ox + 234, oy + 8, 64, 20)) {
             topTab = 2;
             return true;
         }
         if (topTab == 1) {
             searchFocus = false;
             friendFocus = false;
+            playerLookupFocus = false;
             return clickYou(mx, my);
         }
         if (topTab == 2) {
@@ -870,48 +1110,63 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private boolean clickYou(int mx, int my) {
-        int x0 = ox;
         int y0 = oy + TOP;
         int y1 = oy + ph;
-        int left = x0 + 16;
-        int mid = x0 + Math.max(180, pw * 27 / 100);
-        int right = ox + pw - Math.max(160, pw * 22 / 100);
+        int left = youLeft();
+        int mid = youMid();
+        int right = youRight();
+        int leftW = mid - left - 8;
+        int midW = right - mid - 8;
+        int lx = left + 10;
+        int lw = leftW - 20;
 
-        int signInW = mid - 24 - left;
-        if (inside(mx, my, left, y1 - 30, signInW, 20)) {
-            AccountManager.startLogin();
+        if (inside(mx, my, lx, y0 + 16, lw, 22)) {
+            playerLookupFocus = true;
+            cosSearchFocus = false;
             return true;
         }
-        int tx = mid;
-        for (int i = 0; i < COS_TABS.length; i++) {
-            int tw = textRenderer.getWidth(COS_TABS[i]) + 12;
-            if (inside(mx, my, tx, y0 + 8, tw, 16)) {
+        playerLookupFocus = false;
+        if (inside(mx, my, lx, y1 - 38, lw, 22)) {
+            if (AccountManager.account != null) {
+                AccountManager.logout();
+            } else {
+                AccountManager.startLogin();
+            }
+            return true;
+        }
+
+        int tabY = y0 + 16;
+        int tx = mid + 10;
+        String[] tabs = new String[COS_TABS.length + COS_EXTRA.length];
+        System.arraycopy(COS_TABS, 0, tabs, 0, COS_TABS.length);
+        System.arraycopy(COS_EXTRA, 0, tabs, COS_TABS.length, COS_EXTRA.length);
+        for (int i = 0; i < tabs.length; i++) {
+            int tw = Math.max(48, textRenderer.getWidth(tabs[i]) + 16);
+            if (tx + tw > mid + midW - 8) {
+                tx = mid + 10;
+                tabY += 22;
+            }
+            if (inside(mx, my, tx, tabY, tw - 4, 20)) {
                 cosTab = i;
                 return true;
             }
             tx += tw;
         }
-        tx = mid;
-        for (int i = 0; i < COS_EXTRA.length; i++) {
-            int tw = textRenderer.getWidth(COS_EXTRA[i]) + 12;
-            if (inside(mx, my, tx, y0 + 24, tw, 16)) {
-                cosTab = 7 + i;
-                return true;
-            }
-            tx += tw;
-        }
-        cosSearchFocus = inside(mx, my, mid, y0 + 46, right - mid - 12, 20);
+        int searchY = tabY + 26;
+        cosSearchFocus = inside(mx, my, mid + 10, searchY, midW - 20, 22);
         Cosmetics.Kind kind = Cosmetics.kindForTab(cosTab);
         java.util.List<Cosmetics.Item> items = Cosmetics.of(kind, cosSearch);
-        int cell = 70;
-        int gap = 10;
-        int cols = Math.max(2, (right - mid - 8) / (cell + gap));
+        int gx = mid + 10;
+        int gy = searchY + 32;
+        int cell = 56;
+        int gap = 8;
+        int cols = Math.max(1, (midW - 20) / (cell + gap));
         for (int i = 0; i < items.size(); i++) {
             int col = i % cols;
             int row = i / cols;
-            int cx = mid + col * (cell + gap);
-            int cy = y0 + 76 + row * (cell + 22);
-            if (cy + cell > y1 - 24) {
+            int cx = gx + col * (cell + gap);
+            int cy = gy + row * (cell + 20);
+            if (cy + cell > y1 - 16) {
                 break;
             }
             if (inside(mx, my, cx, cy, cell, cell)) {
@@ -924,18 +1179,29 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private boolean clickFriends(int mx, int my) {
-        int x0 = ox;
         int y0 = oy + TOP;
         int y1 = oy + ph;
-        int left = Math.max(160, pw * 25 / 100);
-        friendFocus = inside(mx, my, x0 + 10, y0 + 10, left - 20, 20);
-        int y = y0 + 62 - friendScroll;
+        int left = youLeft();
+        int mid = youMid();
+        int right = youRight();
+        int leftW = mid - left - 8;
+        int lx = left + 10;
+        int lw = leftW - 20;
+        friendFocus = inside(mx, my, lx, y0 + 16, lw, 22);
+        int listTop = y0 + 72;
+        int y = listTop - friendScroll;
         for (int i = 0; i < FriendStore.size(); i++) {
-            if (inside(mx, my, x0 + 8, y, left - 16, 20) && y >= y0 + 58 && y <= y1 - 16) {
+            if (inside(mx, my, lx - 2, y, lw + 4, ROW_H - 4) && y >= listTop && y <= y1 - 16) {
                 friendSel = i;
                 return true;
             }
-            y += 20;
+            y += ROW_H;
+        }
+        if (friendSel >= 0 && friendSel < FriendStore.size()
+                && inside(mx, my, right + 14, y1 - 38, RIGHT_W - 28, 22)) {
+            FriendStore.remove(friendSel);
+            friendSel = Math.min(friendSel, FriendStore.size() - 1);
+            return true;
         }
         return true;
     }
@@ -1136,12 +1402,14 @@ public class ClickGuiScreenLegacy extends Screen {
                 }
                 y += 22;
             } else if (setting.kind == Module.Setting.Kind.ACTION) {
+                String lab = setting.actionLabel == null ? "Open" : setting.actionLabel;
+                int aw = Math.max(52, textRenderer.getWidth(lab) + 16);
+                int ax = x + RIGHT_W - 14 - aw;
                 if (setting.group && inside(mx, my, tx, y - 2, 16, 20)) {
                     toggleGroup(setting);
                     return true;
                 }
-                if (inside(mx, my, x + RIGHT_W - 92, y - 3, 78, 20)) {
-                    toggleGroup(setting);
+                if (inside(mx, my, ax, y - 3, aw, 20)) {
                     if (setting.action != null) {
                         setting.action.run();
                     }
@@ -1244,6 +1512,20 @@ public class ClickGuiScreenLegacy extends Screen {
             friendSel = Math.min(friendSel, FriendStore.size() - 1);
             return true;
         }
+        if (playerLookupFocus) {
+            if (key == GLFW.GLFW_KEY_BACKSPACE && !playerLookup.isEmpty()) {
+                playerLookup = playerLookup.substring(0, playerLookup.length() - 1);
+                return true;
+            }
+            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+                SkinPreview.requestLookup(playerLookup);
+                return true;
+            }
+            if (key == GLFW.GLFW_KEY_ESCAPE) {
+                playerLookupFocus = false;
+                return true;
+            }
+        }
         if (cosSearchFocus) {
             if (key == GLFW.GLFW_KEY_BACKSPACE && !cosSearch.isEmpty()) {
                 cosSearch = cosSearch.substring(0, cosSearch.length() - 1);
@@ -1313,6 +1595,10 @@ public class ClickGuiScreenLegacy extends Screen {
             }
             return true;
         }
+        if (playerLookupFocus && cp >= 32 && cp != 127) {
+            playerLookup += Character.toString(cp);
+            return true;
+        }
         if (cosSearchFocus && cp >= 32 && cp != 127) {
             cosSearch += Character.toString(cp);
             return true;
@@ -1372,9 +1658,5 @@ public class ClickGuiScreenLegacy extends Screen {
     @Override
     public boolean shouldPause() {
         return pauseGame;
-    }
-
-    @Override
-    public void renderBackground(DrawContext context, int mouseX, int mouseY, float delta) {
     }
 }

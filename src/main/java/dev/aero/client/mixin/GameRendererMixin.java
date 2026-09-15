@@ -55,7 +55,8 @@ public class GameRendererMixin {
 
     @Inject(method = {"showFloatingItem", "renderFloatingItem"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$totem(CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemTweaks && AeroClient.CONFIG.totemNoEquip) {
+        if (AeroClient.CONFIG != null && ((AeroClient.CONFIG.totemTweaks && AeroClient.CONFIG.totemNoEquip)
+                || dev.aero.client.Optimizer.totem())) {
             ci.cancel();
         }
     }

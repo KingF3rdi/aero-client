@@ -53,11 +53,13 @@ public final class AccountManager {
                         finish(fresh);
                     } catch (Exception e) {
                         account = saved;
+                        SkinPreview.requestOwn();
                         status.set("Gespeicherter Account: " + saved.name + " (Refresh fehlgeschlagen)");
                     }
                 });
             } else if (saved != null) {
                 account = saved;
+                SkinPreview.requestOwn();
             }
         } catch (Exception e) {
             status.set("Account-Datei unlesbar");
@@ -149,6 +151,7 @@ public final class AccountManager {
         account = logged;
         Files.writeString(file(), GSON.toJson(logged));
         MinecraftClient.getInstance().execute(() -> applySession(logged));
+        SkinPreview.requestOwn();
         status.set("Angemeldet als " + logged.name);
         busy = false;
     }
@@ -172,12 +175,22 @@ public final class AccountManager {
                     field.set(mc, session);
                     set = true;
                 }
+                if (type.contains("CompletableFuture") && field.getName().toLowerCase().contains("gameprofile")) {
+                    field.setAccessible(true);
+                    field.set(mc, java.util.concurrent.CompletableFuture.completedFuture(null));
+                }
+            }
+            SkinPreview.requestOwn();
+            try {
+                mc.getSkinProvider().fetchSkinTextures(mc.getGameProfile());
+            } catch (Throwable ignored) {
             }
             status.set(set
                     ? "Angemeldet als " + logged.name + " — für Server neu joinen"
                     : "Account gespeichert: " + logged.name);
         } catch (Throwable t) {
             status.set("Account gespeichert: " + logged.name);
+            SkinPreview.requestOwn();
         }
     }
 
@@ -191,16 +204,21 @@ public final class AccountManager {
                 Class<?> session = Class.forName(name);
                 Object type = msaType(session);
                 UUID uuid = logged.uuid;
+                java.util.Optional<String> xuid = Optional.ofNullable(logged.xuid);
+                java.util.Optional<String> empty = Optional.empty();
                 for (Constructor<?> ctor : session.getDeclaredConstructors()) {
                     Class<?>[] p = ctor.getParameterTypes();
                     ctor.setAccessible(true);
                     try {
+                        if (p.length == 5 && p[0] == String.class && p[1] == UUID.class && p[2] == String.class) {
+                            if (p[3] == Optional.class) {
+                                return ctor.newInstance(logged.name, uuid, logged.mcToken, xuid, empty);
+                            }
+                            return ctor.newInstance(logged.name, uuid, logged.mcToken, empty, type);
+                        }
                         if (p.length == 6 && p[0] == String.class && p[2] == String.class) {
                             return ctor.newInstance(logged.name, uuid, logged.mcToken,
                                     Optional.ofNullable(logged.xuid), Optional.empty(), type);
-                        }
-                        if (p.length == 5 && p[0] == String.class) {
-                            return ctor.newInstance(logged.name, uuid, logged.mcToken, Optional.empty(), type);
                         }
                         if (p.length == 4 && p[0] == String.class && p[1] == String.class) {
                             return ctor.newInstance(logged.name, uuid.toString(), logged.mcToken, type);

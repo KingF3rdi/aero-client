@@ -82,7 +82,13 @@ public class PlayerEntityRendererMixin {
             }
         }
 
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemCounter && AeroClient.CONFIG.totemPopsOnNametag) {
+        if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametagBadge) {
+            result = Text.literal("✦ ").append(result);
+            changed = true;
+        }
+
+        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemPopsOnNametag
+                && (AeroClient.CONFIG.totemCounter || AeroClient.CONFIG.nametagBadge)) {
             try {
                 int pops = dev.aero.client.Visuals.totemPopsFor(player.getUuid());
                 if (pops > 0) {

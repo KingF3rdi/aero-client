@@ -27,7 +27,16 @@
     "EndCrystalEntityRendererMixin",
     "LivingEntityRendererMixin",
     "LivingEntityStatusMixin",
-    "PlayerEntityRendererMixin"
+    "PlayerEntityRendererMixin",
+    "ClientPlayerInteractionManagerMixin",
+    "BlockEntityRenderDispatcherMixin",
+    "ShieldModelRendererMixin",
+    "PlayerHeldItemFeatureRendererMixin",
+    "ScreenScaleMixin",
+    "InventoryScreenScaleMixin",
+    "RecipeBookScreenScaleMixin",
+    "HandledScreenScaleMixin",
+    "CreativeInventoryScaleMixin"
   ],
   "injectors": {
     "defaultRequire": 0

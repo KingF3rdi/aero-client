@@ -65,18 +65,20 @@ public class HudLayoutScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         context.fill(0, 0, width, height, 0x77000000);
-        context.drawText(textRenderer, Text.literal("Drag the labelled chips to reposition each HUD element. Escape to go back."),
-                12, 10, TEXT, true);
+        UiDraw.glass(context, 8, 6, Math.min(width - 16, 420), 28, 0xC414121E, 12);
+        context.drawText(textRenderer, Text.literal("Drag chips to move HUD elements. Esc to go back."),
+                18, 14, TEXT, false);
 
         for (Elem e : elems) {
             int x = e.getX().getAsInt();
             int y = e.getY().getAsInt();
             int w = chipW(e);
             int dotColor = e.on().getAsBoolean() ? ACCENT : MUTED;
-            boolean hover = inside(mouseX, mouseY, x, y, w, 14) || dragging == e;
-            context.fill(x, y, x + w, y + 14, hover ? 0xE0221E30 : 0xC014121C);
-            context.fill(x, y, x + 3, y + 14, dotColor);
-            context.drawText(textRenderer, Text.literal(e.label()), x + 8, y + 3, TEXT, true);
+            boolean hover = inside(mouseX, mouseY, x, y, w, 16) || dragging == e;
+            UiDraw.roundRect(context, x, y, w, 16, 6, hover ? 0xE0282436 : 0xC014121C);
+            UiDraw.roundBorder(context, x, y, w, 16, 6, hover ? 0x66C4B5FD : 0x22FFFFFF);
+            context.fill(x + 4, y + 4, x + 7, y + 12, dotColor);
+            context.drawText(textRenderer, Text.literal(e.label()), x + 12, y + 4, TEXT, false);
         }
     }
 
@@ -91,7 +93,7 @@ public class HudLayoutScreen extends Screen {
         for (Elem e : elems) {
             int x = e.getX().getAsInt();
             int y = e.getY().getAsInt();
-            if (inside(mx, my, x, y, chipW(e), 14)) {
+            if (inside(mx, my, x, y, chipW(e), 16)) {
                 dragging = e;
                 dragOffX = mx - x;
                 dragOffY = my - y;
@@ -107,7 +109,7 @@ public class HudLayoutScreen extends Screen {
             return false;
         }
         int nx = Math.max(0, Math.min(width - chipW(dragging), (int) click.x() - dragOffX));
-        int ny = Math.max(0, Math.min(height - 14, (int) click.y() - dragOffY));
+        int ny = Math.max(0, Math.min(height - 16, (int) click.y() - dragOffY));
         dragging.setX().accept(nx);
         dragging.setY().accept(ny);
         return true;

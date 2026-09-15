@@ -57,6 +57,18 @@ public class DrawCrosshairScreen extends Screen {
                 }
             }
         }
+        if (pixels.isEmpty()) {
+            pixels.add(key(0, 0));
+            pixels.add(key(-3, 0));
+            pixels.add(key(-2, 0));
+            pixels.add(key(2, 0));
+            pixels.add(key(3, 0));
+            pixels.add(key(0, -3));
+            pixels.add(key(0, -2));
+            pixels.add(key(0, 2));
+            pixels.add(key(0, 3));
+            save();
+        }
     }
 
     private int gridX() {
@@ -69,11 +81,14 @@ public class DrawCrosshairScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        context.fill(0, 0, width, height, BG);
+        context.fill(0, 0, width, height, 0x66000000);
         int gx = gridX();
         int gy = gridY();
-        context.drawText(textRenderer, Text.literal("Draw your crosshair - click to toggle a pixel"),
-                width / 2 - 110, gy - 20, TEXT, false);
+        int panelW = GRID * CELL + 28;
+        int panelH = GRID * CELL + 86;
+        UiDraw.glass(context, gx - 14, gy - 36, panelW, panelH, 0xD414121E, 18);
+        context.drawText(textRenderer, Text.literal("Draw your crosshair"),
+                gx, gy - 22, TEXT, false);
 
         context.fill(gx - 2, gy - 2, gx + GRID * CELL + 2, gy + GRID * CELL + 2, PANEL);
         for (int cy = 0; cy < GRID; cy++) {
@@ -166,6 +181,10 @@ public class DrawCrosshairScreen extends Screen {
 
         if (inside(mx, my, gx, gy + GRID * CELL + 14, 150, 20)) {
             AeroClient.CONFIG.crosshairUseDrawing = !AeroClient.CONFIG.crosshairUseDrawing;
+            if (AeroClient.CONFIG.crosshairUseDrawing) {
+                AeroClient.CONFIG.customCrosshair = true;
+                AeroClient.CONFIG.crosshairStyle = "Drawn";
+            }
             AeroClient.CONFIG.save();
             return true;
         }
@@ -176,6 +195,10 @@ public class DrawCrosshairScreen extends Screen {
         }
         int doneX = gx + GRID * CELL - 70;
         if (inside(mx, my, doneX, gy + GRID * CELL + 14, 70, 20)) {
+            AeroClient.CONFIG.customCrosshair = true;
+            AeroClient.CONFIG.crosshairStyle = "Drawn";
+            AeroClient.CONFIG.crosshairUseDrawing = true;
+            save();
             client.setScreen(parent);
             return true;
         }
@@ -184,6 +207,10 @@ public class DrawCrosshairScreen extends Screen {
             return true;
         }
         return false;
+    }
+
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        return mouseClicked(new Click(mouseX, mouseY, new net.minecraft.client.input.MouseInput(button, 0)), false);
     }
 
     @Override

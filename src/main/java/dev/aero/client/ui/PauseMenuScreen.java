@@ -11,82 +11,139 @@ import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * NoRisk-style pause overlay: brand, Mod Menu button, icon row.
+ * Pause overlay: frosted panel, primary action, labelled shortcuts.
  */
 public class PauseMenuScreen extends Screen {
-    private static final int ACCENT = 0xFFFFFFFF;
+    private static final int TEXT = 0xFFF6F3FB;
+    private static final int MUTED = 0xFFB8B0C8;
+    private static final String[] LABELS = {"Resume", "Options", "FPS", "Menu", "Quit"};
     private int hover = -1;
 
     public PauseMenuScreen() {
         super(Text.literal("Larp Launcher"));
     }
 
+    /** Esc Menu Scale (GUI Tweaks) - independent of Minecraft's own GUI Scale option. */
+    private float scale() {
+        var cfg = dev.aero.client.AeroClient.CONFIG;
+        if (cfg == null) {
+            return 1f;
+        }
+        return Math.max(0.5f, Math.min(2f, cfg.escHudScale));
+    }
+
+    private int vw() {
+        return Math.max(1, Math.round(width / scale()));
+    }
+
+    private int vh() {
+        return Math.max(1, Math.round(height / scale()));
+    }
+
+    private int panelX() {
+        return vw() / 2 - 180;
+    }
+
+    private int panelY() {
+        return vh() / 2 - 78;
+    }
+
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         super.render(context, mouseX, mouseY, delta);
 
-        int cx = width / 2;
-        int cy = height / 2 - 28;
+        float scale = scale();
+        int mx = Math.round(mouseX / scale);
+        int my = Math.round(mouseY / scale);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().scale(scale, scale);
+        try {
+            renderScaled(context, mx, my);
+        } finally {
+            context.getMatrices().popMatrix();
+        }
+    }
 
-        String left = "LARP";
-        String right = "LAUNCHER";
-        int gap = 28;
-        int lw = textRenderer.getWidth(left);
-        int rw = textRenderer.getWidth(right);
-        context.drawText(textRenderer, Text.literal(left), cx - gap - lw, cy, ACCENT, false);
-        drawBolt(context, cx, cy + 4);
-        context.drawText(textRenderer, Text.literal(right), cx + gap, cy, ACCENT, false);
+    private void renderScaled(DrawContext context, int mouseX, int mouseY) {
+        int px = panelX();
+        int py = panelY();
+        UiDraw.glass(context, px, py, 360, 168, 0xC414121E, 20);
+
+        int cx = vw() / 2;
+        context.drawText(textRenderer, Text.literal("LARP"), cx - 78, py + 18, TEXT, false);
+        context.drawText(textRenderer, Text.literal("LAUNCHER"), cx + 10, py + 18, TEXT, false);
+        drawBolt(context, cx - 2, py + 20);
+        context.drawText(textRenderer, Text.literal("Right Shift opens the client menu"),
+                cx - textRenderer.getWidth("Right Shift opens the client menu") / 2, py + 36, MUTED, false);
 
         int bw = 220;
-        int bh = 22;
+        int bh = 24;
         int bx = cx - bw / 2;
-        int by = cy + 36;
+        int by = py + 56;
         boolean menuHover = inside(mouseX, mouseY, bx, by, bw, bh);
-        context.fill(bx, by, bx + bw, by + bh, menuHover ? 0x33111111 : 0x22111111);
-        context.fill(bx, by, bx + bw, by + 1, 0x33FFFFFF);
-        context.fill(bx, by + bh - 1, bx + bw, by + bh, 0x33FFFFFF);
-        String label = "MOD MENU";
+        UiDraw.pill(context, bx, by, bw, bh, menuHover);
+        String label = "Open menu";
         context.drawText(textRenderer, Text.literal(label),
-                cx - textRenderer.getWidth(label) / 2, by + 7, ACCENT, false);
+                cx - textRenderer.getWidth(label) / 2, by + 8, TEXT, false);
 
-        int[] icons = {0, 1, 2, 3, 4};
         hover = -1;
-        int iconY = by + 36;
-        int start = cx - (icons.length * 28) / 2;
-        for (int i = 0; i < icons.length; i++) {
-            int ix = start + i * 28;
-            boolean h = inside(mouseX, mouseY, ix, iconY, 18, 18);
+        int iconY = py + 96;
+        int start = cx - (5 * 52) / 2;
+        for (int i = 0; i < 5; i++) {
+            int ix = start + i * 52;
+            boolean h = inside(mouseX, mouseY, ix, iconY, 44, 48);
             if (h) {
                 hover = i;
             }
-            drawIcon(context, i, ix, iconY, h ? 0xFFFFFFFF : 0xFFD0D0D0);
+            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? 0x44C4B5FD : 0x2214101C);
+            drawIcon(context, i, ix + 13, iconY + 9, h ? 0xFFFFFFFF : 0xFFD0D0D0);
+            String cap = LABELS[i];
+            context.drawText(textRenderer, Text.literal(cap),
+                    ix + (44 - textRenderer.getWidth(cap)) / 2, iconY + 38, h ? TEXT : MUTED, false);
         }
     }
 
     private static void drawBolt(DrawContext context, int cx, int cy) {
-        context.fill(cx + 2, cy - 2, cx + 5, cy + 5, 0xFFFFFFFF);
-        context.fill(cx - 3, cy + 4, cx + 5, cy + 6, 0xFFFFFFFF);
-        context.fill(cx - 2, cy + 6, cx + 1, cy + 13, 0xFFFFFFFF);
+        context.fill(cx + 2, cy - 2, cx + 5, cy + 5, 0xFFC4B5FD);
+        context.fill(cx - 3, cy + 4, cx + 5, cy + 6, 0xFFC4B5FD);
+        context.fill(cx - 2, cy + 6, cx + 1, cy + 13, 0xFFC4B5FD);
     }
 
     private static void drawIcon(DrawContext context, int id, int x, int y, int color) {
         switch (id) {
-            case 0 -> { // camera
-                context.fill(x + 2, y + 5, x + 16, y + 14, color);
-                context.fill(x + 6, y + 3, x + 12, y + 6, color);
+            case 0 -> { // Resume: play triangle
+                for (int dy = -6; dy <= 6; dy++) {
+                    int w = Math.max(1, (10 - Math.abs(dy)) / 2);
+                    int ry = y + 8 + dy;
+                    context.fill(x + 3, ry, x + 3 + w, ry + 1, color);
+                }
             }
-            case 1 -> { // shirt / cosmetics
-                context.fill(x + 4, y + 3, x + 14, y + 6, color);
-                context.fill(x + 5, y + 6, x + 13, y + 15, color);
+            case 1 -> { // Options: sliders
+                int track = 0x66000000 | (color & 0xFFFFFF);
+                int[] knobX = {12, 5, 9};
+                for (int i = 0; i < 3; i++) {
+                    int ly = y + 3 + i * 5;
+                    context.fill(x + 2, ly, x + 16, ly + 1, track);
+                    context.fill(x + knobX[i] - 1, ly - 2, x + knobX[i] + 2, ly + 3, color);
+                }
             }
             case 2 -> drawBolt(context, x + 8, y + 2);
-            case 3 -> { // person / settings
-                context.fill(x + 7, y + 3, x + 11, y + 7, color);
-                context.fill(x + 5, y + 8, x + 13, y + 15, color);
+            case 3 -> { // Menu: hamburger
+                for (int i = 0; i < 3; i++) {
+                    context.fill(x + 2, y + 3 + i * 5, x + 16, y + 5 + i * 5, color);
+                }
             }
-            default -> { // leave
-                context.fill(x + 5, y + 3, x + 13, y + 15, color);
-                context.fill(x + 8, y + 6, x + 15, y + 12, color);
+            default -> { // Quit: power glyph
+                int cx = x + 9;
+                int cy = y + 9;
+                int r = 6;
+                for (int a = 25; a <= 335; a += 18) {
+                    double rad = Math.toRadians(a - 90);
+                    int px = cx + (int) Math.round(Math.cos(rad) * r);
+                    int py = cy + (int) Math.round(Math.sin(rad) * r);
+                    context.fill(px, py, px + 2, py + 2, color);
+                }
+                context.fill(cx - 1, cy - r - 1, cx + 1, cy - 1, color);
             }
         }
     }
@@ -97,20 +154,21 @@ public class PauseMenuScreen extends Screen {
 
     @Override
     public boolean mouseClicked(Click click, boolean doubled) {
-        int mx = (int) click.x();
-        int my = (int) click.y();
-        int cx = width / 2;
-        int cy = height / 2 - 28;
+        float scale = scale();
+        int mx = Math.round((float) (click.x() / scale));
+        int my = Math.round((float) (click.y() / scale));
+        int cx = vw() / 2;
+        int py = panelY();
         int bx = cx - 110;
-        int by = cy + 36;
-        if (inside(mx, my, bx, by, 220, 22)) {
+        int by = py + 56;
+        if (inside(mx, my, bx, by, 220, 24)) {
             client.setScreen(Menus.clickGui(this, false));
             return true;
         }
-        int iconY = by + 36;
-        int start = cx - (5 * 28) / 2;
+        int iconY = py + 96;
+        int start = cx - (5 * 52) / 2;
         for (int i = 0; i < 5; i++) {
-            if (inside(mx, my, start + i * 28, iconY, 18, 18)) {
+            if (inside(mx, my, start + i * 52, iconY, 44, 48)) {
                 onIcon(i);
                 return true;
             }

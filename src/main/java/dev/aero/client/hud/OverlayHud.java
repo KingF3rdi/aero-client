@@ -47,6 +47,26 @@ public final class OverlayHud {
         }
     }
 
+    public static boolean hideVanillaCrosshair() {
+        ClientConfig cfg = AeroClient.CONFIG;
+        if (cfg == null || !cfg.customCrosshair) {
+            return false;
+        }
+        String style = cfg.crosshairStyle == null ? "Cross" : cfg.crosshairStyle;
+        if ("Vanilla".equalsIgnoreCase(style) && !cfg.crosshairUseDrawing) {
+            return false;
+        }
+        return true;
+    }
+
+    private static boolean usingDrawn(ClientConfig cfg) {
+        if (cfg.crosshairUseDrawing && cfg.crosshairPixels != null && !cfg.crosshairPixels.isBlank()) {
+            return true;
+        }
+        return cfg.customCrosshair && "Drawn".equalsIgnoreCase(cfg.crosshairStyle)
+                && cfg.crosshairPixels != null && !cfg.crosshairPixels.isBlank();
+    }
+
     public static void render(DrawContext context, RenderTickCounter tickCounter) {
         try {
             renderInner(context, tickCounter);
@@ -56,37 +76,35 @@ public final class OverlayHud {
 
     private static void renderInner(DrawContext context, RenderTickCounter tickCounter) {
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.options.hudHidden) {
-            return;
-        }
-        if (mc.getDebugHud() != null && mc.getDebugHud().shouldShowDebugHud()) {
+        if (mc.player == null) {
             return;
         }
         ClientConfig cfg = AeroClient.CONFIG;
         if (cfg == null) {
             return;
         }
+        boolean hudHidden = mc.options.hudHidden;
         int sw = context.getScaledWindowWidth();
         int sh = context.getScaledWindowHeight();
+        if (cfg.damageTint) {
+            renderDamageTint(context, mc, cfg, sw, sh);
+        }
+        if (hudHidden && !(cfg.customCrosshair && cfg.crosshairWhenHidden)) {
+            return;
+        }
+        boolean debug = mc.getDebugHud() != null && mc.getDebugHud().shouldShowDebugHud();
+        if (debug) {
+            drawCrosshairOverlay(context, mc, cfg, sw, sh);
+            return;
+        }
 
-        if (cfg.watermark) {
-            String brand = (cfg.watermarkText == null || cfg.watermarkText.isBlank() ? "LARP" : cfg.watermarkText)
-                    + "  " + AeroClient.VERSION;
-            if (cfg.watermarkSubtitle != null && !cfg.watermarkSubtitle.isBlank()) {
-                brand = brand + "  " + cfg.watermarkSubtitle;
-            }
-            int wx = cfg.watermarkX;
-            int wy = cfg.watermarkY;
-            int color = cfg.watermarkRainbow
-                    ? java.awt.Color.HSBtoRGB((System.currentTimeMillis() % 4000L) / 4000f, 0.45f, 1f) | 0xFF000000
-                    : TEXT;
-            if (cfg.fastHud || !cfg.watermarkBg) {
-                context.drawText(mc.textRenderer, Text.literal(brand), wx, wy + 4, color, cfg.watermarkShadow);
-            } else {
-                int w = 26 + mc.textRenderer.getWidth(brand);
-                UiDraw.card(context, wx, wy, w, 18, 0xE014121C, true);
-                context.drawTextWithShadow(mc.textRenderer, Text.literal(brand), wx + 8, wy + 5, color);
-            }
+        if (hudHidden) {
+            drawCrosshairOverlay(context, mc, cfg, sw, sh);
+            return;
+        }
+
+        if (shouldWatermark(mc, cfg)) {
+            drawWatermark(context, mc, cfg, sw, sh);
         }
 
         if (cfg.fpsHud) {
@@ -119,14 +137,13 @@ public final class OverlayHud {
         }
         if (cfg.totemCounter && cfg.totemHud) {
             int totems = countTotems(mc);
-            if (totems > 0) {
-                int iconX = sw / 2 - 8;
-                int iconY = sh - 40;
-                context.drawItem(new ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING), iconX, iconY);
-                String count = String.valueOf(totems);
-                int cw = mc.textRenderer.getWidth(count);
-                context.drawText(mc.textRenderer, Text.literal(count), sw / 2 - cw / 2, iconY + 18, TEXT, true);
-            }
+            int iconX = cfg.totemX > 0 ? cfg.totemX : sw / 2 - 8;
+            int iconY = cfg.totemY > 0 ? cfg.totemY : sh - 58;
+            context.drawItem(new ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING), iconX, iconY);
+            String count = String.valueOf(totems);
+            int cw = mc.textRenderer.getWidth(count);
+            int col = cfg.totemUseColor ? (cfg.totemColor | 0xFF000000) : TEXT;
+            context.drawText(mc.textRenderer, Text.literal(count), iconX + 8 - cw / 2, iconY + 18, col, true);
         }
 
         if (cfg.arraylist && AeroClient.MODULES != null) {
@@ -155,22 +172,30 @@ public final class OverlayHud {
                 Collection<StatusEffectInstance> effects = mc.player.getStatusEffects();
                 int y = cfg.potionY;
                 for (StatusEffectInstance effect : effects) {
-                    String text = "";
-                    if (cfg.potionName) {
-                        text = effectName(effect);
-                    }
-                    if (cfg.potionLevel) {
-                        text += (text.isEmpty() ? "" : " ") + (effect.getAmplifier() + 1);
-                    }
-                    if (cfg.potionTimer) {
-                        int sec = effect.getDuration() / 20;
-                        text += (text.isEmpty() ? "" : "  ") + (sec / 60) + ":" + String.format("%02d", sec % 60);
-                    }
-                    if (text.isBlank()) {
+                    if (effect == null) {
                         continue;
                     }
-                    hudLine(context, mc, cfg, cfg.potionX, y, text);
-                    y += cfg.fastHud ? 11 : 17;
+                    String name = effectName(effect);
+                    String text = name;
+                    if (cfg.potionLevel) {
+                        text += " " + roman(effect.getAmplifier() + 1);
+                    }
+                    if (cfg.potionTimer) {
+                        int sec = Math.max(0, effect.getDuration() / 20);
+                        text += "  " + (sec / 60) + ":" + String.format("%02d", sec % 60);
+                    }
+                    if (cfg.potionIcons) {
+                        int col = 0xFFC4B5FD;
+                        try {
+                            col = 0xFF000000 | (effect.getEffectType().value().getColor() & 0xFFFFFF);
+                        } catch (Throwable ignored) {
+                        }
+                        UiDraw.roundRect(context, cfg.potionX, y, 12, 12, 3, col);
+                        hudLine(context, mc, cfg, cfg.potionX + 16, y, text);
+                    } else {
+                        hudLine(context, mc, cfg, cfg.potionX, y, text);
+                    }
+                    y += cfg.fastHud ? 13 : 17;
                 }
             } catch (Throwable ignored) {
             }
@@ -244,52 +269,10 @@ public final class OverlayHud {
             first = mc.options.getPerspective().isFirstPerson();
         } catch (Throwable ignored) {
         }
-        if ((cfg.customCrosshair || cfg.crosshairAddons) && (first || (cfg.crosshairAddons && cfg.addonThirdPerson))) {
-            int cx = sw / 2;
-            int cy = sh / 2;
-            int gap = cfg.customCrosshair ? Math.max(0, cfg.crosshairGap) : (cfg.crosshairAddons ? Math.max(0, cfg.addonGap) : 2);
-            int arm = cfg.customCrosshair ? Math.max(2, cfg.crosshairArm) : (cfg.crosshairAddons ? 6 : 5);
-            int c = cfg.customCrosshair ? (cfg.crosshairColor | 0xFF000000) : 0xFFF6F2FF;
-            if (cfg.crosshairHover && dev.aero.client.Visuals.hoveredPlayer(mc, Math.max(1.0, cfg.crosshairHoverRange)) != null) {
-                c = cfg.crosshairHoverColor | 0xFF000000;
-            }
-            if (cfg.customCrosshair && cfg.crosshairUseDrawing && cfg.crosshairPixels != null && !cfg.crosshairPixels.isBlank()) {
-                drawCustomCrosshair(context, cx, cy, cfg.crosshairPixels, c);
-            } else {
-                int o = 0xCC120E1A;
-                context.fill(cx - arm - 1, cy, cx - gap + 1, cy + 2, o);
-                context.fill(cx + gap, cy, cx + arm + 2, cy + 2, o);
-                context.fill(cx, cy - arm - 1, cx + 2, cy - gap + 1, o);
-                context.fill(cx, cy + gap, cx + 2, cy + arm + 2, o);
-                context.fill(cx - arm, cy, cx - gap, cy + 1, c);
-                context.fill(cx + gap + 1, cy, cx + arm + 1, cy + 1, c);
-                context.fill(cx, cy - arm, cx + 1, cy - gap, c);
-                context.fill(cx, cy + gap + 1, cx + 1, cy + arm + 1, c);
-            }
-            if (cfg.crosshairAddons) {
-                if (cfg.addonElytra && flying(mc)) {
-                    context.fill(cx - 2, cy + 8, cx + 3, cy + 10, ACCENT);
-                }
-                if (cfg.addonShield && shieldIndicatorReady(mc, cfg)) {
-                    context.fill(cx - 6, cy - 1, cx - 4, cy + 2, ACCENT);
-                }
-                if (cfg.addonEntity && matchesEntityAddon(mc, cfg)) {
-                    context.fill(cx - 1, cy - arm - 5, cx + 2, cy - arm - 2, ACCENT);
-                }
-                if (cfg.addonShieldBreak && HudStats.shieldBreakActive(
-                        Math.max(1, cfg.addonShieldBreakDuration) * 50L, cfg.addonShieldBreakStopOnAnimEnd)) {
-                    context.fill(cx - 6, cy + gap + 4, cx + 6, cy + gap + 6, 0xFFE05555);
-                }
-                if (cfg.addonHitmarker && HudStats.hitmarkerActive(
-                        Math.max(1, cfg.addonHitmarkerDuration) * 50L, cfg.addonHitmarkerStopOnAnimEnd)) {
-                    context.fill(cx - arm - 4, cy - 1, cx - arm - 1, cy + 2, 0xFFF6F2FF);
-                    context.fill(cx + arm + 1, cy - 1, cx + arm + 4, cy + 2, 0xFFF6F2FF);
-                }
-            }
-        }
+        drawCrosshairOverlay(context, mc, cfg, sw, sh, first);
 
-        if (cfg.shieldTweaks) {
-            renderShieldStatus(context, mc, cfg, sw, sh);
+        if (dev.aero.client.Optimizer.elytra() && flying(mc)) {
+            hudLine(context, mc, cfg, sw / 2 - 24, sh / 2 + 48, "ELYTRA");
         }
         if (cfg.crossbowTweaks) {
             renderCrossbowCharge(context, mc, cfg, sw, sh);
@@ -302,7 +285,159 @@ public final class OverlayHud {
         }
     }
 
-    private static void drawCustomCrosshair(DrawContext context, int cx, int cy, String pixels, int color) {
+    private static void drawCrosshairOverlay(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
+        boolean first = true;
+        try {
+            first = mc.options.getPerspective().isFirstPerson();
+        } catch (Throwable ignored) {
+        }
+        drawCrosshairOverlay(context, mc, cfg, sw, sh, first);
+    }
+
+    private static void drawCrosshairOverlay(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh, boolean first) {
+        boolean third = cfg.customCrosshair ? cfg.crosshairThirdPerson : (cfg.crosshairAddons && cfg.addonThirdPerson);
+        if (!first && !third) {
+            return;
+        }
+        int cx = sw / 2;
+        int cy = sh / 2;
+        int gap = cfg.customCrosshair ? Math.max(0, cfg.crosshairGap) : Math.max(0, cfg.addonGap);
+        int arm = cfg.customCrosshair ? Math.max(2, cfg.crosshairArm) : 6;
+        if (cfg.customCrosshair && cfg.crosshairDynamicAttack && mc.player.handSwinging) {
+            gap += 3;
+        }
+        int t = 1;
+        if (cfg.customCrosshair) {
+            t = Math.max(1, Math.round(cfg.crosshairThickness));
+            if (cfg.crosshairThickness < 1f) {
+                t = 1;
+            }
+        }
+        int c = cfg.customCrosshair ? (cfg.crosshairColor | 0xFF000000) : 0xFFF6F2FF;
+        if (cfg.customCrosshair && cfg.crosshairRainbow) {
+            float hue = (System.currentTimeMillis() % 4000L) / 4000f * Math.max(0.2f, cfg.crosshairRainbowSpeed);
+            c = 0xFF000000 | (java.awt.Color.HSBtoRGB(hue % 1f, 0.85f, 1f) & 0xFFFFFF);
+        }
+        if (cfg.customCrosshair && cfg.crosshairHover && dev.aero.client.Visuals.hoveredPlayer(mc, Math.max(1.0, cfg.crosshairHoverRange)) != null) {
+            c = cfg.crosshairHoverColor | 0xFF000000;
+        } else if (cfg.customCrosshair && mc.targetedEntity instanceof net.minecraft.entity.LivingEntity living) {
+            if (cfg.crosshairHighlightHostiles && living instanceof net.minecraft.entity.mob.HostileEntity) {
+                c = cfg.crosshairHostileColor | 0xFF000000;
+            } else if (cfg.crosshairHighlightPassives && !(living instanceof net.minecraft.entity.player.PlayerEntity)
+                    && !(living instanceof net.minecraft.entity.mob.HostileEntity)) {
+                c = cfg.crosshairPassiveColor | 0xFF000000;
+            }
+        }
+        if (cfg.customCrosshair && hideVanillaCrosshair()) {
+            if (usingDrawn(cfg)) {
+                drawCustomCrosshair(context, cx, cy, cfg.crosshairPixels, c, t);
+            } else {
+                drawStyledCrosshair(context, cx, cy, gap, arm, t, c, cfg);
+            }
+            if (cfg.crosshairCooldown) {
+                drawCooldownRing(context, mc, cfg, cx, cy, arm + gap + 4);
+            }
+        }
+        if (cfg.crosshairAddons) {
+            int marker = Math.max(arm, 6) + gap;
+            if (cfg.addonElytra && flying(mc)) {
+                context.fill(cx - 2, cy + marker + 2, cx + 3, cy + marker + 4, ACCENT);
+            }
+            if (cfg.addonShield && shieldIndicatorReady(mc, cfg)) {
+                context.fill(cx - marker - 4, cy - 1, cx - marker - 2, cy + 2, ACCENT);
+            }
+            if (cfg.addonEntity && matchesEntityAddon(mc, cfg)) {
+                context.fill(cx - 1, cy - marker - 5, cx + 2, cy - marker - 2, ACCENT);
+            }
+            if (cfg.addonShieldBreak && HudStats.shieldBreakActive(
+                    Math.max(1, cfg.addonShieldBreakDuration) * 50L, cfg.addonShieldBreakStopOnAnimEnd)) {
+                context.fill(cx - 6, cy + gap + 4, cx + 6, cy + gap + 6, 0xFFE05555);
+            }
+            if (cfg.addonHitmarker && HudStats.hitmarkerActive(
+                    Math.max(1, cfg.addonHitmarkerDuration) * 50L, cfg.addonHitmarkerStopOnAnimEnd)) {
+                context.fill(cx - marker - 4, cy - 1, cx - marker - 1, cy + 2, 0xFFF6F2FF);
+                context.fill(cx + marker + 1, cy - 1, cx + marker + 4, cy + 2, 0xFFF6F2FF);
+            }
+        }
+    }
+
+    private static void drawStyledCrosshair(DrawContext context, int cx, int cy, int gap, int arm, int t, int c, ClientConfig cfg) {
+        int o = cfg.crosshairOutline ? cfg.crosshairOutlineColor : 0;
+        String style = cfg.crosshairStyle == null ? "Cross" : cfg.crosshairStyle;
+        if ("Circle".equalsIgnoreCase(style)) {
+            int r = arm + gap;
+            for (int a = 0; a < 360; a += 8) {
+                double rad = Math.toRadians(a);
+                int x = cx + (int) Math.round(Math.cos(rad) * r);
+                int y = cy + (int) Math.round(Math.sin(rad) * r);
+                context.fill(x, y, x + t, y + t, c);
+            }
+        } else if ("Square".equalsIgnoreCase(style)) {
+            int r = arm + gap;
+            fillRect(context, cx - r, cy - r, cx + r + t, cy - r + t, c, o);
+            fillRect(context, cx - r, cy + r, cx + r + t, cy + r + t, c, o);
+            fillRect(context, cx - r, cy - r, cx - r + t, cy + r + t, c, o);
+            fillRect(context, cx + r, cy - r, cx + r + t, cy + r + t, c, o);
+        } else if ("Triangle".equalsIgnoreCase(style)) {
+            int r = arm + gap;
+            fillRect(context, cx - r, cy + r / 2, cx + r + t, cy + r / 2 + t, c, o);
+            for (int i = 0; i <= r; i++) {
+                context.fill(cx - i / 2, cy - r / 2 + i, cx - i / 2 + t, cy - r / 2 + i + t, c);
+                context.fill(cx + i / 2, cy - r / 2 + i, cx + i / 2 + t, cy - r / 2 + i + t, c);
+            }
+        } else if ("Arrow".equalsIgnoreCase(style)) {
+            fillRect(context, cx, cy - arm, cx + t, cy - gap, c, o);
+            fillRect(context, cx - arm / 2, cy - gap, cx, cy - gap + t, c, o);
+            fillRect(context, cx + t, cy - gap, cx + arm / 2 + t, cy - gap + t, c, o);
+        } else {
+            fillRect(context, cx - arm, cy, cx - gap, cy + t, c, o);
+            fillRect(context, cx + gap + t, cy, cx + arm + t, cy + t, c, o);
+            fillRect(context, cx, cy - arm, cx + t, cy - gap, c, o);
+            fillRect(context, cx, cy + gap + t, cx + t, cy + arm + t, c, o);
+        }
+        if (cfg.crosshairDot) {
+            int d = cfg.crosshairDotColor | 0xFF000000;
+            context.fill(cx, cy, cx + t, cy + t, d);
+        }
+    }
+
+    private static void fillRect(DrawContext context, int x0, int y0, int x1, int y1, int c, int outline) {
+        if (x1 < x0) {
+            int t = x0; x0 = x1; x1 = t;
+        }
+        if (y1 < y0) {
+            int t = y0; y0 = y1; y1 = t;
+        }
+        if ((outline & 0xFF000000) != 0) {
+            context.fill(x0 - 1, y0 - 1, x1 + 1, y1 + 1, outline);
+        }
+        context.fill(x0, y0, x1, y1, c);
+    }
+
+    private static void drawCooldownRing(DrawContext context, MinecraftClient mc, ClientConfig cfg, int cx, int cy, int r) {
+        try {
+            ItemStack stack = mc.player.getMainHandStack();
+            if (stack.isEmpty()) {
+                return;
+            }
+            float progress = mc.player.getItemCooldownManager().getCooldownProgress(stack, 0f);
+            if (progress <= 0f) {
+                return;
+            }
+            int col = cfg.crosshairCooldownColor;
+            int steps = Math.max(1, (int) (360 * progress / 12));
+            for (int i = 0; i < steps; i++) {
+                double rad = Math.toRadians(i * 12);
+                int x = cx + (int) Math.round(Math.cos(rad) * r);
+                int y = cy + (int) Math.round(Math.sin(rad) * r);
+                context.fill(x, y, x + 2, y + 2, col);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void drawCustomCrosshair(DrawContext context, int cx, int cy, String pixels, int color, int thickness) {
+        int t = Math.max(1, thickness);
         for (String part : pixels.split(";")) {
             String[] xy = part.split(",");
             if (xy.length != 2) {
@@ -311,7 +446,7 @@ public final class OverlayHud {
             try {
                 int dx = Integer.parseInt(xy[0].trim());
                 int dy = Integer.parseInt(xy[1].trim());
-                context.fill(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, color);
+                context.fill(cx + dx, cy + dy, cx + dx + t, cy + dy + t, color);
             } catch (NumberFormatException ignored) {
             }
         }
@@ -357,6 +492,49 @@ public final class OverlayHud {
      * this would normally use for a true accumulation blur, so this fakes the effect with an
      * edge-darkening vignette that grows with how fast the camera is turning.
      */
+    private static void renderDamageTint(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
+        if (mc.player == null || mc.player.hurtTime <= 0) {
+            return;
+        }
+        float t = Math.min(1f, mc.player.hurtTime / 10f);
+        int packed = cfg.damageTintColor;
+        if (cfg.damageTintChroma) {
+            float hue = (System.currentTimeMillis() % 4000L) / 4000f * Math.max(0.05f, cfg.damageTintSpeed);
+            packed = 0xFF000000 | (java.awt.Color.HSBtoRGB(hue % 1f, 0.85f, 1f) & 0xFFFFFF);
+        }
+        int rgb = packed & 0x00FFFFFF;
+        int baseA = (packed >>> 24) & 0xFF;
+        if (baseA < 40) {
+            baseA = 110;
+        }
+        int a = Math.min(210, (int) (baseA * (0.35f + 0.65f * t)));
+        int fill = (a << 24) | rgb;
+        context.fill(0, 0, sw, sh, fill);
+        int band = Math.max(28, Math.min(sw, sh) / 7);
+        int edge = (Math.min(180, a + 40) << 24) | rgb;
+        context.fill(0, 0, sw, band, edge);
+        context.fill(0, sh - band, sw, sh, edge);
+        context.fill(0, 0, band, sh, edge);
+        context.fill(sw - band, 0, sw, sh, edge);
+        if (cfg.damageTintGradient) {
+            int g = cfg.damageTintGradientColor;
+            int ga = Math.min(160, (int) (((g >>> 24) & 0xFF) * t));
+            if (ga < 30) {
+                ga = (int) (90 * t);
+            }
+            context.fillGradient(0, 0, sw, sh, fill, (ga << 24) | (g & 0xFFFFFF));
+        }
+        if (cfg.damageTintArmor) {
+            int slotA = Math.min(160, a);
+            int col = (slotA << 24) | rgb;
+            int x = sw / 2 - 44;
+            int y = sh - 70;
+            for (int i = 0; i < 4; i++) {
+                context.fill(x + i * 22, y, x + i * 22 + 18, y + 4, col);
+            }
+        }
+    }
+
     private static void renderMotionBlur(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
         if (mc.player == null) {
             return;
@@ -401,58 +579,6 @@ public final class OverlayHud {
             String line = (i + 1) + "  " + presets[i];
             context.drawText(mc.textRenderer, Text.literal(line), x + 8, y + 6 + i * rowH, TEXT, false);
         }
-    }
-
-    private static ItemStack findShield(net.minecraft.client.network.AbstractClientPlayerEntity player) {
-        for (ItemStack stack : new ItemStack[]{player.getMainHandStack(), player.getOffHandStack()}) {
-            if (!stack.isEmpty() && stack.getItem().toString().toLowerCase().contains("shield")) {
-                return stack;
-            }
-        }
-        return ItemStack.EMPTY;
-    }
-
-    private static void renderShieldStatus(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
-        if (mc.player == null) {
-            return;
-        }
-        ItemStack shield = findShield(mc.player);
-        if (shield.isEmpty()) {
-            return;
-        }
-        boolean blocking;
-        boolean disabled;
-        try {
-            disabled = mc.player.getItemCooldownManager().isCoolingDown(shield);
-        } catch (Throwable t) {
-            disabled = false;
-        }
-        blocking = mc.player.isBlocking();
-
-        String label;
-        int color;
-        if (disabled && cfg.shieldDisabled) {
-            label = "Disabled";
-            color = cfg.shieldDisabledColor;
-        } else if (blocking && cfg.shieldBlocking) {
-            label = "Blocking";
-            color = cfg.shieldBlockingColor;
-        } else if (!disabled && cfg.shieldReady) {
-            label = "Shield Ready";
-            color = cfg.shieldReadyColor;
-        } else {
-            return;
-        }
-
-        int a = Math.max(10, Math.min(255, (int) (cfg.shieldOpacity / 100f * 255)));
-        int barW = 74;
-        int x = sw / 2 - barW / 2;
-        int y = sh / 2 + 34;
-        int rgb = color & 0x00FFFFFF;
-        context.fill(x, y, x + barW, y + 14, (Math.min(255, a) << 24) | 0x00101018);
-        context.fill(x, y, x + barW, y + 1, ((a) << 24) | rgb);
-        context.fill(x + 2, y + 2, x + 6, y + 12, (a << 24) | rgb);
-        context.drawText(mc.textRenderer, Text.literal(label), x + 11, y + 4, (a << 24) | 0x00FFFFFF, cfg.panelShadow);
     }
 
     private static void renderCrossbowCharge(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
@@ -528,13 +654,13 @@ public final class OverlayHud {
         }
     }
 
-    private static boolean matchesHighlight(ClientConfig cfg, ItemStack stack) {
+    public static boolean matchesHighlight(ClientConfig cfg, ItemStack stack) {
         if (stack.isEmpty()) {
             return false;
         }
         String filter = cfg.itemHighlighterFilter == null ? "" : cfg.itemHighlighterFilter.trim();
         if (filter.isEmpty()) {
-            return enchanted(stack) || isTotem(stack);
+            return pvpHighlight(cfg, stack) || (cfg.highlightEnchanted && enchanted(stack));
         }
         String name = stack.getItem().toString().toLowerCase(java.util.Locale.ROOT);
         for (String part : filter.split(",")) {
@@ -546,11 +672,65 @@ public final class OverlayHud {
         return false;
     }
 
+    private static boolean pvpHighlight(ClientConfig cfg, ItemStack stack) {
+        String n = stack.getItem().toString().toLowerCase(java.util.Locale.ROOT);
+        try {
+            n = net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).getPath();
+        } catch (Throwable ignored) {
+        }
+        if (cfg.highlightTotem && n.contains("totem")) {
+            return true;
+        }
+        if (cfg.highlightCrystal && n.contains("end_crystal")) {
+            return true;
+        }
+        if (cfg.highlightGapple && (n.contains("golden_apple") || n.contains("enchanted_golden"))) {
+            return true;
+        }
+        if (cfg.highlightPearl && n.contains("ender_pearl")) {
+            return true;
+        }
+        if (cfg.highlightObsidian && n.contains("obsidian")) {
+            return true;
+        }
+        if (cfg.highlightXp && n.contains("experience_bottle")) {
+            return true;
+        }
+        if (cfg.highlightShield && n.contains("shield")) {
+            return true;
+        }
+        if (cfg.highlightSword && n.contains("sword")) {
+            return true;
+        }
+        if (cfg.highlightAxe && n.contains("_axe") && !n.contains("pickaxe")) {
+            return true;
+        }
+        if (cfg.highlightMace && n.contains("mace")) {
+            return true;
+        }
+        if (cfg.highlightAnchor && n.contains("respawn_anchor")) {
+            return true;
+        }
+        if (cfg.highlightGlowstone && n.contains("glowstone")) {
+            return true;
+        }
+        if (cfg.highlightWeb && n.contains("cobweb")) {
+            return true;
+        }
+        if (cfg.highlightPotion && n.contains("potion")) {
+            return true;
+        }
+        return false;
+    }
+
     private static void highlightHotbar(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
         try {
             int selected = selectedHotbar(mc);
+            if (selected < 0 || selected > 8) {
+                selected = ((selected % 9) + 9) % 9;
+            }
             int x0 = sw / 2 - 91;
-            int y = sh - 22;
+            int y = sh - 23;
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = mc.player.getInventory().getStack(i);
                 if (!matchesHighlight(cfg, stack)) {
@@ -568,15 +748,10 @@ public final class OverlayHud {
     }
 
     private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line) {
-        if (cfg.fastHud) {
-            context.fill(x, y + 2, x + 2, y + 12, ACCENT);
-            context.drawText(mc.textRenderer, Text.literal(line), x + 5, y + 3, TEXT, cfg.panelShadow);
-            return;
-        }
         int w = 12 + mc.textRenderer.getWidth(line);
-        context.fill(x, y, x + w, y + 14, 0xCC12101A);
-        context.fill(x, y + 2, x + 2, y + 12, cfg.panelAccent | 0xFF000000);
-        context.drawText(mc.textRenderer, Text.literal(line), x + 6, y + 3, TEXT, true);
+        UiDraw.roundRect(context, x, y, w, 14, 5, 0x9912101A);
+        context.fill(x + 3, y + 3, x + 5, y + 11, cfg.panelAccent | 0xFF000000);
+        context.drawText(mc.textRenderer, Text.literal(line), x + 8, y + 3, TEXT, cfg.panelShadow);
     }
 
     private static String sprintText(MinecraftClient mc, ClientConfig cfg) {
@@ -595,31 +770,23 @@ public final class OverlayHud {
     private static void key(DrawContext context, MinecraftClient mc, int x, int y, String label, boolean down, int size) {
         int w = Math.max(size, mc.textRenderer.getWidth(label) + 8);
         int h = Math.max(14, size);
-        context.fill(x, y, x + w, y + h, down ? 0xE8C4B5FD : 0xD214121C);
-        context.drawText(mc.textRenderer, Text.literal(label), x + 4, y + Math.max(2, h / 2 - 4), down ? 0xFF1A1024 : TEXT, !down);
+        UiDraw.roundRect(context, x, y, w, h, 5, down ? 0xA0C4B5FD : 0x6614121C);
+        context.drawText(mc.textRenderer, Text.literal(label), x + 4, y + Math.max(2, h / 2 - 4), down ? 0xFF1A1024 : TEXT, false);
     }
 
     private static String effectName(StatusEffectInstance effect) {
         try {
-            Object type = effect.getClass().getMethod("getEffectType").invoke(effect);
-            if (type == null) {
-                type = effect.getClass().getMethod("getEffect").invoke(effect);
-            }
-            String text = String.valueOf(type);
-            try {
-                Object id = type.getClass().getMethod("getIdAsString").invoke(type);
-                text = String.valueOf(id);
-            } catch (Throwable ignored) {
-                try {
-                    Object key = type.getClass().getMethod("getKey").invoke(type);
-                    text = String.valueOf(key);
-                } catch (Throwable ignored2) {
-                }
-            }
-            int colon = text.indexOf(':');
-            return colon >= 0 ? text.substring(colon + 1) : text;
+            return net.minecraft.text.Text.translatable(effect.getTranslationKey()).getString();
         } catch (Throwable t) {
-            return "effect";
+            try {
+                var entry = effect.getEffectType();
+                Object value = entry.value();
+                String key = String.valueOf(value);
+                int colon = key.lastIndexOf('.') + 1;
+                return key.substring(Math.max(0, colon)).replace('_', ' ');
+            } catch (Throwable ignored) {
+                return "Effect";
+            }
         }
     }
 
@@ -712,20 +879,70 @@ public final class OverlayHud {
 
     private static int fps(MinecraftClient mc) {
         long now = System.currentTimeMillis();
-        if (now - fpsAt < 200) {
+        if (now - fpsAt < 200 && cachedFps > 0) {
             return cachedFps;
         }
         fpsAt = now;
         try {
-            cachedFps = (int) MinecraftClient.class.getMethod("getCurrentFps").invoke(mc);
+            cachedFps = mc.getCurrentFps();
         } catch (Throwable t) {
+            cachedFps = 0;
+        }
+        if (cachedFps <= 0) {
             try {
-                cachedFps = (int) MinecraftClient.class.getMethod("getFps").invoke(mc);
+                Object dbgObj = MinecraftClient.class.getField("fpsDebugString").get(mc);
+                String dbg = dbgObj == null ? null : dbgObj.toString();
+                if (dbg != null) {
+                    int sp = dbg.indexOf(' ');
+                    cachedFps = Integer.parseInt(sp > 0 ? dbg.substring(0, sp) : dbg.replaceAll("[^0-9]", ""));
+                }
             } catch (Throwable ignored) {
-                cachedFps = 0;
             }
         }
         return cachedFps;
+    }
+
+    private static boolean shouldWatermark(MinecraftClient mc, ClientConfig cfg) {
+        if (cfg == null || !cfg.watermark) {
+            return false;
+        }
+        if (mc.currentScreen != null) {
+            return true;
+        }
+        return mc.options == null || !mc.options.hudHidden;
+    }
+
+    private static void drawWatermark(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
+        String brand = (cfg.watermarkText == null || cfg.watermarkText.isBlank() ? "LARP" : cfg.watermarkText);
+        int color = cfg.watermarkRainbow
+                ? java.awt.Color.HSBtoRGB((System.currentTimeMillis() % 4000L) / 4000f, 0.45f, 1f) | 0xFF000000
+                : TEXT;
+        int tw = mc.textRenderer.getWidth(brand);
+        int w = 22 + tw;
+        int h = 16;
+        int wx = sw - w - 10;
+        int wy = sh - h - 8;
+        if (cfg.watermarkX > 20 || cfg.watermarkY > 40) {
+            wx = cfg.watermarkX;
+            wy = cfg.watermarkY;
+        }
+        if (cfg.watermarkBg && !cfg.fastHud) {
+            UiDraw.roundRect(context, wx, wy, w, h, 8, 0xCC14121C);
+            UiDraw.roundBorder(context, wx, wy, w, h, 8, 0x44C4B5FD);
+        }
+        UiDraw.larpMark(context, wx + 3, wy + 2, 12, ACCENT);
+        context.drawText(mc.textRenderer, Text.literal(brand), wx + 18, wy + 4, color, cfg.watermarkShadow);
+    }
+
+    private static String roman(int n) {
+        return switch (n) {
+            case 1 -> "I";
+            case 2 -> "II";
+            case 3 -> "III";
+            case 4 -> "IV";
+            case 5 -> "V";
+            default -> String.valueOf(n);
+        };
     }
 
     private static int ping(MinecraftClient mc) {

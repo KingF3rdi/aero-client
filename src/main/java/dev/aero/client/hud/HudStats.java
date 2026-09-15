@@ -160,14 +160,31 @@ public final class HudStats {
         if (cfg.hideXpOrbs && n.contains("ExperienceOrb") && dist > 64) {
             return true;
         }
-        if (cfg.itemLimiter && entity instanceof ItemEntity && dist > 32 * 32) {
+        if ((cfg.itemLimiter && entity instanceof ItemEntity && dist > 32 * 32)
+                || (cfg.hideDroppedItems && entity instanceof ItemEntity)) {
+            return true;
+        }
+        String low = n.toLowerCase();
+        if (cfg.hideTnt && (low.contains("tnt") || low.contains("primedtnt"))) {
+            return true;
+        }
+        if (cfg.hideProjectiles && (low.contains("arrow") || low.contains("trident") || low.contains("snowball")
+                || low.contains("egg") || low.contains("fireworkrocket") || low.contains("potionentity")
+                || low.contains("enderpearl") || low.contains("shulkerbullet") || low.contains("llama"))) {
+            return entity != client.player;
+        }
+        if (cfg.hidePassiveMobs && (low.contains("cow") || low.contains("pig") || low.contains("sheep")
+                || low.contains("chicken") || low.contains("rabbit") || low.contains("bat")
+                || low.contains("bee") || low.contains("villager") || low.contains("cat")
+                || low.contains("wolf") || low.contains("horse") || low.contains("squid")
+                || low.contains("fish") || low.contains("axolotl"))) {
             return true;
         }
         if (cfg.entityDistance && dist > (double) cfg.entityRange * cfg.entityRange) {
             return entity != client.player;
         }
-        if (cfg.crystalOptimizer && cfg.crystalOptimizerRange
-                && n.toLowerCase().contains("endcrystal")
+        if (dev.aero.client.Optimizer.crystal() && cfg.crystalOptimizerRange
+                && low.contains("endcrystal")
                 && dist > (double) cfg.crystalOptimizerRangeValue * cfg.crystalOptimizerRangeValue) {
             return true;
         }

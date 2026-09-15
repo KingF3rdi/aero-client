@@ -67,7 +67,7 @@ public final class Visuals {
             return false;
         }
         String n = particle.getClass().getName().toLowerCase();
-        boolean crystalCut = c.crystalOptimizer && c.crystalOptimizerParticles;
+        boolean crystalCut = Optimizer.crystal() && (c.crystalOptimizerParticles || Optimizer.on("marlowcrystal"));
         if ((c.noExplosions || crystalCut)
                 && (n.contains("explosion") || n.contains("flash") || n.contains("largeexplode"))) {
             return true;
@@ -75,22 +75,35 @@ public final class Visuals {
         if (crystalCut && (n.contains("crit") || n.contains("enchant"))) {
             return true;
         }
-        if (c.anchorOptimizer && c.anchorOptimizerParticles
-                && (n.contains("explosion") || n.contains("flash") || n.contains("largeexplode"))) {
-            return true;
+        if ((c.anchorOptimizer && c.anchorOptimizerParticles) || Optimizer.heroAnchor() || Optimizer.cutebowAnchor()) {
+            if (n.contains("explosion") || n.contains("flash") || n.contains("largeexplode")) {
+                return true;
+            }
         }
-        if (c.pearlOptimizer && c.pearlOptimizerParticles
+        if (Optimizer.pearl() && (c.pearlOptimizerParticles || Optimizer.on("pearloptimizer"))
                 && (n.contains("portal") || n.contains("teleport"))) {
             return true;
         }
-        if (c.crossbowOptimizer && c.crossbowOptimizerParticles && n.contains("crit")) {
+        if ((c.crossbowOptimizer || Optimizer.crossbow()) && c.crossbowOptimizerParticles && n.contains("crit")) {
+            return true;
+        }
+        if (Optimizer.mace() && (n.contains("smash") || n.contains("gust") || n.contains("explosion"))) {
             return true;
         }
         if (c.noFireworks && (n.contains("firework") || n.contains("fireworks"))) {
             return true;
         }
-        if (c.totemTweaks && n.contains("totemparticle")) {
-            if (c.totemPopNoParticles) {
+        if (c.noBreakParticles && (n.contains("blockdust") || n.contains("block_dust") || n.contains("breaking"))) {
+            return true;
+        }
+        if (c.noPotionParticles && (n.contains("spell") || n.contains("effect") || n.contains("ambiententity"))) {
+            return true;
+        }
+        if (c.hideEnchantParticles && n.contains("enchant")) {
+            return true;
+        }
+        if ((c.totemTweaks && n.contains("totemparticle")) || (Optimizer.totem() && n.contains("totem"))) {
+            if (c.totemPopNoParticles || Optimizer.totem()) {
                 return true;
             }
             float mult = Math.max(0f, c.totemPopParticleCount);
@@ -131,12 +144,14 @@ public final class Visuals {
             }
         } catch (Throwable ignored) {
         }
-        if (c.crystalOptimizer && c.crystalOptimizerSound && (n.contains("explode") || n.contains("explosion"))) {
+        if (Optimizer.crystal() && (c.crystalOptimizerSound || Optimizer.on("marlowcrystal"))
+                && (n.contains("explode") || n.contains("explosion"))) {
             return true;
         }
-        if (c.anchorOptimizer && c.anchorOptimizerSound && (n.contains("explode") || n.contains("explosion")
-                || n.contains("respawn_anchor"))) {
-            return true;
+        if ((c.anchorOptimizer && c.anchorOptimizerSound) || Optimizer.heroAnchor() || Optimizer.cutebowAnchor()) {
+            if (n.contains("explode") || n.contains("explosion") || n.contains("respawn_anchor")) {
+                return true;
+            }
         }
         if (c.shieldOptimizer && c.shieldOptimizerSound && n.contains("shield")) {
             return true;
@@ -397,50 +412,137 @@ public final class Visuals {
         }
     }
 
-    public static Integer shieldStateColor(ClientConfig c, PlayerEntity holder) {
-        if (c == null || !c.shieldTweaks || holder == null) {
-            return null;
+    public static boolean isShield(net.minecraft.item.ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        try {
+            if (stack.isOf(net.minecraft.item.Items.SHIELD)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
+        }
+        String n = stack.getItem().toString().toLowerCase(java.util.Locale.ROOT);
+        if (n.contains("shield")) {
+            return true;
+        }
+        try {
+            String path = net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).getPath();
+            return path.contains("shield");
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static void markShieldDisabled(PlayerEntity holder) {
+        if (holder == null) {
+            return;
+        }
+        shieldDisabledUntil.put(holder.getUuid(), System.currentTimeMillis() + SHIELD_DISABLE_MS);
+    }
+
+    public static boolean shieldDisabled(PlayerEntity holder) {
+        if (holder == null) {
+            return false;
         }
         net.minecraft.item.ItemStack shield = null;
         for (net.minecraft.item.ItemStack stack : new net.minecraft.item.ItemStack[]{
                 holder.getMainHandStack(), holder.getOffHandStack()}) {
-            if (!stack.isEmpty() && stack.getItem().toString().toLowerCase(java.util.Locale.ROOT).contains("shield")) {
+            if (isShield(stack)) {
                 shield = stack;
                 break;
             }
         }
         if (shield == null) {
-            return null;
+            return false;
         }
-        boolean disabled;
         try {
-            disabled = holder.getItemCooldownManager() != null && holder.getItemCooldownManager().isCoolingDown(shield);
-        } catch (Throwable t) {
-            disabled = false;
+            var cd = holder.getItemCooldownManager();
+            if (cd != null && cd.isCoolingDown(shield)) {
+                return true;
+            }
+        } catch (Throwable ignored) {
         }
         Long until = shieldDisabledUntil.get(holder.getUuid());
-        if (until != null) {
-            if (System.currentTimeMillis() < until) {
-                disabled = true;
-            } else {
-                shieldDisabledUntil.remove(holder.getUuid());
+        if (until == null) {
+            return false;
+        }
+        if (System.currentTimeMillis() < until) {
+            return true;
+        }
+        shieldDisabledUntil.remove(holder.getUuid());
+        return false;
+    }
+
+    private static final ThreadLocal<PlayerEntity> shieldHolder = new ThreadLocal<>();
+
+    public static void pushShieldHolder(PlayerEntity holder) {
+        shieldHolder.set(holder);
+    }
+
+    public static void popShieldHolder(PlayerEntity previous) {
+        if (previous == null) {
+            shieldHolder.remove();
+        } else {
+            shieldHolder.set(previous);
+        }
+    }
+
+    public static PlayerEntity currentShieldHolder() {
+        return shieldHolder.get();
+    }
+
+    public static Integer shieldStateColor(ClientConfig c, PlayerEntity holder) {
+        if (c == null || !c.shieldTweaks || holder == null) {
+            return null;
+        }
+        boolean has = false;
+        for (net.minecraft.item.ItemStack stack : new net.minecraft.item.ItemStack[]{
+                holder.getMainHandStack(), holder.getOffHandStack()}) {
+            if (isShield(stack)) {
+                has = true;
+                break;
             }
         }
-        boolean blocking = holder.isBlocking();
-        boolean rising = holder.isUsingItem() && !blocking && !disabled;
-        if (disabled && c.shieldDisabled) {
-            return c.shieldDisabledColor;
+        if (!has) {
+            return null;
         }
-        if (rising) {
-            return 0xFFE8D048;
+        if (shieldDisabled(holder)) {
+            return c.shieldDisabled ? c.shieldDisabledColor : 0xFFE05555;
         }
-        if (blocking && c.shieldBlocking) {
+        if (holder.isBlocking() && c.shieldBlocking) {
             return c.shieldBlockingColor;
         }
-        if (!disabled && c.shieldReady) {
-            return c.shieldReadyColor;
+        return c.shieldReady ? c.shieldReadyColor : 0xFF4CD964;
+    }
+
+    /** ARGB multiply-tint for the held shield model, including opacity. */
+    public static Integer shieldModelTint() {
+        ClientConfig c = cfg();
+        PlayerEntity holder = shieldHolder.get();
+        if (c == null || !c.shieldTweaks || holder == null) {
+            return null;
         }
-        return null;
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (c.shieldOwnOnly && mc.player != null && holder != mc.player) {
+            return null;
+        }
+        int rgb;
+        if (shieldDisabled(holder) && c.shieldDisabled) {
+            rgb = c.shieldDisabledColor;
+        } else if (holder.isBlocking() && c.shieldBlocking) {
+            rgb = c.shieldBlockingColor;
+        } else if (c.shieldReady) {
+            rgb = c.shieldReadyColor;
+        } else {
+            rgb = 0xFFFFFFFF;
+        }
+        int srcA = (rgb >>> 24) & 0xFF;
+        if (srcA == 0) {
+            srcA = 255;
+        }
+        int a = Math.max(1, Math.min(255, Math.round(c.shieldOpacity / 100f * srcA)));
+        return (a << 24) | (rgb & 0x00FFFFFF);
     }
 
     public static boolean showHitbox(Entity entity) {

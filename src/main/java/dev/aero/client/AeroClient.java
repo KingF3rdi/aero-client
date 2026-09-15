@@ -53,6 +53,7 @@ public class AeroClient implements ClientModInitializer {
         guiKey = registerMenuKey();
         registerHud();
         registerCobwebTweaks();
+        registerOptimizers();
         WorldOverlayRenderer.register();
         ClientTickEvents.END_CLIENT_TICK.register(AeroClient::tick);
     }
@@ -68,6 +69,16 @@ public class AeroClient implements ClientModInitializer {
                         return CONFIG.cobwebColor;
                     },
                     net.minecraft.block.Blocks.COBWEB);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void registerOptimizers() {
+        try {
+            net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+                Optimizer.onUseBlock(player, world, hand, hit);
+                return net.minecraft.util.ActionResult.PASS;
+            });
         } catch (Throwable ignored) {
         }
     }
