@@ -253,15 +253,19 @@ public final class OverlayHud {
             if (cfg.crosshairHover && dev.aero.client.Visuals.hoveredPlayer(mc, Math.max(1.0, cfg.crosshairHoverRange)) != null) {
                 c = cfg.crosshairHoverColor | 0xFF000000;
             }
-            int o = 0xCC120E1A;
-            context.fill(cx - arm - 1, cy, cx - gap + 1, cy + 2, o);
-            context.fill(cx + gap, cy, cx + arm + 2, cy + 2, o);
-            context.fill(cx, cy - arm - 1, cx + 2, cy - gap + 1, o);
-            context.fill(cx, cy + gap, cx + 2, cy + arm + 2, o);
-            context.fill(cx - arm, cy, cx - gap, cy + 1, c);
-            context.fill(cx + gap + 1, cy, cx + arm + 1, cy + 1, c);
-            context.fill(cx, cy - arm, cx + 1, cy - gap, c);
-            context.fill(cx, cy + gap + 1, cx + 1, cy + arm + 1, c);
+            if (cfg.customCrosshair && cfg.crosshairUseDrawing && cfg.crosshairPixels != null && !cfg.crosshairPixels.isBlank()) {
+                drawCustomCrosshair(context, cx, cy, cfg.crosshairPixels, c);
+            } else {
+                int o = 0xCC120E1A;
+                context.fill(cx - arm - 1, cy, cx - gap + 1, cy + 2, o);
+                context.fill(cx + gap, cy, cx + arm + 2, cy + 2, o);
+                context.fill(cx, cy - arm - 1, cx + 2, cy - gap + 1, o);
+                context.fill(cx, cy + gap, cx + 2, cy + arm + 2, o);
+                context.fill(cx - arm, cy, cx - gap, cy + 1, c);
+                context.fill(cx + gap + 1, cy, cx + arm + 1, cy + 1, c);
+                context.fill(cx, cy - arm, cx + 1, cy - gap, c);
+                context.fill(cx, cy + gap + 1, cx + 1, cy + arm + 1, c);
+            }
             if (cfg.crosshairAddons) {
                 if (cfg.addonElytra && flying(mc)) {
                     context.fill(cx - 2, cy + 8, cx + 3, cy + 10, ACCENT);
@@ -295,6 +299,21 @@ public final class OverlayHud {
         }
         if (cfg.motionBlur) {
             renderMotionBlur(context, mc, cfg, sw, sh);
+        }
+    }
+
+    private static void drawCustomCrosshair(DrawContext context, int cx, int cy, String pixels, int color) {
+        for (String part : pixels.split(";")) {
+            String[] xy = part.split(",");
+            if (xy.length != 2) {
+                continue;
+            }
+            try {
+                int dx = Integer.parseInt(xy[0].trim());
+                int dy = Integer.parseInt(xy[1].trim());
+                context.fill(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, color);
+            } catch (NumberFormatException ignored) {
+            }
         }
     }
 

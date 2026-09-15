@@ -91,6 +91,11 @@ public class Module {
         return this;
     }
 
+    public Module settingAction(String name, String button, Runnable action) {
+        settings.add(Setting.action(name, button, action));
+        return this;
+    }
+
     public Module nestLast(String parent) {
         if (!settings.isEmpty()) {
             settings.get(settings.size() - 1).nestUnder = parent;

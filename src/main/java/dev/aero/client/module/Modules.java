@@ -266,7 +266,10 @@ public final class Modules {
                 .settingF("Opacity", () -> (double) c.crossbowOpacity, v -> c.crossbowOpacity = (float) v, 0, 100));
         add(new Module("Crosshair", "Draw your own crosshair", Category.PVP,
                 () -> c.customCrosshair, v -> c.customCrosshair = v)
-                .settingAction("Drawing", "Edit")
+                .settingAction("Drawing", "Edit", () -> {
+                    var mc = net.minecraft.client.MinecraftClient.getInstance();
+                    mc.setScreen(new dev.aero.client.ui.DrawCrosshairScreen(mc.currentScreen));
+                })
                 .setting("Length", () -> c.crosshairArm, v -> c.crosshairArm = v, 2, 16)
                 .nestLast("Drawing")
                 .setting("Gap", () -> c.crosshairGap, v -> c.crosshairGap = v, 0, 12)

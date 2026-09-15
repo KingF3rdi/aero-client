@@ -189,6 +189,8 @@ public class ClientConfig {
     public int crosshairArm = 5;
     public int crosshairGap = 2;
     public int crosshairColor = 0xFFF6F2FF;
+    public boolean crosshairUseDrawing = false;
+    public String crosshairPixels = "";
     public boolean addonElytra = true;
     public boolean addonEntity = false;
     public boolean addonEntityShowAll = false;

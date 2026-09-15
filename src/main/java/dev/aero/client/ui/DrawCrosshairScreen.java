@@ -1,0 +1,217 @@
+package dev.aero.client.ui;
+
+import dev.aero.client.AeroClient;
+import dev.aero.client.config.ClientConfig;
+import net.minecraft.client.gui.Click;
+import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.input.KeyInput;
+import net.minecraft.text.Text;
+import org.lwjgl.glfw.GLFW;
+
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Pixel-grid crosshair editor, modeled after Custom Crosshair Mod's "Draw your own" screen (CC0):
+ * a small square canvas you click cells on/off in, stored as offsets from the crosshair center.
+ */
+public class DrawCrosshairScreen extends Screen {
+    private static final int BG = 0xCC09080F;
+    private static final int PANEL = 0xF00E0C16;
+    private static final int TEXT = 0xFFF3F0F8;
+    private static final int MUTED = 0xFF8E889C;
+    private static final int ACCENT = 0xFFC4B5FD;
+
+    private static final int RADIUS = 8;
+    private static final int GRID = RADIUS * 2 + 1;
+    private static final int CELL = 14;
+
+    private final Screen parent;
+    private final Set<Long> pixels = new HashSet<>();
+    private boolean dragErasing;
+    private boolean dragging;
+
+    public DrawCrosshairScreen(Screen parent) {
+        super(Text.literal("Draw Crosshair"));
+        this.parent = parent;
+    }
+
+    private static long key(int dx, int dy) {
+        return ((long) (dx + 128) << 32) | (dy + 128);
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        pixels.clear();
+        String raw = AeroClient.CONFIG == null ? "" : AeroClient.CONFIG.crosshairPixels;
+        if (raw != null && !raw.isBlank()) {
+            for (String part : raw.split(";")) {
+                String[] xy = part.split(",");
+                if (xy.length == 2) {
+                    try {
+                        pixels.add(key(Integer.parseInt(xy[0].trim()), Integer.parseInt(xy[1].trim())));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        }
+    }
+
+    private int gridX() {
+        return width / 2 - (GRID * CELL) / 2;
+    }
+
+    private int gridY() {
+        return height / 2 - (GRID * CELL) / 2 - 10;
+    }
+
+    @Override
+    public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        context.fill(0, 0, width, height, BG);
+        int gx = gridX();
+        int gy = gridY();
+        context.drawText(textRenderer, Text.literal("Draw your crosshair - click to toggle a pixel"),
+                width / 2 - 110, gy - 20, TEXT, false);
+
+        context.fill(gx - 2, gy - 2, gx + GRID * CELL + 2, gy + GRID * CELL + 2, PANEL);
+        for (int cy = 0; cy < GRID; cy++) {
+            for (int cx = 0; cx < GRID; cx++) {
+                int dx = cx - RADIUS;
+                int dy = cy - RADIUS;
+                int x = gx + cx * CELL;
+                int y = gy + cy * CELL;
+                boolean on = pixels.contains(key(dx, dy));
+                boolean center = dx == 0 && dy == 0;
+                int fill = on ? (0xFF000000 | (AeroClient.CONFIG.crosshairColor & 0xFFFFFF)) : 0xFF14121C;
+                context.fill(x + 1, y + 1, x + CELL - 1, y + CELL - 1, fill);
+                if (center) {
+                    context.fill(x, y, x + CELL, y + 1, ACCENT);
+                    context.fill(x, y + CELL - 1, x + CELL, y + CELL, ACCENT);
+                    context.fill(x, y, x + 1, y + CELL, ACCENT);
+                    context.fill(x + CELL - 1, y, x + CELL, y + CELL, ACCENT);
+                }
+            }
+        }
+
+        boolean useH = inside(mouseX, mouseY, gx, gy + GRID * CELL + 14, 150, 20);
+        UiDraw.pill(context, gx, gy + GRID * CELL + 14, 150, 20, AeroClient.CONFIG.crosshairUseDrawing);
+        String useLabel = "Use drawing: " + (AeroClient.CONFIG.crosshairUseDrawing ? "On" : "Off");
+        context.drawText(textRenderer, Text.literal(useLabel), gx + 8, gy + GRID * CELL + 20,
+                useH ? TEXT : MUTED, false);
+
+        boolean clearH = inside(mouseX, mouseY, gx + 160, gy + GRID * CELL + 14, 70, 20);
+        UiDraw.pill(context, gx + 160, gy + GRID * CELL + 14, 70, 20, clearH);
+        context.drawText(textRenderer, Text.literal("Clear"), gx + 160 + 20, gy + GRID * CELL + 20,
+                clearH ? TEXT : MUTED, false);
+
+        int doneX = gx + GRID * CELL - 70;
+        boolean doneH = inside(mouseX, mouseY, doneX, gy + GRID * CELL + 14, 70, 20);
+        UiDraw.pill(context, doneX, gy + GRID * CELL + 14, 70, 20, doneH);
+        context.drawText(textRenderer, Text.literal("Done"), doneX + 22, gy + GRID * CELL + 20,
+                doneH ? TEXT : MUTED, false);
+    }
+
+    private static boolean inside(int mx, int my, int x, int y, int w, int h) {
+        return mx >= x && my >= y && mx < x + w && my < y + h;
+    }
+
+    private void save() {
+        if (AeroClient.CONFIG == null) {
+            return;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (long k : pixels) {
+            int dx = (int) (k >> 32) - 128;
+            int dy = (int) (k & 0xFFFFFFFFL) - 128;
+            if (sb.length() > 0) {
+                sb.append(';');
+            }
+            sb.append(dx).append(',').append(dy);
+        }
+        AeroClient.CONFIG.crosshairPixels = sb.toString();
+        AeroClient.CONFIG.save();
+    }
+
+    private boolean toggleCellAt(int mx, int my, boolean startDrag) {
+        int gx = gridX();
+        int gy = gridY();
+        if (mx < gx || my < gy || mx >= gx + GRID * CELL || my >= gy + GRID * CELL) {
+            return false;
+        }
+        int cx = (mx - gx) / CELL;
+        int cy = (my - gy) / CELL;
+        int dx = cx - RADIUS;
+        int dy = cy - RADIUS;
+        long k = key(dx, dy);
+        if (startDrag) {
+            dragErasing = pixels.contains(k);
+        }
+        if (dragErasing) {
+            pixels.remove(k);
+        } else {
+            pixels.add(k);
+        }
+        save();
+        return true;
+    }
+
+    @Override
+    public boolean mouseClicked(Click click, boolean doubled) {
+        int mx = (int) click.x();
+        int my = (int) click.y();
+        int gx = gridX();
+        int gy = gridY();
+
+        if (inside(mx, my, gx, gy + GRID * CELL + 14, 150, 20)) {
+            AeroClient.CONFIG.crosshairUseDrawing = !AeroClient.CONFIG.crosshairUseDrawing;
+            AeroClient.CONFIG.save();
+            return true;
+        }
+        if (inside(mx, my, gx + 160, gy + GRID * CELL + 14, 70, 20)) {
+            pixels.clear();
+            save();
+            return true;
+        }
+        int doneX = gx + GRID * CELL - 70;
+        if (inside(mx, my, doneX, gy + GRID * CELL + 14, 70, 20)) {
+            client.setScreen(parent);
+            return true;
+        }
+        if (toggleCellAt(mx, my, true)) {
+            dragging = true;
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+        if (dragging) {
+            toggleCellAt((int) click.x(), (int) click.y(), false);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean mouseReleased(Click click) {
+        dragging = false;
+        return false;
+    }
+
+    @Override
+    public boolean keyPressed(KeyInput input) {
+        if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+            client.setScreen(parent);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean shouldPause() {
+        return false;
+    }
+}

@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class SoundSystemMixin {
     @Inject(method = "play", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$cutSound(Object sound, CallbackInfo ci) {
+        Visuals.onShieldBreakSound(sound);
         if (Visuals.skipSound(sound)) {
             ci.cancel();
         }

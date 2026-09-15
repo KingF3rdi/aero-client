@@ -106,8 +106,11 @@ public final class WorldOverlayRenderer {
             lastSeenPos.clear();
             echoSpawnedAt.clear();
             echoPos.clear();
+            visibleLastTick.clear();
         }
     }
+
+    private static final Set<UUID> visibleLastTick = new HashSet<>();
 
     private static void tickPopChams(MinecraftClient mc, dev.aero.client.config.ClientConfig cfg) {
         Set<UUID> seenNow = new HashSet<>();
@@ -115,16 +118,31 @@ public final class WorldOverlayRenderer {
             if (p == mc.player && !cfg.popChamsShowOwn) {
                 continue;
             }
-            seenNow.add(p.getUuid());
-            lastSeenPos.put(p.getUuid(), p.getEntityPos());
+            UUID id = p.getUuid();
+            seenNow.add(id);
+            boolean visible = Visuals.isPlayerVisible(mc, p);
+            boolean wasVisible = visibleLastTick.contains(id);
+            if (wasVisible && !visible) {
+                // Just walked out of line of sight (behind a wall etc.) - echo at the last spot
+                // we could actually see them, not their current (now-hidden) position.
+                Vec3d last = lastSeenPos.getOrDefault(id, p.getEntityPos());
+                echoSpawnedAt.put(id, System.currentTimeMillis());
+                echoPos.put(id, last);
+            }
+            if (visible) {
+                visibleLastTick.add(id);
+                lastSeenPos.put(id, p.getEntityPos());
+            } else {
+                visibleLastTick.remove(id);
+            }
         }
         for (UUID id : new HashSet<>(lastSeenPos.keySet())) {
             if (!seenNow.contains(id)) {
-                // Player is gone this tick - spawn one echo at their last known spot, then forget
-                // them so this doesn't keep re-spawning an echo every tick forever.
+                // Player left render distance / disconnected entirely - echo at their last known spot.
                 echoSpawnedAt.put(id, System.currentTimeMillis());
                 echoPos.put(id, lastSeenPos.get(id));
                 lastSeenPos.remove(id);
+                visibleLastTick.remove(id);
             }
         }
     }
@@ -149,7 +167,9 @@ public final class WorldOverlayRenderer {
             int alpha = Math.max(0, Math.min(255, (int) (140 * t)));
             int color = (alpha << 24) | 0x00C4B5FD;
             Box box = new Box(pos.x - 0.3, pos.y, pos.z - 0.3, pos.x + 0.3, pos.y + 1.8, pos.z + 0.3);
-            if (cfg.popChamsWireframe) {
+            // Only an outline is implemented so far - Filled Model draws the same outline rather
+            // than nothing, since a true solid-fill render isn't built yet.
+            if (cfg.popChamsWireframe || cfg.popChamsFilledModel) {
                 drawBox(matrices, consumers, box, camPos, color);
             }
         }

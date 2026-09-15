@@ -256,6 +256,27 @@ public final class Visuals {
         }
     }
 
+    /**
+     * True line-of-sight check (blocked by terrain, unlike the tracking-distance-only check that
+     * mc.world.getPlayers() gives you) - Pop Chams needs this to know when a player actually walks
+     * out of view behind something, not just when they leave render distance entirely.
+     */
+    public static boolean isPlayerVisible(MinecraftClient mc, PlayerEntity target) {
+        if (mc.player == null || mc.world == null || target == null) {
+            return false;
+        }
+        try {
+            Vec3d eye = mc.player.getCameraPosVec(1.0f);
+            Vec3d targetPos = target.getEyePos();
+            var hit = mc.world.raycast(new net.minecraft.world.RaycastContext(eye, targetPos,
+                    net.minecraft.world.RaycastContext.ShapeType.COLLIDER,
+                    net.minecraft.world.RaycastContext.FluidHandling.NONE, mc.player));
+            return hit == null || hit.getType() == net.minecraft.util.hit.HitResult.Type.MISS;
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
     public static long timeOfDay() {
         ClientConfig c = cfg();
         if (c == null) {
@@ -337,6 +358,45 @@ public final class Visuals {
      * here using this project's own render path since ShieldStatus's approach of recoloring the
      * shield item texture needs a shader-color hook that Minecraft 1.21.11 removed.
      */
+    private static final java.util.Map<java.util.UUID, Long> shieldDisabledUntil = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long SHIELD_DISABLE_MS = 5000L;
+
+    /**
+     * The server only sends cooldown packets to the player whose item actually went on cooldown -
+     * it never tells observers when SOMEONE ELSE's shield breaks, so getItemCooldownManager() is
+     * always empty for other players. The ITEM_SHIELD_BREAK sound, on the other hand, is broadcast
+     * positionally to everyone nearby, so this hooks that sound (see SoundSystemMixin) and estimates
+     * which player it belongs to by proximity - the same trick the real ShieldFixes mod uses.
+     */
+    public static void onShieldBreakSound(Object sound) {
+        try {
+            if (!(sound instanceof net.minecraft.client.sound.SoundInstance si)) {
+                return;
+            }
+            String id = si.getId() == null ? "" : si.getId().toString().toLowerCase(java.util.Locale.ROOT);
+            if (!id.contains("shield") || !id.contains("break")) {
+                return;
+            }
+            MinecraftClient mc = MinecraftClient.getInstance();
+            if (mc.world == null) {
+                return;
+            }
+            PlayerEntity nearest = null;
+            double best = 4.0 * 4.0;
+            for (PlayerEntity p : mc.world.getPlayers()) {
+                double d = p.squaredDistanceTo(si.getX(), si.getY(), si.getZ());
+                if (d < best) {
+                    best = d;
+                    nearest = p;
+                }
+            }
+            if (nearest != null) {
+                shieldDisabledUntil.put(nearest.getUuid(), System.currentTimeMillis() + SHIELD_DISABLE_MS);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     public static Integer shieldStateColor(ClientConfig c, PlayerEntity holder) {
         if (c == null || !c.shieldTweaks || holder == null) {
             return null;
@@ -357,6 +417,14 @@ public final class Visuals {
             disabled = holder.getItemCooldownManager() != null && holder.getItemCooldownManager().isCoolingDown(shield);
         } catch (Throwable t) {
             disabled = false;
+        }
+        Long until = shieldDisabledUntil.get(holder.getUuid());
+        if (until != null) {
+            if (System.currentTimeMillis() < until) {
+                disabled = true;
+            } else {
+                shieldDisabledUntil.remove(holder.getUuid());
+            }
         }
         boolean blocking = holder.isBlocking();
         boolean rising = holder.isUsingItem() && !blocking && !disabled;
