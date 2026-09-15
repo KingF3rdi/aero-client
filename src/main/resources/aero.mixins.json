@@ -1,0 +1,34 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.aero.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "GameRendererMixin",
+    "InGameHudMixin",
+    "ParticleManagerMixin",
+    "WorldMixin",
+    "EntityRenderDispatcherMixin",
+    "CameraMixin",
+    "LightmapTextureManagerMixin",
+    "WorldRendererMixin",
+    "ClientWorldMixin",
+    "HeldItemRendererMixin",
+    "MinecraftClientMixin",
+    "ArmorFeatureRendererMixin",
+    "StuckArrowsFeatureRendererMixin",
+    "EntityRendererMixin",
+    "InventoryScreenMixin",
+    "ChatHudMixin",
+    "BeaconBlockEntityRendererMixin",
+    "ItemStackMixin",
+    "BossBarHudMixin",
+    "SoundSystemMixin",
+    "EndCrystalEntityRendererMixin",
+    "LivingEntityRendererMixin",
+    "LivingEntityStatusMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

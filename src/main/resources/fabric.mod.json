@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "larp",
+  "version": "${version}",
+  "name": "Larp Launcher",
+  "description": "Lightweight Fabric client focused on FPS and a clean PvP HUD.",
+  "authors": ["Larp"],
+  "environment": "client",
+  "entrypoints": {
+    "client": ["dev.aero.client.AeroClient"]
+  },
+  "mixins": [
+    "aero.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": ">=1.21 <=1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "jars": [
+    { "file": "META-INF/jars/player-animation-library.jar" },
+    { "file": "META-INF/jars/bendable-cuboids.jar" }
+  ]
+}
