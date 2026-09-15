@@ -13,7 +13,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
  * Inventory only - CreativeInventoryScreen overrides mouseScrolled itself for its tab scrollbar
  * (see CreativeInventoryScaleMixin), so it's excluded here to avoid remapping it twice.
  */
-@Mixin(HandledScreen.class)
+@Mixin(value = HandledScreen.class, priority = 2000)
 public class HandledScreenScaleMixin {
     @ModifyVariable(method = "mouseScrolled", at = @At("HEAD"), ordinal = 0, argsOnly = true, require = 0)
     private double aero$shrinkScrollX(double mouseX) {

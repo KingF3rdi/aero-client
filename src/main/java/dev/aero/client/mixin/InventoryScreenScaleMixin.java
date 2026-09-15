@@ -17,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * inherited from RecipeBookScreen (see RecipeBookScreenScaleMixin) but mouseReleased is overridden
  * here directly, so it needs its own remap.
  */
-@Mixin(InventoryScreen.class)
+@Mixin(value = InventoryScreen.class, priority = 2000)
 public class InventoryScreenScaleMixin {
     @Inject(method = "render(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("HEAD"), require = 0)
     private void aero$pushScale(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {

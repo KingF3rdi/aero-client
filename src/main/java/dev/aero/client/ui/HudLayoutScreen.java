@@ -56,6 +56,12 @@ public class HudLayoutScreen extends Screen {
         elems.add(new Elem("Music", () -> c.musicPlayer, () -> c.musicX, v -> c.musicX = v, () -> c.musicY, v -> c.musicY = v));
         elems.add(new Elem("Keystrokes", () -> c.keystrokes, () -> c.keystrokesX, v -> c.keystrokesX = v, () -> c.keystrokesY, v -> c.keystrokesY = v));
         elems.add(new Elem("Armor HUD", () -> c.armorHud, () -> c.armorHudX, v -> c.armorHudX = v, () -> c.armorHudY, v -> c.armorHudY = v));
+        // totemX/Y default to 0, meaning "center it automatically" (see OverlayHud) - show that
+        // computed position here too, otherwise the chip would sit at (0,0) instead of where the
+        // totem counter actually renders until it's been dragged at least once.
+        elems.add(new Elem("Totem Counter", () -> c.totemCounter && c.totemHud,
+                () -> c.totemX > 0 ? c.totemX : width / 2 - 8, v -> c.totemX = v,
+                () -> c.totemY > 0 ? c.totemY : height - 70, v -> c.totemY = v));
     }
 
     private int chipW(Elem e) {

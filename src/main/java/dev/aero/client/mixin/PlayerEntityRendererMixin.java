@@ -22,7 +22,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * players - virtual dispatch always calls this override instead. Every player-nametag feature
  * (ping, TierTagger, totem pop count, own-nametag, scale) has to hook here instead.
  */
-@Mixin(PlayerEntityRenderer.class)
+@Mixin(value = PlayerEntityRenderer.class, priority = 2000)
 public class PlayerEntityRendererMixin {
     @Inject(method = "hasLabel", at = @At("RETURN"), cancellable = true, require = 0)
     private void aero$ownName(PlayerLikeEntity entity, double dist, CallbackInfoReturnable<Boolean> cir) {

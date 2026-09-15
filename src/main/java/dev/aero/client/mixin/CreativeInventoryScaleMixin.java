@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * mouseScrolled itself instead of inheriting HandledScreen's/RecipeBookScreen's, so it needs its
  * own copy of every remap rather than sharing the survival-Inventory mixins.
  */
-@Mixin(CreativeInventoryScreen.class)
+@Mixin(value = CreativeInventoryScreen.class, priority = 2000)
 public class CreativeInventoryScaleMixin {
     @Inject(method = "render(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("HEAD"), require = 0)
     private void aero$pushScale(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci) {

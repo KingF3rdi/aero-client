@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = "net.minecraft.client.render.entity.feature.ArmorFeatureRenderer")
+@Mixin(targets = "net.minecraft.client.render.entity.feature.ArmorFeatureRenderer", priority = 2000)
 public class ArmorFeatureRendererMixin {
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$hideEntity(net.minecraft.client.util.math.MatrixStack matrices, Object vertices, int light,

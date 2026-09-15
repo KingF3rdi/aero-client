@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
  * InventoryScreen directly. Gated to InventoryScreen only - other RecipeBookScreen users (crafting
  * table, furnace, stonecutter, ...) aren't part of the "Inventory Scale" setting.
  */
-@Mixin(RecipeBookScreen.class)
+@Mixin(value = RecipeBookScreen.class, priority = 2000)
 public class RecipeBookScreenScaleMixin {
     @ModifyVariable(method = "mouseClicked", at = @At("HEAD"), argsOnly = true, require = 0)
     private Click aero$shrinkClicked(Click click) {

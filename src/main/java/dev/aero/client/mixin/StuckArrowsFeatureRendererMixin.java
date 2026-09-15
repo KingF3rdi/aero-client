@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = {
         "net.minecraft.client.render.entity.feature.StuckArrowsFeatureRenderer",
         "net.minecraft.client.render.entity.feature.StuckStingersFeatureRenderer"
-})
+}, priority = 2000)
 public class StuckArrowsFeatureRendererMixin {
     @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$clean(CallbackInfo ci) {

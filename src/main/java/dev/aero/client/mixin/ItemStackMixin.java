@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(ItemStack.class)
+@Mixin(value = ItemStack.class, priority = 2000)
 public class ItemStackMixin {
     @Inject(method = {"hasGlint", "hasEnchantmentGlint", "hasGlintOverride"}, at = @At("HEAD"),
             cancellable = true, require = 0)

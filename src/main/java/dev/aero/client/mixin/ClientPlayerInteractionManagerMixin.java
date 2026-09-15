@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ClientPlayerInteractionManager.class)
+@Mixin(value = ClientPlayerInteractionManager.class, priority = 2000)
 public class ClientPlayerInteractionManagerMixin {
     @Inject(method = {"attackEntity", "attack"}, at = @At("TAIL"), require = 0)
     private void aero$crystal(PlayerEntity player, Entity target, CallbackInfo ci) {

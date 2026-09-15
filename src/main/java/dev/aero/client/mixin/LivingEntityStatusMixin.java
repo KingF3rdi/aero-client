@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Totem Counter "pops next to name": every client sees EntityStatuses.USE_TOTEM_OF_UNDYING for
  * any entity that pops a totem, so this works for other players too, not just yourself. */
-@Mixin(LivingEntity.class)
+@Mixin(value = LivingEntity.class, priority = 2000)
 public class LivingEntityStatusMixin {
     @Inject(method = "handleStatus", at = @At("HEAD"), require = 0)
     private void aero$totemPop(byte status, CallbackInfo ci) {

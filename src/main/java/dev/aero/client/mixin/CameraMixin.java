@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(Camera.class)
+@Mixin(value = Camera.class, priority = 2000)
 public class CameraMixin {
     @Inject(method = "getSubmersionType", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$noFog(CallbackInfoReturnable<CameraSubmersionType> cir) {

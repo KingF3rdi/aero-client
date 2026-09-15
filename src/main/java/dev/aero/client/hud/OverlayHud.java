@@ -138,7 +138,7 @@ public final class OverlayHud {
         if (cfg.totemCounter && cfg.totemHud) {
             int totems = countTotems(mc);
             int iconX = cfg.totemX > 0 ? cfg.totemX : sw / 2 - 8;
-            int iconY = cfg.totemY > 0 ? cfg.totemY : sh - 58;
+            int iconY = cfg.totemY > 0 ? cfg.totemY : sh - 70;
             context.drawItem(new ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING), iconX, iconY);
             String count = String.valueOf(totems);
             int cw = mc.textRenderer.getWidth(count);
@@ -175,14 +175,13 @@ public final class OverlayHud {
                     if (effect == null) {
                         continue;
                     }
-                    String name = effectName(effect);
-                    String text = name;
+                    String text = cfg.potionName ? effectName(effect) : "";
                     if (cfg.potionLevel) {
-                        text += " " + roman(effect.getAmplifier() + 1);
+                        text += (text.isEmpty() ? "" : " ") + roman(effect.getAmplifier() + 1);
                     }
                     if (cfg.potionTimer) {
                         int sec = Math.max(0, effect.getDuration() / 20);
-                        text += "  " + (sec / 60) + ":" + String.format("%02d", sec % 60);
+                        text += (text.isEmpty() ? "" : "  ") + (sec / 60) + ":" + String.format("%02d", sec % 60);
                     }
                     if (cfg.potionIcons) {
                         int col = 0xFFC4B5FD;
@@ -307,10 +306,15 @@ public final class OverlayHud {
             gap += 3;
         }
         int t = 1;
+        float thinAlpha = 1f;
         if (cfg.customCrosshair) {
-            t = Math.max(1, Math.round(cfg.crosshairThickness));
             if (cfg.crosshairThickness < 1f) {
+                // A screen pixel can't be drawn narrower than 1px, so sub-1 thickness is faked by
+                // dimming the line instead - it reads as thinner even though it's still 1px wide.
                 t = 1;
+                thinAlpha = Math.max(0.25f, cfg.crosshairThickness);
+            } else {
+                t = Math.max(1, Math.round(cfg.crosshairThickness));
             }
         }
         int c = cfg.customCrosshair ? (cfg.crosshairColor | 0xFF000000) : 0xFFF6F2FF;
@@ -327,6 +331,10 @@ public final class OverlayHud {
                     && !(living instanceof net.minecraft.entity.mob.HostileEntity)) {
                 c = cfg.crosshairPassiveColor | 0xFF000000;
             }
+        }
+        if (thinAlpha < 1f) {
+            int a = Math.max(40, Math.round(((c >>> 24) & 0xFF) * thinAlpha));
+            c = (a << 24) | (c & 0x00FFFFFF);
         }
         if (cfg.customCrosshair && hideVanillaCrosshair()) {
             if (usingDrawn(cfg)) {
@@ -737,14 +745,26 @@ public final class OverlayHud {
                     continue;
                 }
                 int x = x0 + i * 20;
-                int color = i == selected ? 0x88C4B5FD : 0x55C4B5FD;
-                context.fill(x, y, x + 20, y + 1, color);
-                context.fill(x, y + 19, x + 20, y + 20, color);
-                context.fill(x, y, x + 1, y + 20, color);
-                context.fill(x + 19, y, x + 20, y + 20, color);
+                outlineSlot(context, x, y, i == selected ? 0x88C4B5FD : 0x55C4B5FD);
+            }
+            // The offhand slot (e.g. a shield) isn't part of getInventory()'s 0-8 hotbar range, so
+            // without this a spare matching item sitting in the numbered hotbar got outlined
+            // instead of the one actually equipped and in use.
+            ItemStack off = mc.player.getOffHandStack();
+            if (matchesHighlight(cfg, off)) {
+                boolean mainLeft = mc.player.getMainArm() == net.minecraft.util.Arm.LEFT;
+                int ox = mainLeft ? x0 + 9 * 20 + 8 : x0 - 28;
+                outlineSlot(context, ox, y, 0x88C4B5FD);
             }
         } catch (Throwable ignored) {
         }
+    }
+
+    private static void outlineSlot(DrawContext context, int x, int y, int color) {
+        context.fill(x, y, x + 20, y + 1, color);
+        context.fill(x, y + 19, x + 20, y + 20, color);
+        context.fill(x, y, x + 1, y + 20, color);
+        context.fill(x + 19, y, x + 20, y + 20, color);
     }
 
     private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line) {

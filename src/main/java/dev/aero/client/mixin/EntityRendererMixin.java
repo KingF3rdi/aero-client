@@ -23,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * Text edits now happen in updateRenderState, which still hands us the live Entity plus the state
  * object whose displayName field actually gets drawn.
  */
-@Mixin(EntityRenderer.class)
+@Mixin(value = EntityRenderer.class, priority = 2000)
 public class EntityRendererMixin {
     @Inject(method = "hasLabel", at = @At("RETURN"), cancellable = true, require = 0)
     private void aero$ownNameDist(Entity entity, double dist, CallbackInfoReturnable<Boolean> cir) {

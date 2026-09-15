@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * vanilla death-flop rotation (computed inline from entity.deathTime) never progresses, then
  * restores it so normal death timing / entity removal elsewhere is unaffected.
  */
-@Mixin(LivingEntityRenderer.class)
+@Mixin(value = LivingEntityRenderer.class, priority = 2000)
 public class LivingEntityRendererMixin {
     @Unique
     private int aero$savedDeathTime = -1;

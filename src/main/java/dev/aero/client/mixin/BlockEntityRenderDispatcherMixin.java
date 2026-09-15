@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = "net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher")
+@Mixin(targets = "net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher", priority = 2000)
 public class BlockEntityRenderDispatcherMixin {
     @Inject(method = {"render", "tryRender"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$hideTile(CallbackInfo ci) {

@@ -18,7 +18,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
  * resize itself (see CreativeInventoryScaleMixin), and handling it in both places risks shrinking
  * it twice if that override calls super.resize().
  */
-@Mixin(Screen.class)
+@Mixin(value = Screen.class, priority = 2000)
 public class ScreenScaleMixin {
     @ModifyVariable(method = "init(II)V", at = @At("HEAD"), ordinal = 0, argsOnly = true, require = 0)
     private int aero$shrinkInitWidth(int width) {

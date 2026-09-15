@@ -38,9 +38,6 @@ public final class FriendStore {
             } catch (Exception ignored) {
             }
         }
-        if (NAMES.isEmpty()) {
-            addSilent(ownName());
-        }
     }
 
     public static void save() {

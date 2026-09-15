@@ -7,7 +7,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(World.class)
+@Mixin(value = World.class, priority = 2000)
 public class WorldMixin {
     @Inject(method = "getRainGradient", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$noRain(float delta, CallbackInfoReturnable<Float> cir) {

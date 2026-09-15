@@ -15,7 +15,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(EntityRenderManager.class)
+@Mixin(value = EntityRenderManager.class, priority = 2000)
 public class EntityRenderDispatcherMixin {
     @Unique
     private static final ThreadLocal<Entity> AERO$RENDERING = new ThreadLocal<>();

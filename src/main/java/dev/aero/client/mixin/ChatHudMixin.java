@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
-@Mixin(ChatHud.class)
+@Mixin(value = ChatHud.class, priority = 2000)
 public class ChatHudMixin {
     @ModifyVariable(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), argsOnly = true, require = 0)
     private Text aero$stamp(Text message) {

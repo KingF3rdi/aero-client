@@ -9,7 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(GameRenderer.class)
+@Mixin(value = GameRenderer.class, priority = 2000)
 public class GameRendererMixin {
     @Inject(method = {"tiltViewWhenHurt", "bobViewWhenHurt", "tiltView"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$noHurtcam(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
