@@ -138,7 +138,7 @@ public final class Modules {
                 .setting("Ping Side", () -> c.pingSide, v -> c.pingSide = v, "Left", "Right")
                 .setting("Ping Divider", () -> c.pingDivider, v -> c.pingDivider = v)
                 .setting("Show Own Nametag", () -> c.ownNametag, v -> c.ownNametag = v)
-                .setting("Client badge", () -> c.nametagBadge, v -> c.nametagBadge = v));
+                .setting("\"L\" badge for friends", () -> c.nametagBadge, v -> c.nametagBadge = v));
         add(new Module("Time Changer", "Client-only world time", Category.RENDER,
                 () -> c.timeChanger, v -> c.timeChanger = v)
                 .setting("Time", () -> c.timePreset, v -> c.timePreset = v, "Day", "Noon", "Sunset", "Night", "Midnight", "Custom")

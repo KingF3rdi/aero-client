@@ -76,6 +76,18 @@ public final class FriendStore {
         save();
     }
 
+    public static boolean isFriend(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        for (String n : NAMES) {
+            if (n.equalsIgnoreCase(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean online(String name) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.getNetworkHandler() == null || name == null || name.isBlank()) {

@@ -25,6 +25,10 @@ public class EndCrystalEntityRendererMixin {
         if (c == null || !c.customEndCrystals || matrices == null) {
             return;
         }
+        // Vanilla's own render() does matrices.push()/pop() around its scale+submitModel, so without
+        // pushing here first, our transform never gets popped and leaks into whatever runs after this
+        // method returns (the super.render() call at the end, i.e. the nametag/label pass).
+        matrices.push();
         float scale = Math.max(0.15f, c.crystalScale);
         float bounce = (float) Math.sin((state.age * 0.2f) * Math.max(0.05f, c.crystalBounceSpeed))
                 * 0.2f * c.crystalBounceHeight;
@@ -37,6 +41,23 @@ public class EndCrystalEntityRendererMixin {
         float spin = state.age * 8f * Math.max(0f, c.crystalRotationSpeed);
         try {
             matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(spin));
+        } catch (Throwable ignored) {
+        }
+    }
+
+    @Inject(
+            method = "render(Lnet/minecraft/client/render/entity/state/EndCrystalEntityRenderState;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;Lnet/minecraft/client/render/state/CameraRenderState;)V",
+            at = @At("RETURN"),
+            require = 0
+    )
+    private void aero$unstyle(EndCrystalEntityRenderState state, MatrixStack matrices,
+                              OrderedRenderCommandQueue queue, CameraRenderState camera, CallbackInfo ci) {
+        var c = AeroClient.CONFIG;
+        if (c == null || !c.customEndCrystals || matrices == null) {
+            return;
+        }
+        try {
+            matrices.pop();
         } catch (Throwable ignored) {
         }
     }

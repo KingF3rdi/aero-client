@@ -780,6 +780,23 @@ public class ClickGuiScreenLegacy extends Screen {
         context.drawText(textRenderer, Text.literal(kind.name()), rx, belowPreviewY + 34, MUTED, false);
     }
 
+    /** The friend's live PlayerEntity if they're currently in this world/server, else null. */
+    private static net.minecraft.entity.player.PlayerEntity onlinePlayerEntity(String name) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.world == null || name == null || name.isBlank()) {
+            return null;
+        }
+        for (var p : mc.world.getPlayers()) {
+            try {
+                if (name.equalsIgnoreCase(p.getName().getString())) {
+                    return p;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        return null;
+    }
+
     private void drawFriends(DrawContext context, int mx, int my) {
         int y0 = oy + TOP;
         int y1 = oy + ph;
@@ -846,14 +863,7 @@ public class ClickGuiScreenLegacy extends Screen {
         int mx0 = mid + 12;
         context.drawText(textRenderer, Text.literal("You"), mx0, y0 + 16, MUTED, false);
         String own = FriendStore.ownName();
-        SkinPreview.requestOwn();
-        String youKey = ownSkinKey();
-        if (SkinPreview.ready(youKey) || SkinPreview.ready(own.toLowerCase()) || SkinPreview.ready("own")) {
-            String k = SkinPreview.ready(youKey) ? youKey : (SkinPreview.ready(own.toLowerCase()) ? own.toLowerCase() : "own");
-            SkinPreview.drawHead(context, k, mx0, y0 + 34, 36);
-        } else {
-            UiDraw.roundRect(context, mx0, y0 + 34, 36, 36, 10, 0xFFC8A0E8);
-        }
+        CosmeticPreview.player(context, mx0 + 18, y0 + 52, 18, mx, my);
         context.drawText(textRenderer, Text.literal(fit(own, midW - 60)), mx0 + 46, y0 + 42, TEXT, false);
         context.drawText(textRenderer, Text.literal("Your list"), mx0 + 46, y0 + 54, MUTED, false);
 
@@ -866,7 +876,12 @@ public class ClickGuiScreenLegacy extends Screen {
             SkinPreview.requestLookup(picked);
             context.drawText(textRenderer, Text.literal(fit(picked, RIGHT_W - 36)), rx, y0 + 16, TEXT, false);
             context.drawText(textRenderer, Text.literal(FriendStore.online(picked) ? "Online now" : "Offline"), rx, y0 + 30, MUTED, false);
-            if (SkinPreview.ready(picked.toLowerCase())) {
+            var liveFriend = onlinePlayerEntity(picked);
+            if (liveFriend != null) {
+                // Online: render the real live entity in 3D (auto-spinning) instead of the
+                // network-fetched flat skin, since we already have their model loaded anyway.
+                CosmeticPreview.spin(context, rx + 40, y0 + 132, 30, liveFriend);
+            } else if (SkinPreview.ready(picked.toLowerCase())) {
                 SkinPreview.drawBody(context, picked.toLowerCase(), rx + 20, y0 + 50, 3);
             } else {
                 UiDraw.roundRect(context, rx + 28, y0 + 54, 36, 90, 8, 0x6614101C);
@@ -1379,6 +1394,12 @@ public class ClickGuiScreenLegacy extends Screen {
             } else if (setting.kind == Module.Setting.Kind.CHOICE) {
                 if (inside(mx, my, tx, y - 2, RIGHT_W - 28 - indent, 20)) {
                     setting.cycle();
+                    // Cycling the Crosshair style straight to "Drawn" opens the pixel editor right
+                    // away, since otherwise it's easy to miss the separate "Draw own" action row.
+                    if ("Crosshair".equals(selected.name) && "Style".equals(setting.name)
+                            && "Drawn".equalsIgnoreCase(setting.choiceGet.get()) && client != null) {
+                        client.setScreen(new DrawCrosshairScreen(this));
+                    }
                     return true;
                 }
                 y += 26;

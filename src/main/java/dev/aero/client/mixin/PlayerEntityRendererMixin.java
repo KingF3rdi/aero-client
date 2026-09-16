@@ -82,8 +82,12 @@ public class PlayerEntityRendererMixin {
             }
         }
 
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametagBadge) {
-            result = Text.literal("✦ ").append(result);
+        // There's no way for a pure client mod to know whether an arbitrary player on someone
+        // else's server is running this client too (that needs the server's cooperation), so this
+        // only marks players already on your own friends list rather than claiming to detect them.
+        if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametagBadge
+                && dev.aero.client.social.FriendStore.isFriend(player.getName().getString())) {
+            result = Text.literal("L ").append(result);
             changed = true;
         }
 
