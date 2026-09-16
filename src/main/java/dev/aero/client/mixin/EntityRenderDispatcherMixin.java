@@ -20,13 +20,14 @@ public class EntityRenderDispatcherMixin {
     @Unique
     private static final ThreadLocal<Entity> AERO$RENDERING = new ThreadLocal<>();
 
+    // Transparent Players used to also skip shouldRender() once alpha dropped near 0, meant as a
+    // cheap optimization - but that turns "barely visible" into "fully culled", so dragging the
+    // opacity slider low made every player disappear outright instead of fading. AlphaBuffers
+    // already handles the actual fade at render time, so there's no need to cull here at all.
     @Inject(method = "shouldRender", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$cull(Entity entity, Frustum frustum, double x, double y, double z,
                            CallbackInfoReturnable<Boolean> cir) {
         if (HudStats.skipEntity(entity) || Visuals.hideOtherPlayer(entity)) {
-            cir.setReturnValue(false);
-        }
-        if (Visuals.transparentPlayerAlpha(entity, false) <= 0.01f) {
             cir.setReturnValue(false);
         }
     }

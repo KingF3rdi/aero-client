@@ -234,10 +234,10 @@ public final class UiDraw {
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {
-        roundRect(c, x, y + 3, 28, 10, 5, on ? 0xFFB9A8EE : 0x66302C3C);
+        roundRect(c, x, y + 3, 28, 10, 0, on ? 0xFFB9A8EE : 0x66302C3C);
         int knobX = on ? x + 15 : x + 1;
-        roundRect(c, knobX, y, 13, 16, 7, on ? 0xFFF8F5FF : 0xD0AAA5B8);
-        roundBorder(c, knobX, y, 13, 16, 7, on ? 0x66FFFFFF : 0x22000000);
+        roundRect(c, knobX, y, 13, 16, 0, on ? 0xFFF8F5FF : 0xD0AAA5B8);
+        roundBorder(c, knobX, y, 13, 16, 0, on ? 0x66FFFFFF : 0x22000000);
     }
 
     public static void slider(DrawContext c, int x, int y, int w, float t) {

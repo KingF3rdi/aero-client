@@ -762,10 +762,14 @@ public class ClickGuiScreenLegacy extends Screen {
         int belowPreviewY = Math.min(y1 - 72, py + 140);
         context.enableScissor(right + 8, py - 2, ox + pw - 12, belowPreviewY);
         try {
-            if (SkinPreview.ready(key)) {
+            // Prefer the live, slowly-spinning 3D preview (own player, or the looked-up player if
+            // they're online in this world) over the flat static body render - only falls back to
+            // the flat skin when there's no live entity to spin (an offline looked-up player).
+            var liveEntity = playerLookup.isBlank() ? MinecraftClient.getInstance().player : onlinePlayerEntity(playerLookup);
+            if (liveEntity != null) {
+                CosmeticPreview.spin(context, right + 70, py + 110, 38, liveEntity);
+            } else if (SkinPreview.ready(key)) {
                 SkinPreview.drawBody(context, key, px, py, 4);
-            } else if (playerLookup.isBlank() && MinecraftClient.getInstance().player != null) {
-                CosmeticPreview.player(context, right + 70, py + 110, 38, mx, my);
             } else {
                 UiDraw.roundRect(context, px + 12, py, 48, 120, 12, 0x6614101C);
                 context.drawText(textRenderer, Text.literal("Loading skin…"), px, py + 52, MUTED, false);
@@ -863,7 +867,13 @@ public class ClickGuiScreenLegacy extends Screen {
         int mx0 = mid + 12;
         context.drawText(textRenderer, Text.literal("You"), mx0, y0 + 16, MUTED, false);
         String own = FriendStore.ownName();
-        CosmeticPreview.player(context, mx0 + 18, y0 + 52, 18, mx, my);
+        SkinPreview.requestOwn();
+        String ownKey = ownSkinKey();
+        if (SkinPreview.ready(ownKey)) {
+            SkinPreview.drawHead(context, ownKey, mx0 + 4, y0 + 34, 28);
+        } else {
+            UiDraw.roundRect(context, mx0 + 4, y0 + 34, 28, 28, 8, 0xFFC8A0E8);
+        }
         context.drawText(textRenderer, Text.literal(fit(own, midW - 60)), mx0 + 46, y0 + 42, TEXT, false);
         context.drawText(textRenderer, Text.literal("Your list"), mx0 + 46, y0 + 54, MUTED, false);
 

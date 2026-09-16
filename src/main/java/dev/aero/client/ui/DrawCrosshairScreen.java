@@ -31,6 +31,8 @@ public class DrawCrosshairScreen extends Screen {
     private final Set<Long> pixels = new HashSet<>();
     private boolean dragErasing;
     private boolean dragging;
+    private boolean colorFocus;
+    private String colorDraft = "";
 
     public DrawCrosshairScreen(Screen parent) {
         super(Text.literal("Draw Crosshair"));
@@ -85,7 +87,7 @@ public class DrawCrosshairScreen extends Screen {
         int gx = gridX();
         int gy = gridY();
         int panelW = GRID * CELL + 28;
-        int panelH = GRID * CELL + 86;
+        int panelH = GRID * CELL + 112;
         UiDraw.glass(context, gx - 14, gy - 36, panelW, panelH, 0xD414121E, 18);
         context.drawText(textRenderer, Text.literal("Draw your crosshair"),
                 gx, gy - 22, TEXT, false);
@@ -110,21 +112,31 @@ public class DrawCrosshairScreen extends Screen {
             }
         }
 
-        boolean useH = inside(mouseX, mouseY, gx, gy + GRID * CELL + 14, 150, 20);
-        UiDraw.pill(context, gx, gy + GRID * CELL + 14, 150, 20, AeroClient.CONFIG.crosshairUseDrawing);
+        int row1Y = gy + GRID * CELL + 14;
+        boolean useH = inside(mouseX, mouseY, gx, row1Y, 150, 20);
+        UiDraw.pill(context, gx, row1Y, 150, 20, AeroClient.CONFIG.crosshairUseDrawing);
         String useLabel = "Use drawing: " + (AeroClient.CONFIG.crosshairUseDrawing ? "On" : "Off");
-        context.drawText(textRenderer, Text.literal(useLabel), gx + 8, gy + GRID * CELL + 20,
+        context.drawText(textRenderer, Text.literal(useLabel), gx + 8, row1Y + 6,
                 useH ? TEXT : MUTED, false);
 
-        boolean clearH = inside(mouseX, mouseY, gx + 160, gy + GRID * CELL + 14, 70, 20);
-        UiDraw.pill(context, gx + 160, gy + GRID * CELL + 14, 70, 20, clearH);
-        context.drawText(textRenderer, Text.literal("Clear"), gx + 160 + 20, gy + GRID * CELL + 20,
+        int colorX = gx + 160;
+        int colorW = GRID * CELL - 160;
+        String hex = colorFocus ? colorDraft : String.format("#%06X", AeroClient.CONFIG.crosshairColor & 0xFFFFFF);
+        UiDraw.field(context, colorX, row1Y, colorW, 20, colorFocus);
+        UiDraw.roundRect(context, colorX + 6, row1Y + 5, 10, 10, 3, 0xFF000000 | AeroClient.CONFIG.crosshairColor);
+        context.drawText(textRenderer, Text.literal(hex + (colorFocus ? "|" : "")), colorX + 22, row1Y + 6,
+                colorFocus ? TEXT : MUTED, false);
+
+        int row2Y = row1Y + 26;
+        boolean clearH = inside(mouseX, mouseY, gx, row2Y, 110, 20);
+        UiDraw.pill(context, gx, row2Y, 110, 20, clearH);
+        context.drawText(textRenderer, Text.literal("Clear"), gx + 45, row2Y + 6,
                 clearH ? TEXT : MUTED, false);
 
-        int doneX = gx + GRID * CELL - 70;
-        boolean doneH = inside(mouseX, mouseY, doneX, gy + GRID * CELL + 14, 70, 20);
-        UiDraw.pill(context, doneX, gy + GRID * CELL + 14, 70, 20, doneH);
-        context.drawText(textRenderer, Text.literal("Done"), doneX + 22, gy + GRID * CELL + 20,
+        int doneX = gx + GRID * CELL - 110;
+        boolean doneH = inside(mouseX, mouseY, doneX, row2Y, 110, 20);
+        UiDraw.pill(context, doneX, row2Y, 110, 20, doneH);
+        context.drawText(textRenderer, Text.literal("Done"), doneX + 45, row2Y + 6,
                 doneH ? TEXT : MUTED, false);
     }
 
@@ -179,7 +191,9 @@ public class DrawCrosshairScreen extends Screen {
         int gx = gridX();
         int gy = gridY();
 
-        if (inside(mx, my, gx, gy + GRID * CELL + 14, 150, 20)) {
+        int row1Y = gy + GRID * CELL + 14;
+        int row2Y = row1Y + 26;
+        if (inside(mx, my, gx, row1Y, 150, 20)) {
             AeroClient.CONFIG.crosshairUseDrawing = !AeroClient.CONFIG.crosshairUseDrawing;
             if (AeroClient.CONFIG.crosshairUseDrawing) {
                 AeroClient.CONFIG.customCrosshair = true;
@@ -188,13 +202,21 @@ public class DrawCrosshairScreen extends Screen {
             AeroClient.CONFIG.save();
             return true;
         }
-        if (inside(mx, my, gx + 160, gy + GRID * CELL + 14, 70, 20)) {
+        int colorX = gx + 160;
+        int colorW = GRID * CELL - 160;
+        if (inside(mx, my, colorX, row1Y, colorW, 20)) {
+            colorFocus = true;
+            colorDraft = String.format("#%06X", AeroClient.CONFIG.crosshairColor & 0xFFFFFF);
+            return true;
+        }
+        colorFocus = false;
+        if (inside(mx, my, gx, row2Y, 110, 20)) {
             pixels.clear();
             save();
             return true;
         }
-        int doneX = gx + GRID * CELL - 70;
-        if (inside(mx, my, doneX, gy + GRID * CELL + 14, 70, 20)) {
+        int doneX = gx + GRID * CELL - 110;
+        if (inside(mx, my, doneX, row2Y, 110, 20)) {
             AeroClient.CONFIG.customCrosshair = true;
             AeroClient.CONFIG.crosshairStyle = "Drawn";
             AeroClient.CONFIG.crosshairUseDrawing = true;
@@ -207,6 +229,28 @@ public class DrawCrosshairScreen extends Screen {
             return true;
         }
         return false;
+    }
+
+    private void applyColorDraft() {
+        String hex = colorDraft.startsWith("#") ? colorDraft.substring(1) : colorDraft;
+        try {
+            AeroClient.CONFIG.crosshairColor = 0xFF000000 | (Integer.parseInt(hex, 16) & 0xFFFFFF);
+            AeroClient.CONFIG.save();
+        } catch (NumberFormatException ignored) {
+        }
+        colorFocus = false;
+    }
+
+    @Override
+    public boolean charTyped(net.minecraft.client.input.CharInput input) {
+        if (!colorFocus) {
+            return false;
+        }
+        char ch = Character.toUpperCase((char) input.codepoint());
+        if ((ch == '#' || (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F')) && colorDraft.length() < 7) {
+            colorDraft += ch;
+        }
+        return true;
     }
 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -230,6 +274,21 @@ public class DrawCrosshairScreen extends Screen {
 
     @Override
     public boolean keyPressed(KeyInput input) {
+        if (colorFocus) {
+            if (input.key() == GLFW.GLFW_KEY_BACKSPACE && !colorDraft.isEmpty()) {
+                colorDraft = colorDraft.substring(0, colorDraft.length() - 1);
+                return true;
+            }
+            if (input.key() == GLFW.GLFW_KEY_ENTER || input.key() == GLFW.GLFW_KEY_KP_ENTER) {
+                applyColorDraft();
+                return true;
+            }
+            if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
+                colorFocus = false;
+                return true;
+            }
+            return true;
+        }
         if (input.key() == GLFW.GLFW_KEY_ESCAPE) {
             client.setScreen(parent);
             return true;

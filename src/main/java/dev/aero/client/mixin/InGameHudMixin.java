@@ -9,6 +9,7 @@ import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = InGameHud.class, priority = 2000)
@@ -126,10 +127,17 @@ public class InGameHudMixin {
         }
     }
 
-    @Inject(method = {"renderExperienceBar", "renderExperienceLevel"}, at = @At("HEAD"), cancellable = true, require = 0)
-    private void aero$xp(CallbackInfo ci) {
+    // 1.21.11 moved the XP level number out into a static helper on the new Bar interface (the bar
+    // graphic itself moved to ExperienceBarMixin) - the old renderExperienceBar/renderExperienceLevel
+    // method names this used to target don't exist anymore, so this toggle silently did nothing
+    // (every injector here defaults to require = 0, which hides a dead target instead of erroring).
+    @Redirect(method = "renderMainHud", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/gui/hud/bar/Bar;drawExperienceLevel(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/client/font/TextRenderer;I)V"),
+            require = 0)
+    private void aero$xpLevel(DrawContext context, net.minecraft.client.font.TextRenderer textRenderer, int level) {
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.guiTweaks && !AeroClient.CONFIG.guiXp) {
-            ci.cancel();
+            return;
         }
+        net.minecraft.client.gui.hud.bar.Bar.drawExperienceLevel(context, textRenderer, level);
     }
 }

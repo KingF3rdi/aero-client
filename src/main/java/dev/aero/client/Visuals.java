@@ -356,6 +356,15 @@ public final class Visuals {
         return Math.max(0f, Math.min(100f, pct)) / 100f;
     }
 
+    /** Render alpha for Custom End Crystals' "Opacity" setting - was a config field nothing ever read. */
+    public static float crystalAlpha(Entity entity) {
+        ClientConfig c = cfg();
+        if (c == null || !c.customEndCrystals || !(entity instanceof net.minecraft.entity.decoration.EndCrystalEntity)) {
+            return 1f;
+        }
+        return Math.max(0f, Math.min(100f, c.crystalOpacity)) / 100f;
+    }
+
     public static boolean showPlayerGlow(Entity entity) {
         ClientConfig c = cfg();
         return c != null && c.renders && c.rendersPlayersGlow && entity instanceof PlayerEntity;

@@ -17,7 +17,7 @@ public final class AlphaBuffers {
         if (inner == null) {
             return inner;
         }
-        float alpha = Visuals.transparentPlayerAlpha(entity, false);
+        float alpha = Math.min(Visuals.transparentPlayerAlpha(entity, false), Visuals.crystalAlpha(entity));
         if (alpha >= 0.999f) {
             return inner;
         }
