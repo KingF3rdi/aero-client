@@ -67,20 +67,44 @@ public final class UiDraw {
         return (a << 24) | (color & 0x00FFFFFF);
     }
 
+    /**
+     * A rounded corner is mostly fully-opaque interior with only a 1-2px anti-aliased ring at the
+     * actual curve, but the original version called context.fill() once per pixel regardless -
+     * for a single radius-20 corner that's up to 400 draw calls, times 4 corners, times every
+     * rounded element the ClickGUI draws (rows, pills, toggles, sliders, panels) every frame,
+     * which is what made the whole menu feel slow. This walks each row and merges consecutive
+     * fully-opaque pixels into one fill() call, only falling back to per-pixel fills for the
+     * actual blended edge - same output, far fewer draw calls.
+     */
     private static void corner(DrawContext c, int x, int y, int r, int color, byte[] cov,
                                boolean flipX, boolean flipY) {
         if (r <= 0 || cov == null) {
             return;
         }
         for (int iy = 0; iy < r; iy++) {
-            for (int ix = 0; ix < r; ix++) {
-                int packed = withCoverage(color, cov[iy * r + ix] & 0xFF);
-                if (packed == 0) {
+            int row = iy * r;
+            int ix = 0;
+            while (ix < r) {
+                int rawCov = cov[row + ix] & 0xFF;
+                if (rawCov == 0) {
+                    ix++;
                     continue;
                 }
-                int px = flipX ? x + r - 1 - ix : x + ix;
                 int py = flipY ? y + r - 1 - iy : y + iy;
+                if (rawCov == 255) {
+                    int runStart = ix;
+                    do {
+                        ix++;
+                    } while (ix < r && (cov[row + ix] & 0xFF) == 255);
+                    int runLen = ix - runStart;
+                    int px0 = flipX ? x + r - runStart - runLen : x + runStart;
+                    c.fill(px0, py, px0 + runLen, py + 1, color);
+                    continue;
+                }
+                int packed = withCoverage(color, rawCov);
+                int px = flipX ? x + r - 1 - ix : x + ix;
                 c.fill(px, py, px + 1, py + 1, packed);
+                ix++;
             }
         }
     }
