@@ -19,7 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public final class OverlayHud {
-    private static final int ACCENT = 0xFFC4B5FD;
+    private static final int ACCENT = 0xFF4F8EFF;
     private static final int TEXT = 0xFFF4F1FA;
     private static final int MUTED = 0xFFB8B0C8;
 
@@ -184,7 +184,7 @@ public final class OverlayHud {
                         text += (text.isEmpty() ? "" : "  ") + (sec / 60) + ":" + String.format("%02d", sec % 60);
                     }
                     if (cfg.potionIcons) {
-                        int col = 0xFFC4B5FD;
+                        int col = 0xFF4F8EFF;
                         try {
                             col = 0xFF000000 | (effect.getEffectType().value().getColor() & 0xFFFFFF);
                         } catch (Throwable ignored) {
@@ -745,7 +745,7 @@ public final class OverlayHud {
                     continue;
                 }
                 int x = x0 + i * 20;
-                outlineSlot(context, x, y, i == selected ? 0x88C4B5FD : 0x55C4B5FD);
+                outlineSlot(context, x, y, i == selected ? 0x884F8EFF : 0x554F8EFF);
             }
             // The offhand slot (e.g. a shield) isn't part of getInventory()'s 0-8 hotbar range, so
             // without this a spare matching item sitting in the numbered hotbar got outlined
@@ -754,7 +754,7 @@ public final class OverlayHud {
             if (matchesHighlight(cfg, off)) {
                 boolean mainLeft = mc.player.getMainArm() == net.minecraft.util.Arm.LEFT;
                 int ox = mainLeft ? x0 + 9 * 20 + 8 : x0 - 28;
-                outlineSlot(context, ox, y, 0x88C4B5FD);
+                outlineSlot(context, ox, y, 0x884F8EFF);
             }
         } catch (Throwable ignored) {
         }
@@ -790,7 +790,7 @@ public final class OverlayHud {
     private static void key(DrawContext context, MinecraftClient mc, int x, int y, String label, boolean down, int size) {
         int w = Math.max(size, mc.textRenderer.getWidth(label) + 8);
         int h = Math.max(14, size);
-        UiDraw.roundRect(context, x, y, w, h, 5, down ? 0xA0C4B5FD : 0x6614121C);
+        UiDraw.roundRect(context, x, y, w, h, 5, down ? 0xA04F8EFF : 0x6614121C);
         context.drawText(mc.textRenderer, Text.literal(label), x + 4, y + Math.max(2, h / 2 - 4), down ? 0xFF1A1024 : TEXT, false);
     }
 
@@ -948,7 +948,7 @@ public final class OverlayHud {
         }
         if (cfg.watermarkBg && !cfg.fastHud) {
             UiDraw.roundRect(context, wx, wy, w, h, 8, 0xCC14121C);
-            UiDraw.roundBorder(context, wx, wy, w, h, 8, 0x44C4B5FD);
+            UiDraw.roundBorder(context, wx, wy, w, h, 8, 0x444F8EFF);
         }
         UiDraw.larpMark(context, wx + 3, wy + 2, 12, ACCENT);
         context.drawText(mc.textRenderer, Text.literal(brand), wx + 18, wy + 4, color, cfg.watermarkShadow);

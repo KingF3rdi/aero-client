@@ -95,7 +95,7 @@ public class PauseMenuScreen extends Screen {
             if (h) {
                 hover = i;
             }
-            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? 0x44C4B5FD : 0x2214101C);
+            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? 0x444F8EFF : 0x2214101C);
             drawIcon(context, i, ix + 13, iconY + 9, h ? 0xFFFFFFFF : 0xFFD0D0D0);
             String cap = LABELS[i];
             context.drawText(textRenderer, Text.literal(cap),
@@ -104,9 +104,9 @@ public class PauseMenuScreen extends Screen {
     }
 
     private static void drawBolt(DrawContext context, int cx, int cy) {
-        context.fill(cx + 2, cy - 2, cx + 5, cy + 5, 0xFFC4B5FD);
-        context.fill(cx - 3, cy + 4, cx + 5, cy + 6, 0xFFC4B5FD);
-        context.fill(cx - 2, cy + 6, cx + 1, cy + 13, 0xFFC4B5FD);
+        context.fill(cx + 2, cy - 2, cx + 5, cy + 5, 0xFF4F8EFF);
+        context.fill(cx - 3, cy + 4, cx + 5, cy + 6, 0xFF4F8EFF);
+        context.fill(cx - 2, cy + 6, cx + 1, cy + 13, 0xFF4F8EFF);
     }
 
     private static void drawIcon(DrawContext context, int id, int x, int y, int color) {

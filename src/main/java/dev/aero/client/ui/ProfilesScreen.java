@@ -18,7 +18,7 @@ public class ProfilesScreen extends Screen {
     private static final int PANEL = 0xF00E0C16;
     private static final int TEXT = 0xFFF3F0F8;
     private static final int MUTED = 0xFF8E889C;
-    private static final int ACCENT = 0xFFC4B5FD;
+    private static final int ACCENT = 0xFF4F8EFF;
 
     private final Screen parent;
     private String draft = "";

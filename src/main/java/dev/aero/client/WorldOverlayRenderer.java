@@ -136,7 +136,7 @@ public final class WorldOverlayRenderer {
             }
             float t = cfg.popChamsFadeOverTime ? 1f - (age / (float) durationMs) : 1f;
             int alpha = Math.max(0, Math.min(255, (int) (140 * t)));
-            int color = (alpha << 24) | 0x00C4B5FD;
+            int color = (alpha << 24) | 0x004F8EFF;
             Box box = new Box(pos.x - 0.3, pos.y, pos.z - 0.3, pos.x + 0.3, pos.y + 1.8, pos.z + 0.3);
             // Only an outline is implemented so far - Filled Model draws the same outline rather
             // than nothing, since a true solid-fill render isn't built yet.

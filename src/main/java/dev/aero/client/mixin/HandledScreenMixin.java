@@ -26,7 +26,7 @@ public class HandledScreenMixin {
         }
         int sx = slot.x;
         int sy = slot.y;
-        int col = 0x66C4B5FD;
+        int col = 0x664F8EFF;
         context.fill(sx, sy, sx + 16, sy + 1, col);
         context.fill(sx, sy + 15, sx + 16, sy + 16, col);
         context.fill(sx, sy, sx + 1, sy + 16, col);

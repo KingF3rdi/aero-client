@@ -27,7 +27,7 @@ public final class Cosmetics {
         cape("migrator", "Migrator", 0xFFC04040);
         cape("minecart", "Minecart", 0xFF8B5A2B);
         cape("minecon", "Minecon 2011", 0xFFB03030);
-        cape("aurora", "Aurora", 0xFFC4B5FD);
+        cape("aurora", "Aurora", 0xFF4F8EFF);
         cape("void", "Void", 0xFF221833);
         wings("none", "None", 0xFF2A2A32);
         wings("angel", "Angel", 0xFFF6F2FC);
@@ -40,19 +40,19 @@ public final class Cosmetics {
         head("crown", "Crown", 0xFFE8C878);
         head("cat", "Cat ears", 0xFFD8A070);
         trail("none", "None", 0xFF2A2A32);
-        trail("spark", "Spark", 0xFFC4B5FD);
+        trail("spark", "Spark", 0xFF4F8EFF);
         trail("heart", "Heart", 0xFFF4C8DC);
         trail("snow", "Snow", 0xFFE8F0F8);
         pet("none", "None", 0xFF2A2A32);
         pet("axolotl", "Axolotl", 0xFFF4A0B8);
         pet("bee", "Bee", 0xFFE8C878);
         pet("fox", "Fox", 0xFFE09050);
-        emote("wave", "Wave", 0xFFC4B5FD);
+        emote("wave", "Wave", 0xFF4F8EFF);
         emote("clap", "Clap", 0xFFE8C878);
         tag("none", "None", 0xFF2A2A32);
         tag("og", "OG", 0xFFE8C878);
         badge("none", "None", 0xFF2A2A32);
-        badge("staff", "Staff", 0xFFC4B5FD);
+        badge("staff", "Staff", 0xFF4F8EFF);
         badge("beta", "Beta", 0xFF88C0D0);
     }
 

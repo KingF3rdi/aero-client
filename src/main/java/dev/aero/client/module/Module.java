@@ -21,7 +21,7 @@ public class Module {
         public int toggleKey = -1;
         public String panelStyle = "Glass";
         public boolean shadow = true;
-        public int accent = 0xFFC4B5FD;
+        public int accent = 0xFF4F8EFF;
     }
 
     public ModuleStyle style() {

@@ -34,7 +34,7 @@ public class ClickGuiScreenLegacy extends Screen {
     private static final int PILL_ON = 0xAA3A3158;
     private static final int MUTED = 0xFF8E889C;
     private static final int TEXT = 0xFFF3F0F8;
-    private static final int ACCENT = 0xFFC4B5FD;
+    private static final int ACCENT = 0xFF4F8EFF;
     private static final int LAV = 0xFFE4DCF6;
     private static final int TRACK_OFF = 0xFF2A2A36;
     private static final int TRACK_ON = 0xFFD8D0EC;
@@ -450,7 +450,7 @@ public class ClickGuiScreenLegacy extends Screen {
                 boolean sel = module == selected;
                 int rowBottom = y + ROW_H - 4;
                 if (sel) {
-                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x44C4B5FD);
+                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x444F8EFF);
                     UiDraw.roundRect(context, x + 6, y + 6, 3, rowBottom - y - 12, 1, ACCENT);
                 } else if (h) {
                     UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x28FFFFFF);
@@ -842,7 +842,7 @@ public class ClickGuiScreenLegacy extends Screen {
                 boolean sel = friendSel == i;
                 SkinPreview.requestLookup(n);
                 if (sel) {
-                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x44C4B5FD);
+                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x444F8EFF);
                     UiDraw.roundRect(context, lx - 2, y + 6, 3, ROW_H - 16, 1, ACCENT);
                 } else if (inside(mx, my, lx - 2, y, lw + 4, ROW_H - 4)) {
                     UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x28FFFFFF);
@@ -910,8 +910,8 @@ public class ClickGuiScreenLegacy extends Screen {
      */
     private void drawModIcon(DrawContext context, Module module, int x, int y) {
         int col = switch (module.category) {
-            case PVP -> 0xFFC4B5FD;
-            case HUD -> 0xFFA78BFA;
+            case PVP -> 0xFF4F8EFF;
+            case HUD -> 0xFF00B9E8;
             case RENDER -> 0xFFDDD6FE;
             case PLAYER -> 0xFFE9D5FF;
             case MISC -> 0xFFB8B0C8;
@@ -1325,7 +1325,7 @@ public class ClickGuiScreenLegacy extends Screen {
         style.toggleKey = -1;
         style.panelStyle = "Glass";
         style.shadow = true;
-        style.accent = 0xFFC4B5FD;
+        style.accent = 0xFF4F8EFF;
     }
 
     private void applySliderDrag(Module.Setting setting, int barX, int barW, int mx) {

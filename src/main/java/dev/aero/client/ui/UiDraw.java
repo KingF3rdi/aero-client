@@ -8,8 +8,8 @@ import net.minecraft.client.gui.DrawContext;
 public final class UiDraw {
     public static final int BORDER = 0x38FFFFFF;
     public static final int BORDER_SOFT = 0x18FFFFFF;
-    public static final int ACCENT = 0xFFC4B5FD;
-    public static final int ACCENT_DIM = 0x55A78BFA;
+    public static final int ACCENT = 0xFF4F8EFF;
+    public static final int ACCENT_DIM = 0x552E5A8A;
     public static final int FILL = 0xA812101A;
     public static final int FILL_DEEP = 0xA00A0910;
     public static final int FILL_LIFT = 0xB01A1826;
@@ -206,7 +206,7 @@ public final class UiDraw {
     public static void field(DrawContext c, int x, int y, int w, int h, boolean focused) {
         int r = Math.min(h / 2, 10);
         roundRect(c, x, y, w, h, r, focused ? 0xE0181622 : 0x9912111A);
-        roundBorder(c, x, y, w, h, r, focused ? 0x66C4B5FD : 0x22FFFFFF);
+        roundBorder(c, x, y, w, h, r, focused ? 0x664F8EFF : 0x22FFFFFF);
     }
 
     public static void scrollbar(DrawContext c, int x, int y, int h, int scroll, int content, int view) {
@@ -218,7 +218,7 @@ public final class UiDraw {
         int max = Math.max(1, content - view);
         int ty = y + 4 + (int) ((track - thumb) * (scroll / (float) max));
         roundRect(c, x, y + 4, 4, track, 2, 0x22FFFFFF);
-        roundRect(c, x, ty, 4, thumb, 2, 0x88C4B5FD);
+        roundRect(c, x, ty, 4, thumb, 2, 0x884F8EFF);
     }
 
     public static void card(DrawContext c, int x, int y, int w, int h, int fill, boolean accentBar) {
@@ -229,8 +229,8 @@ public final class UiDraw {
     }
 
     public static void pill(DrawContext c, int x, int y, int w, int h, boolean on) {
-        roundRect(c, x, y, w, h, h / 2, on ? 0x55C4B5FD : 0x2814101C);
-        roundBorder(c, x, y, w, h, h / 2, on ? 0x44C4B5FD : 0x14FFFFFF);
+        roundRect(c, x, y, w, h, h / 2, on ? 0x554F8EFF : 0x2814101C);
+        roundBorder(c, x, y, w, h, h / 2, on ? 0x444F8EFF : 0x14FFFFFF);
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {
