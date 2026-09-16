@@ -338,6 +338,30 @@ public final class Visuals {
         return entity.getType().toString().toLowerCase().contains(filter);
     }
 
+    /** How many ticks of the death flop to still let play before freezing it - "Death time" setting. */
+    public static int deathTimeCap() {
+        ClientConfig c = cfg();
+        return c == null ? 20 : Math.round(c.deathTime);
+    }
+
+    /**
+     * Fades a dying entity toward "Opacity"% over "Overlay time" ticks once its flop has been
+     * capped by deathTimeCap() - deathTime and deathOverlayTime/deathOpacity were plain config
+     * fields nothing ever read, so the flop-removal was the only part of this module that worked.
+     */
+    public static float deathFadeAlpha(Entity entity) {
+        ClientConfig c = cfg();
+        if (c == null || !(entity instanceof net.minecraft.entity.LivingEntity living) || !skipDeathAnimation(entity)) {
+            return 1f;
+        }
+        float progress = (living.deathTime - c.deathTime) / Math.max(1f, c.deathOverlayTime);
+        if (progress <= 0f) {
+            return 1f;
+        }
+        float pct = Math.max(0f, Math.min(100f, c.deathOpacity)) / 100f;
+        return 1f - Math.min(1f, progress) * (1f - pct);
+    }
+
     /** Body/armor render alpha for the Transparent Players module; 1f = fully opaque, always occlusion-tested normally. */
     public static float transparentPlayerAlpha(Entity entity, boolean armorPiece) {
         ClientConfig c = cfg();
@@ -354,6 +378,33 @@ public final class Visuals {
         }
         float pct = armorPiece ? c.transparentArmorOpacity : c.transparentBodyOpacity;
         return Math.max(0f, Math.min(100f, pct)) / 100f;
+    }
+
+    /**
+     * How strongly to blend the damage-tint color into a player's rendered model while they're
+     * flashing hurt. This only ever runs through the normal per-entity render path, which is never
+     * invoked for your own player in first person (Minecraft simply doesn't render your own model
+     * there) - so tinting here naturally only affects third-person self-view and other players,
+     * with no separate perspective check needed. Replaces the old full-screen flash entirely.
+     */
+    public static float damageTintStrength(Entity entity) {
+        ClientConfig c = cfg();
+        if (c == null || !c.damageTint || !(entity instanceof PlayerEntity player) || player.hurtTime <= 0) {
+            return 0f;
+        }
+        return Math.min(1f, player.hurtTime / 10f) * 0.65f;
+    }
+
+    public static int damageTintRgb() {
+        ClientConfig c = cfg();
+        if (c == null) {
+            return 0xFF0000;
+        }
+        if (c.damageTintChroma) {
+            float hue = (System.currentTimeMillis() % 4000L) / 4000f * Math.max(0.05f, c.damageTintSpeed);
+            return java.awt.Color.HSBtoRGB(hue % 1f, 0.85f, 1f) & 0xFFFFFF;
+        }
+        return c.damageTintColor & 0xFFFFFF;
     }
 
     /** Render alpha for Custom End Crystals' "Opacity" setting - was a config field nothing ever read. */

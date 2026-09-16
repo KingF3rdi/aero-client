@@ -11,9 +11,11 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Death Animation: temporarily zeroes deathTime for the duration of the transform setup so the
- * vanilla death-flop rotation (computed inline from entity.deathTime) never progresses, then
- * restores it so normal death timing / entity removal elsewhere is unaffected.
+ * Death Animation: temporarily caps deathTime at the "Death time" setting for the duration of the
+ * transform setup, so the vanilla death-flop rotation (computed inline from entity.deathTime) never
+ * progresses past that point, then restores the real value so normal death timing / entity removal
+ * elsewhere is unaffected. The actual fade-out (deathOverlayTime/deathOpacity) reads the real,
+ * unrestored deathTime separately - see Visuals.deathFadeAlpha().
  */
 @Mixin(value = LivingEntityRenderer.class, priority = 2000)
 public class LivingEntityRendererMixin {
@@ -25,7 +27,7 @@ public class LivingEntityRendererMixin {
                                    float bodyYaw, float tickDelta, CallbackInfo ci) {
         if (Visuals.skipDeathAnimation(entity)) {
             aero$savedDeathTime = entity.deathTime;
-            entity.deathTime = 0;
+            entity.deathTime = Math.min(entity.deathTime, Visuals.deathTimeCap());
         }
     }
 

@@ -90,9 +90,6 @@ public final class OverlayHud {
         boolean hudHidden = mc.options.hudHidden;
         int sw = context.getScaledWindowWidth();
         int sh = context.getScaledWindowHeight();
-        if (cfg.damageTint) {
-            renderDamageTint(context, mc, cfg, sw, sh);
-        }
         if (hudHidden && !(cfg.customCrosshair && cfg.crosshairWhenHidden)) {
             return;
         }
@@ -504,49 +501,6 @@ public final class OverlayHud {
      * this would normally use for a true accumulation blur, so this fakes the effect with an
      * edge-darkening vignette that grows with how fast the camera is turning.
      */
-    private static void renderDamageTint(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
-        if (mc.player == null || mc.player.hurtTime <= 0) {
-            return;
-        }
-        float t = Math.min(1f, mc.player.hurtTime / 10f);
-        int packed = cfg.damageTintColor;
-        if (cfg.damageTintChroma) {
-            float hue = (System.currentTimeMillis() % 4000L) / 4000f * Math.max(0.05f, cfg.damageTintSpeed);
-            packed = 0xFF000000 | (java.awt.Color.HSBtoRGB(hue % 1f, 0.85f, 1f) & 0xFFFFFF);
-        }
-        int rgb = packed & 0x00FFFFFF;
-        int baseA = (packed >>> 24) & 0xFF;
-        if (baseA < 40) {
-            baseA = 110;
-        }
-        int a = Math.min(210, (int) (baseA * (0.35f + 0.65f * t)));
-        int fill = (a << 24) | rgb;
-        context.fill(0, 0, sw, sh, fill);
-        int band = Math.max(28, Math.min(sw, sh) / 7);
-        int edge = (Math.min(180, a + 40) << 24) | rgb;
-        context.fill(0, 0, sw, band, edge);
-        context.fill(0, sh - band, sw, sh, edge);
-        context.fill(0, 0, band, sh, edge);
-        context.fill(sw - band, 0, sw, sh, edge);
-        if (cfg.damageTintGradient) {
-            int g = cfg.damageTintGradientColor;
-            int ga = Math.min(160, (int) (((g >>> 24) & 0xFF) * t));
-            if (ga < 30) {
-                ga = (int) (90 * t);
-            }
-            context.fillGradient(0, 0, sw, sh, fill, (ga << 24) | (g & 0xFFFFFF));
-        }
-        if (cfg.damageTintArmor) {
-            int slotA = Math.min(160, a);
-            int col = (slotA << 24) | rgb;
-            int x = sw / 2 - 44;
-            int y = sh - 70;
-            for (int i = 0; i < 4; i++) {
-                context.fill(x + i * 22, y, x + i * 22 + 18, y + 4, col);
-            }
-        }
-    }
-
     private static void renderMotionBlur(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
         if (mc.player == null) {
             return;

@@ -195,10 +195,7 @@ public class ClientConfig {
     public float brightness = 10.0f;
     public boolean damageTintChroma = false;
     public float damageTintSpeed = 0.25f;
-    public boolean damageTintGradient = false;
-    public boolean damageTintArmor = true;
     public int damageTintColor = 1308557312;
-    public int damageTintGradientColor = 1308600832;
     public boolean crosshairHover = true;
     public int crosshairHoverColor = -44976;
     public float crosshairHoverRange = 6.0f;

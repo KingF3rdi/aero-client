@@ -327,12 +327,10 @@ public final class Modules {
                 .settingF("Cooldown (s)", () -> (double) c.autoTextCooldown, v -> c.autoTextCooldown = (float) v, 0, 30)
                 .settingF("Kill Range", () -> (double) c.autoTextKillRange, v -> c.autoTextKillRange = (float) v, 4, 64)
                 .settingText("Chat Trigger", () -> c.autoTextChatTrigger, v -> c.autoTextChatTrigger = v));
-        add(new Module("Damage Tint", "Hit flash / tint when damaged", Category.PVP,
+        add(new Module("Damage Tint", "Tint a hurt player's model (third-person self, or any other player) toward a color - skin, armor and held item all included", Category.PVP,
                 () -> c.damageTint, v -> c.damageTint = v)
                 .setting("Chroma", () -> c.damageTintChroma, v -> c.damageTintChroma = v)
-                .settingF("Speed", () -> (double) c.damageTintSpeed, v -> c.damageTintSpeed = (float) v, 0.05, 2)
-                .setting("Gradient", () -> c.damageTintGradient, v -> c.damageTintGradient = v)
-                .setting("Armor", () -> c.damageTintArmor, v -> c.damageTintArmor = v));
+                .settingF("Speed", () -> (double) c.damageTintSpeed, v -> c.damageTintSpeed = (float) v, 0.05, 2));
         add(new Module("Optimizer", "All PvP lag cuts in one place", Category.PVP,
                 () -> c.optimizersModule, v -> c.optimizersModule = v)
                 .setting("Skip crystal particles", () -> c.crystalOptimizerParticles, v -> c.crystalOptimizerParticles = v)

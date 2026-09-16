@@ -112,25 +112,18 @@ public final class Optimizer {
             charge = state.get(RespawnAnchorBlock.CHARGES);
         } catch (Throwable ignored) {
         }
-        boolean explodeDim = true;
+        // 1.21.11 removed DimensionType.respawnAnchorWorks() (and the other old per-dimension
+        // booleans) entirely in favor of a generic EnvironmentAttribute system, so the reflective
+        // lookup this used to do could never find a matching method anymore and silently always
+        // fell back to its default - which happened to still read as correct for the Overworld
+        // (respawn anchors explode) but would have been wrong in the Nether (they don't).
+        boolean respawnAnchorWorks = false;
         try {
-            Object dim = world.getDimension();
-            try {
-                Object v = dim.getClass().getMethod("respawnAnchorWorks").invoke(dim);
-                explodeDim = !Boolean.TRUE.equals(v);
-            } catch (NoSuchMethodException e) {
-                for (String m : new String[]{"hasRespawnAnchorWorks", "isRespawnAnchorWorks"}) {
-                    try {
-                        Object v = dim.getClass().getMethod(m).invoke(dim);
-                        explodeDim = !Boolean.TRUE.equals(v);
-                        break;
-                    } catch (NoSuchMethodException ignored) {
-                    }
-                }
-            }
+            respawnAnchorWorks = Boolean.TRUE.equals(world.getEnvironmentAttributes()
+                    .getAttributeValue(net.minecraft.world.attribute.EnvironmentAttributes.RESPAWN_ANCHOR_WORKS_GAMEPLAY, pos));
         } catch (Throwable ignored) {
         }
-        if (charge <= 0 || !explodeDim) {
+        if (charge <= 0 || respawnAnchorWorks) {
             return;
         }
         world.setBlockState(pos, Blocks.AIR.getDefaultState(), 3);
