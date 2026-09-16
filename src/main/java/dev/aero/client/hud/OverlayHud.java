@@ -26,6 +26,10 @@ public final class OverlayHud {
     private static final List<Module> ENABLED = new ArrayList<>();
     private static int cachedFps;
     private static long fpsAt;
+    private static String cachedMusic = "";
+    private static long musicAt;
+    private static float cachedSat;
+    private static long satAt;
 
     private static boolean flying(MinecraftClient mc) {
         try {
@@ -810,7 +814,23 @@ public final class OverlayHud {
         }
     }
 
+    /**
+     * This resolves the current track through several layers of reflection (no stable public API
+     * exposes it), including a full getMethods()/getDeclaredFields() scan in the worst case - far
+     * too expensive to redo every frame. The track name doesn't change faster than once every few
+     * seconds anyway, so it's only actually resolved on a timer, same idea as fps()/ping() above.
+     */
     private static String currentMusic(MinecraftClient mc) {
+        long now = System.currentTimeMillis();
+        if (now - musicAt < 1000) {
+            return cachedMusic;
+        }
+        musicAt = now;
+        cachedMusic = resolveCurrentMusic(mc);
+        return cachedMusic;
+    }
+
+    private static String resolveCurrentMusic(MinecraftClient mc) {
         try {
             Object tracker = MinecraftClient.class.getMethod("getMusicTracker").invoke(mc);
             for (String field : new String[]{"current", "playing", "field_5580"}) {
@@ -881,7 +901,18 @@ public final class OverlayHud {
         return "";
     }
 
+    /** Same reflection-avoidance idea as currentMusic(): saturation only changes on eat/regen ticks. */
     private static float splashSaturation(MinecraftClient mc) {
+        long now = System.currentTimeMillis();
+        if (now - satAt < 250) {
+            return cachedSat;
+        }
+        satAt = now;
+        cachedSat = resolveSplashSaturation(mc);
+        return cachedSat;
+    }
+
+    private static float resolveSplashSaturation(MinecraftClient mc) {
         try {
             Object food = mc.player.getClass().getMethod("getHungerManager").invoke(mc.player);
             Object v = food.getClass().getMethod("getSaturationLevel").invoke(food);

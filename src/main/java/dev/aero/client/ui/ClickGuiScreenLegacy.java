@@ -117,8 +117,8 @@ public class ClickGuiScreenLegacy extends Screen {
     private void layoutPanel() {
         int maxW = Math.max(8, width - 24);
         int maxH = Math.max(8, height - 24);
-        pw = Math.min(maxW, 900);
-        ph = Math.min(maxH, 528);
+        pw = Math.min(maxW, 760);
+        ph = Math.min(maxH, 440);
         if (pw < 612) {
             SIDE_W = Math.max(96, pw * 22 / 100);
             RIGHT_W = Math.max(120, pw * 30 / 100);

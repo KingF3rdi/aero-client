@@ -9,6 +9,7 @@ import net.minecraft.client.MinecraftClient;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -17,6 +18,8 @@ import java.util.Set;
 public final class FriendStore {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final List<String> NAMES = new ArrayList<>();
+    private static Set<String> onlineLower = Set.of();
+    private static long onlineAt;
 
     private FriendStore() {}
 
@@ -88,36 +91,41 @@ public final class FriendStore {
         return false;
     }
 
+    /**
+     * The Friends panel calls this once per friend per frame, so it used to redo a reflective
+     * getMethod()/invoke() over the whole server player list for every single friend, every
+     * frame - O(friends x players) reflection calls, 60+ times a second while the panel is open.
+     * PlayerListEntry.getProfile() is a plain GameProfile with a real getName(), no reflection
+     * needed, and the whole online set only needs rebuilding a few times a second since tab-list
+     * membership doesn't change every frame.
+     */
     public static boolean online(String name) {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.getNetworkHandler() == null || name == null || name.isBlank()) {
+        if (name == null || name.isBlank()) {
             return false;
         }
-        String want = name.toLowerCase(Locale.ROOT);
-        return mc.getNetworkHandler().getPlayerList().stream().anyMatch(e -> {
-            try {
-                Object profile = e.getProfile();
-                if (profile == null) {
-                    return false;
-                }
-                String n = profileName(profile);
-                return n != null && want.equals(n.toLowerCase(Locale.ROOT));
-            } catch (Throwable ignored) {
-                return false;
-            }
-        });
+        refreshOnlineIfStale();
+        return onlineLower.contains(name.toLowerCase(Locale.ROOT));
     }
 
-    private static String profileName(Object profile) {
-        try {
-            return (String) profile.getClass().getMethod("getName").invoke(profile);
-        } catch (Throwable ignored) {
+    private static void refreshOnlineIfStale() {
+        long now = System.currentTimeMillis();
+        if (now - onlineAt < 500) {
+            return;
         }
-        try {
-            return (String) profile.getClass().getMethod("name").invoke(profile);
-        } catch (Throwable ignored) {
+        onlineAt = now;
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (mc.getNetworkHandler() == null) {
+            onlineLower = Set.of();
+            return;
         }
-        return null;
+        Set<String> names = new HashSet<>();
+        for (var entry : mc.getNetworkHandler().getPlayerList()) {
+            com.mojang.authlib.GameProfile profile = entry.getProfile();
+            if (profile != null && profile.name() != null) {
+                names.add(profile.name().toLowerCase(Locale.ROOT));
+            }
+        }
+        onlineLower = names;
     }
 
     public static String ownName() {
