@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(targets = "net.minecraft.client.render.block.entity.BeaconBlockEntityRenderer", priority = 2000)
 public class BeaconBlockEntityRendererMixin {
-    @Inject(method = {"render", "renderBeam"}, at = @At("HEAD"), cancellable = true, require = 0)
+    @Inject(method = "render", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$noBeacon(CallbackInfo ci) {
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.noBeacons) {
             ci.cancel();
