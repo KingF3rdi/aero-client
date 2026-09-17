@@ -371,10 +371,10 @@ public final class Modules {
                 .setting("Break warning", () -> c.armorBreakWarning, v -> c.armorBreakWarning = v));
         add(new Module("Coordinates", "XYZ position", Category.HUD,
                 () -> c.coordsHud, v -> c.coordsHud = v)
-                .setting("Shadow", () -> c.panelShadow, v -> c.panelShadow = v));
+                .setting("Shadow", () -> c.coordsShadow, v -> c.coordsShadow = v));
         add(new Module("FPS", "Shows frames per second", Category.HUD,
                 () -> c.fpsHud, v -> c.fpsHud = v)
-                .setting("Shadow", () -> c.panelShadow, v -> c.panelShadow = v));
+                .setting("Shadow", () -> c.fpsShadow, v -> c.fpsShadow = v));
         add(new Module("GUI Tweaks", "Cleaner vanilla GUI spacing", Category.HUD,
                 () -> c.guiTweaks, v -> c.guiTweaks = v)
                 .setting("HUD Tweaks", () -> c.guiHudTweaks, v -> c.guiHudTweaks = v)
@@ -410,7 +410,7 @@ public final class Modules {
                 .setting("Progress Bar", () -> c.musicBar, v -> c.musicBar = v));
         add(new Module("Ping", "Shows your server latency", Category.HUD,
                 () -> c.pingHud, v -> c.pingHud = v)
-                .setting("Shadow", () -> c.panelShadow, v -> c.panelShadow = v));
+                .setting("Shadow", () -> c.pingShadow, v -> c.pingShadow = v));
         add(new Module("Potion HUD", "Active effect list", Category.HUD,
                 () -> c.potionHud, v -> c.potionHud = v)
                 .setting("Icons", () -> c.potionIcons, v -> c.potionIcons = v)

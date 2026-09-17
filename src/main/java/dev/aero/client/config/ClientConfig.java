@@ -315,6 +315,11 @@ public class ClientConfig {
     public int panelAccent = -4745994;
     public boolean panelShadow = true;
     public String panelStyle = "Glass";
+    // Coordinates/FPS/Ping each show their own "Shadow" checkbox in the ClickGUI -
+    // used to all read/write panelShadow, so toggling one silently flipped the other two.
+    public boolean coordsShadow = true;
+    public boolean fpsShadow = true;
+    public boolean pingShadow = true;
 
     public String equippedCape = "none";
     public String equippedWings = "none";

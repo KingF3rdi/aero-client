@@ -109,10 +109,10 @@ public final class OverlayHud {
         }
 
         if (cfg.fpsHud) {
-            hudLine(context, mc, cfg, cfg.fpsX, cfg.fpsY, fps(mc) + " FPS");
+            hudLine(context, mc, cfg, cfg.fpsX, cfg.fpsY, fps(mc) + " FPS", cfg.fpsShadow);
         }
         if (cfg.pingHud) {
-            hudLine(context, mc, cfg, cfg.pingX, cfg.pingY, ping(mc) + " ms");
+            hudLine(context, mc, cfg, cfg.pingX, cfg.pingY, ping(mc) + " ms", cfg.pingShadow);
         }
         if (cfg.cpsHud) {
             hudLine(context, mc, cfg, cfg.fpsX, cfg.fpsY + 12, HudStats.cps() + " CPS");
@@ -122,7 +122,8 @@ public final class OverlayHud {
         }
         if (cfg.coordsHud) {
             hudLine(context, mc, cfg, cfg.coordsX, cfg.coordsY,
-                    String.format("%.0f  %.0f  %.0f", mc.player.getX(), mc.player.getY(), mc.player.getZ()));
+                    String.format("%.0f  %.0f  %.0f", mc.player.getX(), mc.player.getY(), mc.player.getZ()),
+                    cfg.coordsShadow);
         }
         if (cfg.musicPlayer) {
             String track = currentMusic(mc);
@@ -726,10 +727,14 @@ public final class OverlayHud {
     }
 
     private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line) {
+        hudLine(context, mc, cfg, x, y, line, cfg.panelShadow);
+    }
+
+    private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line, boolean shadow) {
         int w = 12 + mc.textRenderer.getWidth(line);
         UiDraw.roundRect(context, x, y, w, 14, 5, 0x9912101A);
         context.fill(x + 3, y + 3, x + 5, y + 11, cfg.panelAccent | 0xFF000000);
-        context.drawText(mc.textRenderer, Text.literal(line), x + 8, y + 3, TEXT, cfg.panelShadow);
+        context.drawText(mc.textRenderer, Text.literal(line), x + 8, y + 3, TEXT, shadow);
     }
 
     private static String sprintText(MinecraftClient mc, ClientConfig cfg) {

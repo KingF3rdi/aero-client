@@ -192,7 +192,9 @@ public class AeroClient implements ClientModInitializer {
             boolean was = Boolean.TRUE.equals(moduleKeyWasDown.get(module.name));
             if (down && !was) {
                 if ("Screenshot".equals(module.name)) {
-                    Screenshots.capture(client);
+                    if (module.enabled()) {
+                        Screenshots.capture(client);
+                    }
                 } else if (!"Emotes".equals(module.name)) {
                     module.toggle();
                     CONFIG.save();

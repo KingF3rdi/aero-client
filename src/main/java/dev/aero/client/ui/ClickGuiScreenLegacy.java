@@ -35,11 +35,6 @@ public class ClickGuiScreenLegacy extends Screen {
     private static final int MUTED = 0xFF8E889C;
     private static final int TEXT = 0xFFF3F0F8;
     private static final int ACCENT = 0xFF4F8EFF;
-    private static final int LAV = 0xFFE4DCF6;
-    private static final int TRACK_OFF = 0xFF2A2A36;
-    private static final int TRACK_ON = 0xFFD8D0EC;
-    private static final int KNOB_ON = 0xFFF6F2FC;
-    private static final int KNOB_OFF = 0xFF9A96A8;
     private static final int LINE = 0x14FFFFFF;
 
     private static final int TOP = 36;
@@ -73,7 +68,6 @@ public class ClickGuiScreenLegacy extends Screen {
     private String playerLookup = "";
     private boolean playerLookupFocus;
     private int friendScroll;
-    private boolean ambienceReset;
     private final List<Module> visible = new ArrayList<>();
 
     private boolean boundKeysOnly;
@@ -499,7 +493,8 @@ public class ClickGuiScreenLegacy extends Screen {
 
         int y = settingsStartY();
         Module.ModuleStyle style = selected.style();
-        context.drawText(textRenderer, Text.literal("Toggle Key"), x + 14, y + 4, MUTED, false);
+        String keyLabel = "Emotes".equals(selected.name) ? "Hold Key" : "Toggle Key";
+        context.drawText(textRenderer, Text.literal(keyLabel), x + 14, y + 4, MUTED, false);
         String keyName = capturingKeybind == selected ? "Press a key..."
                 : style.toggleKey < 0 ? "None" : org.lwjgl.glfw.GLFW.glfwGetKeyName(style.toggleKey, 0) != null
                 ? org.lwjgl.glfw.GLFW.glfwGetKeyName(style.toggleKey, 0).toUpperCase(java.util.Locale.ROOT) : "Key " + style.toggleKey;
