@@ -111,14 +111,14 @@ public class ClickGuiScreenLegacy extends Screen {
     private void layoutPanel() {
         int maxW = Math.max(8, width - 24);
         int maxH = Math.max(8, height - 24);
-        pw = Math.min(maxW, 640);
-        ph = Math.min(maxH, 370);
-        if (pw < 520) {
-            SIDE_W = Math.max(84, pw * 22 / 100);
-            RIGHT_W = Math.max(104, pw * 30 / 100);
+        pw = Math.min(maxW, 540);
+        ph = Math.min(maxH, 310);
+        if (pw < 460) {
+            SIDE_W = Math.max(76, pw * 22 / 100);
+            RIGHT_W = Math.max(96, pw * 30 / 100);
         } else {
-            SIDE_W = 144;
-            RIGHT_W = 210;
+            SIDE_W = 122;
+            RIGHT_W = 178;
         }
         ox = Math.max(0, (width - pw) / 2);
         oy = Math.max(0, (height - ph) / 2);

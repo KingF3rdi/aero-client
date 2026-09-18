@@ -20,6 +20,9 @@ public final class CosmeticEffects {
     private static double lastX, lastZ;
     private static boolean havePos;
     private static int trailPhase;
+    private static int capePhase;
+    private static int headPhase;
+    private static int petPhase;
 
     public static void tick(MinecraftClient client) {
         ClientPlayerEntity player = client.player;
@@ -36,6 +39,9 @@ public final class CosmeticEffects {
 
         tickTrail(client, player, moved);
         tickWings(client, player);
+        tickCape(client, player, moved);
+        tickHead(client, player);
+        tickPet(client, player, moved);
     }
 
     private static void tickTrail(MinecraftClient client, ClientPlayerEntity player, double moved) {
@@ -72,6 +78,54 @@ public final class CosmeticEffects {
         double baseZ = player.getZ() - backZ;
         spawnPuff(client, baseX + sideX, baseY, baseZ + sideZ, item.color(), 1);
         spawnPuff(client, baseX - sideX, baseY, baseZ - sideZ, item.color(), 1);
+    }
+
+    private static void tickCape(MinecraftClient client, ClientPlayerEntity player, double moved) {
+        if (moved < 0.02) {
+            return;
+        }
+        Cosmetics.Item item = equippedItem(Cosmetics.Kind.CAPE);
+        if (item == null) {
+            return;
+        }
+        // Every 3 ticks at shoulder height, behind the player - a cloak catching the air as they walk.
+        if (++capePhase % 3 != 0) {
+            return;
+        }
+        double yaw = Math.toRadians(player.getYaw());
+        double backX = -Math.sin(yaw) * 0.25;
+        double backZ = Math.cos(yaw) * 0.25;
+        spawnPuff(client, player.getX() - backX, player.getY() + 1.2, player.getZ() - backZ, item.color(), 1);
+    }
+
+    private static void tickHead(MinecraftClient client, ClientPlayerEntity player) {
+        Cosmetics.Item item = equippedItem(Cosmetics.Kind.HEAD);
+        if (item == null) {
+            return;
+        }
+        // A slow, constant shimmer above the head - visible even standing still, unlike trail/wings.
+        if (++headPhase % 8 != 0) {
+            return;
+        }
+        spawnPuff(client, player.getX(), player.getY() + player.getHeight() + 0.15, player.getZ(), item.color(), 1);
+    }
+
+    private static void tickPet(MinecraftClient client, ClientPlayerEntity player, double moved) {
+        if (moved < 0.02) {
+            return;
+        }
+        Cosmetics.Item item = equippedItem(Cosmetics.Kind.PET);
+        if (item == null) {
+            return;
+        }
+        // A little companion puff trailing at ankle height, off to the side rather than underfoot.
+        if (++petPhase % 4 != 0) {
+            return;
+        }
+        double yaw = Math.toRadians(player.getYaw());
+        double sideX = Math.cos(yaw) * 0.5;
+        double sideZ = Math.sin(yaw) * 0.5;
+        spawnPuff(client, player.getX() + sideX, player.getY() + 0.1, player.getZ() + sideZ, item.color(), 1);
     }
 
     /** Called from the chat-based own-kill detector (see Visuals.isOwnKillLine) - a pure client mod

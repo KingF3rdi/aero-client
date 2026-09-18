@@ -49,7 +49,7 @@ public final class CosmeticPreview {
             state.outlineColor = 0;
             // One full turn every 9s - slow enough to read as idle rather than a distracting spin.
             float spinYaw = (System.currentTimeMillis() % 9000L) / 9000f * 360f;
-            if (state instanceof LivingEntityRenderState living) {
+            if (state instanceof LivingEntityRenderState living && living.baseScale > 0f) {
                 living.bodyYaw = spinYaw;
                 living.relativeHeadYaw = 0f;
                 living.pitch = 0f;

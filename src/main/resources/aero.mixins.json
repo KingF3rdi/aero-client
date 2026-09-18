@@ -39,7 +39,8 @@
     "RecipeBookScreenScaleMixin",
     "HandledScreenScaleMixin",
     "CreativeInventoryScaleMixin",
-    "TitleScreenMixin"
+    "TitleScreenMixin",
+    "PlayerListHudMixin"
   ],
   "injectors": {
     "defaultRequire": 0
