@@ -77,6 +77,9 @@ public class ClickGuiScreenLegacy extends Screen {
     private int pw;
     private int ph;
 
+    private int settingsScroll;
+    private int settingsContentH;
+    private Module scrollModule;
     private Module capturingKeybind;
     private Module.Setting focusedTextSetting;
     private String textDraft = "";
@@ -490,10 +493,20 @@ public class ClickGuiScreenLegacy extends Screen {
         UiDraw.pill(context, ox + pw - 42 - 46, y0 + 9, 40, 16, resetHover);
         context.drawText(textRenderer, Text.literal("Reset"), ox + pw - 42 - 46 + 6, y0 + 13,
                 resetHover ? TEXT : MUTED, false);
-        wrap(context, selected.description, x + 14, y0 + 30, RIGHT_W - 28, MUTED);
+        wrap(context, selected.description, x + 14, y0 + 30, RIGHT_W - 28, MUTED, 3);
         UiDraw.divider(context, x + 14, settingsStartY() - 8, RIGHT_W - 28);
 
-        int y = settingsStartY();
+        if (scrollModule != selected) {
+            scrollModule = selected;
+            settingsScroll = 0;
+        }
+        int viewTop = settingsStartY() - 6;
+        int viewBottom = settingsViewBottom();
+        settingsScroll = Math.max(0, Math.min(settingsScroll, Math.max(0, settingsContentH - (viewBottom - viewTop))));
+        int contentStart = settingsStartY() - settingsScroll;
+        int y = contentStart;
+        context.enableScissor(x + 1, viewTop, ox + pw, viewBottom);
+        try {
         Module.ModuleStyle style = selected.style();
         String keyLabel = "Emotes".equals(selected.name) ? "Hold Key" : "Toggle Key";
         context.drawText(textRenderer, Text.literal(keyLabel), x + 14, y + 4, MUTED, false);
@@ -536,9 +549,6 @@ public class ClickGuiScreenLegacy extends Screen {
         for (Module.Setting setting : selected.settings) {
             if (!settingVisible(setting)) {
                 continue;
-            }
-            if (y > y1 - 28) {
-                break;
             }
             int indent = setting.nestUnder == null ? 0 : 12;
             int tx = x + 14 + indent;
@@ -608,10 +618,20 @@ public class ClickGuiScreenLegacy extends Screen {
                 y += 22;
             }
         }
+        } finally {
+            context.disableScissor();
+        }
+        settingsContentH = y - contentStart + 12;
+        UiDraw.scrollbar(context, ox + pw - 8, viewTop, viewBottom - viewTop, settingsScroll, settingsContentH, viewBottom - viewTop);
     }
 
     private int settingsStartY() {
-        return oy + TOP + 58;
+        int lines = selected == null ? 1 : descLines(selected.description, RIGHT_W - 28);
+        return oy + TOP + 30 + lines * 10 + 14;
+    }
+
+    private int settingsViewBottom() {
+        return oy + ph - 8;
     }
 
     private int youLeft() {
@@ -901,11 +921,19 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private void wrap(DrawContext context, String text, int x, int y, int max, int color) {
+        wrap(context, text, x, y, max, color, Integer.MAX_VALUE);
+    }
+
+    private void wrap(DrawContext context, String text, int x, int y, int max, int color, int maxLines) {
+        int lines = 0;
         String[] words = text.split(" ");
         StringBuilder line = new StringBuilder();
         for (String word : words) {
             String next = line.isEmpty() ? word : line + " " + word;
             if (textRenderer.getWidth(next) > max && !line.isEmpty()) {
+                if (++lines > maxLines) {
+                    return;
+                }
                 context.drawText(textRenderer, Text.literal(line.toString()), x, y, color, false);
                 y += 10;
                 line = new StringBuilder(word);
@@ -913,9 +941,24 @@ public class ClickGuiScreenLegacy extends Screen {
                 line = new StringBuilder(next);
             }
         }
-        if (!line.isEmpty()) {
+        if (!line.isEmpty() && lines < maxLines) {
             context.drawText(textRenderer, Text.literal(line.toString()), x, y, color, false);
         }
+    }
+
+    private int descLines(String text, int max) {
+        int lines = 1;
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split(" ")) {
+            String next = line.isEmpty() ? word : line + " " + word;
+            if (textRenderer.getWidth(next) > max && !line.isEmpty()) {
+                lines++;
+                line = new StringBuilder(word);
+            } else {
+                line = new StringBuilder(next);
+            }
+        }
+        return Math.min(3, lines);
     }
 
     private void drawSwitch(DrawContext context, int x, int y, boolean on) {
@@ -1142,7 +1185,10 @@ public class ClickGuiScreenLegacy extends Screen {
             return false;
         }
         int x = ox + pw - RIGHT_W;
-        int y = settingsStartY();
+        if (my < settingsStartY() - 6 || my >= settingsViewBottom()) {
+            return false;
+        }
+        int y = settingsStartY() - settingsScroll;
         Module.ModuleStyle style = selected.style();
         if (inside(mx, my, x + RIGHT_W - 92, y - 3, 78, 20)) {
             capturingKeybind = selected;
@@ -1285,6 +1331,11 @@ public class ClickGuiScreenLegacy extends Screen {
         if (topTab == 1) {
             layoutPanel();
             wardrobe.scroll((int) mouseX, (int) mouseY, verticalAmount);
+            return true;
+        }
+        if (topTab == 0 && selected != null && mouseX >= ox + pw - RIGHT_W) {
+            int view = settingsViewBottom() - (settingsStartY() - 6);
+            settingsScroll = (int) Math.max(0, Math.min(Math.max(0, settingsContentH - view), settingsScroll - verticalAmount * 16));
             return true;
         }
         if (topTab == 2) {
