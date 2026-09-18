@@ -85,12 +85,12 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             if ("glitch".equals(id) && (i + (int) (t * 6)) % 2 == 0) {
                 col = CubeDraw.shade(col, 1.5f);
             }
-            box(0, 0, 2.4f, sway, 0, 0, 0, 2.4f + i * 4.8f, 0, 10, 4.9f, 1, col, light);
+            box(0, 0, 2.4f, sway, 0, 0, 0, 1.6f + i * 3.2f, 0, 10, 3.3f, 1, col, light);
         }
         int trim = CubeDraw.shade(c, 1.4f);
         box(0, 0, 2.4f, sway, 0, 0, 0, 0.7f, -0.15f, 10.4f, 1.4f, 1.4f, trim, light);
-        box(0, 0, 2.4f, sway, 0, 0, -4.9f, 12, 0, 0.8f, 24, 1.2f, trim, light);
-        box(0, 0, 2.4f, sway, 0, 0, 4.9f, 12, 0, 0.8f, 24, 1.2f, trim, light);
+        box(0, 0, 2.4f, sway, 0, 0, -4.9f, 8, 0, 0.8f, 16, 1.2f, trim, light);
+        box(0, 0, 2.4f, sway, 0, 0, 4.9f, 8, 0, 0.8f, 16, 1.2f, trim, light);
     }
 
     // ---- wings --------------------------------------------------------------------------------

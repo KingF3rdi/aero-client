@@ -68,8 +68,8 @@ public final class CosmeticIcons {
 
     private static void cape(DrawContext c, Cosmetics.Item item, int col, int cx, int y, int w, int h, float t) {
         int cw = Math.max(18, w / 3);
-        int ch = h - 20;
-        int top = y + 8;
+        int ch = Math.min(h - 20, cw * 8 / 5 + 4);
+        int top = y + (h - ch) / 2;
         int dark = CubeDraw.shade(col, 0.55f);
         int sway = (int) (Math.sin(t * 1.7) * 2);
         for (int i = 0; i < ch; i += 2) {
