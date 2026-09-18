@@ -13,6 +13,15 @@ public class ParticleManagerMixin {
     private static int spawned;
     private static long window;
 
+    /** The client handles the totem-pop status (35) itself and starts this emitter without ever calling
+     * Entity.handleStatus, so this is the one reliable place that fires exactly once per pop. */
+    @Inject(method = "addEmitter(Lnet/minecraft/entity/Entity;Lnet/minecraft/particle/ParticleEffect;I)V", at = @At("HEAD"), require = 0)
+    private void aero$totemPop(net.minecraft.entity.Entity entity, net.minecraft.particle.ParticleEffect effect, int maxAge, CallbackInfo ci) {
+        if (effect == net.minecraft.particle.ParticleTypes.TOTEM_OF_UNDYING && entity instanceof net.minecraft.entity.LivingEntity living) {
+            dev.aero.client.Visuals.onTotemPop(living);
+        }
+    }
+
     @Inject(method = "addParticle(Lnet/minecraft/client/particle/Particle;)V", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$limit(Particle particle, CallbackInfo ci) {
         if (dev.aero.client.Visuals.skipParticle(particle)) {

@@ -3,7 +3,6 @@ package dev.aero.client.mixin;
 import dev.aero.client.Visuals;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityStatuses;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -23,9 +22,6 @@ public class EntityStatusMixin {
     @Inject(method = "handleStatus", at = @At("HEAD"), require = 0)
     private void aero$status(byte status, CallbackInfo ci) {
         Object self = this;
-        if (status == EntityStatuses.USE_TOTEM_OF_UNDYING && self instanceof LivingEntity living) {
-            Visuals.onTotemPop(living);
-        }
         if (self instanceof PlayerEntity player
                 && (status == EntityStatuses.BREAK_OFFHAND || status == EntityStatuses.BREAK_MAINHAND)) {
             Visuals.markShieldDisabled(player);
