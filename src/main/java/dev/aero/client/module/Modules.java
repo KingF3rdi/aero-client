@@ -95,6 +95,9 @@ public final class Modules {
         add(new Module("Fast Graphics", "Force Fast graphics for more FPS", Category.PERFORMANCE,
                 () -> c.fastGraphics, v -> c.fastGraphics = v));
 
+        add(new Module("Interface Color", "Accent color of the Aero Client menus and HUD", Category.RENDER,
+                () -> true, v -> { })
+                .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
                 () -> c.fullbright, v -> c.fullbright = v)
                 .settingF("Brightness", () -> (double) c.brightness, v -> c.brightness = (float) v, 1, 15));

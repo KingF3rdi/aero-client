@@ -21,7 +21,6 @@ public class DrawCrosshairScreen extends Screen {
     private static final int PANEL = 0xF00E0C16;
     private static final int TEXT = 0xFFF3F0F8;
     private static final int MUTED = 0xFF8E889C;
-    private static final int ACCENT = 0xFF4F8EFF;
 
     private static final int RADIUS = 8;
     private static final int GRID = RADIUS * 2 + 1;
@@ -104,10 +103,10 @@ public class DrawCrosshairScreen extends Screen {
                 int fill = on ? (0xFF000000 | (AeroClient.CONFIG.crosshairColor & 0xFFFFFF)) : 0xFF14121C;
                 context.fill(x + 1, y + 1, x + CELL - 1, y + CELL - 1, fill);
                 if (center) {
-                    context.fill(x, y, x + CELL, y + 1, ACCENT);
-                    context.fill(x, y + CELL - 1, x + CELL, y + CELL, ACCENT);
-                    context.fill(x, y, x + 1, y + CELL, ACCENT);
-                    context.fill(x + CELL - 1, y, x + CELL, y + CELL, ACCENT);
+                    context.fill(x, y, x + CELL, y + 1, UiDraw.accent());
+                    context.fill(x, y + CELL - 1, x + CELL, y + CELL, UiDraw.accent());
+                    context.fill(x, y, x + 1, y + CELL, UiDraw.accent());
+                    context.fill(x + CELL - 1, y, x + CELL, y + CELL, UiDraw.accent());
                 }
             }
         }

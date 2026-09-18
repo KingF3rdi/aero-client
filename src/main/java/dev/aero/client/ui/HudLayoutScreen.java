@@ -23,7 +23,6 @@ import java.util.function.IntSupplier;
 public class HudLayoutScreen extends Screen {
     private static final int TEXT = 0xFFF3F0F8;
     private static final int MUTED = 0xFFB8B0C8;
-    private static final int ACCENT = 0xFF4F8EFF;
 
     private record Elem(String label, BooleanSupplier on, IntSupplier getX, IntConsumer setX,
                          IntSupplier getY, IntConsumer setY) {}
@@ -79,7 +78,7 @@ public class HudLayoutScreen extends Screen {
             int x = e.getX().getAsInt();
             int y = e.getY().getAsInt();
             int w = chipW(e);
-            int dotColor = e.on().getAsBoolean() ? ACCENT : MUTED;
+            int dotColor = e.on().getAsBoolean() ? UiDraw.accent() : MUTED;
             boolean hover = inside(mouseX, mouseY, x, y, w, 16) || dragging == e;
             UiDraw.roundRect(context, x, y, w, 16, 6, hover ? 0xE0282436 : 0xC014121C);
             UiDraw.roundBorder(context, x, y, w, 16, 6, hover ? 0x664F8EFF : 0x22FFFFFF);

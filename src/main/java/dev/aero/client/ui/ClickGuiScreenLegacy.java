@@ -34,7 +34,6 @@ public class ClickGuiScreenLegacy extends Screen {
     private static final int PILL_ON = 0xAA3A3158;
     private static final int MUTED = 0xFF8E889C;
     private static final int TEXT = 0xFFF3F0F8;
-    private static final int ACCENT = 0xFF4F8EFF;
     private static final int LINE = 0x14FFFFFF;
 
     private static final int TOP = 36;
@@ -373,7 +372,7 @@ public class ClickGuiScreenLegacy extends Screen {
         UiDraw.roundRect(context, x0 + 6, y0 + 5, pw - 12, TOP - 8, 12, BAR);
         context.fill(x0 + 14, y0 + TOP - 1, x1 - 14, y0 + TOP, 0x22FFFFFF);
 
-        UiDraw.aeroMark(context, x0 + 12, y0 + 8, 18, ACCENT);
+        UiDraw.aeroMark(context, x0 + 12, y0 + 8, 18, UiDraw.accent());
         if (!compactTop()) {
             context.drawText(textRenderer, Text.literal("Aero"), x0 + 34, y0 + 10, TEXT, false);
             context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 34, y0 + 20, MUTED, false);
@@ -478,7 +477,7 @@ public class ClickGuiScreenLegacy extends Screen {
         boolean boundH = inside(mx, my, x0 + 8, sy, SIDE_W - 16, navH);
         if (boundKeysOnly) {
             UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, navH, 8, PILL_ON);
-            UiDraw.roundRect(context, x0 + 8, sy + 4, 3, navH - 8, 1, ACCENT);
+            UiDraw.roundRect(context, x0 + 8, sy + 4, 3, navH - 8, 1, UiDraw.accent());
         } else if (boundH) {
             UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, navH, 8, 0x8014121C);
         }
@@ -497,7 +496,7 @@ public class ClickGuiScreenLegacy extends Screen {
         boolean h = inside(mx, my, ox + 8, y, SIDE_W - 16, navH);
         if (on) {
             UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, navH, 8, PILL_ON);
-            UiDraw.roundRect(context, ox + 8, y + 4, 3, navH - 8, 1, ACCENT);
+            UiDraw.roundRect(context, ox + 8, y + 4, 3, navH - 8, 1, UiDraw.accent());
         } else if (h) {
             UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, navH, 8, 0x8014121C);
         }
@@ -542,7 +541,7 @@ public class ClickGuiScreenLegacy extends Screen {
                 int rowBottom = y + ROW_H - 4;
                 if (sel) {
                     UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x444F8EFF);
-                    UiDraw.roundRect(context, x + 6, y + 6, 3, rowBottom - y - 12, 1, ACCENT);
+                    UiDraw.roundRect(context, x + 6, y + 6, 3, rowBottom - y - 12, 1, UiDraw.accent());
                 } else if (h) {
                     UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x28FFFFFF);
                 }
@@ -852,7 +851,7 @@ public class ClickGuiScreenLegacy extends Screen {
                 SkinPreview.requestLookup(n);
                 if (sel) {
                     UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x444F8EFF);
-                    UiDraw.roundRect(context, lx - 2, y + 6, 3, ROW_H - 16, 1, ACCENT);
+                    UiDraw.roundRect(context, lx - 2, y + 6, 3, ROW_H - 16, 1, UiDraw.accent());
                 } else if (inside(mx, my, lx - 2, y, lw + 4, ROW_H - 4)) {
                     UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x28FFFFFF);
                 }

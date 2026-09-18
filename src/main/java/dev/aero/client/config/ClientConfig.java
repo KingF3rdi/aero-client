@@ -337,6 +337,7 @@ public class ClientConfig {
     public String equippedKillEffect = "none";
     public String equippedMace = "none";
     public boolean showOthersCosmetics = true;
+    public int uiAccent = 0xFF4F8EFF;
     public String equippedShield = "none";
     public int totemColGood = 0xFF55FF55;
     public int totemColWarn = 0xFFFFA030;

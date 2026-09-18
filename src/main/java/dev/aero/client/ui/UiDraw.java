@@ -8,8 +8,10 @@ import net.minecraft.client.gui.DrawContext;
 public final class UiDraw {
     public static final int BORDER = 0x38FFFFFF;
     public static final int BORDER_SOFT = 0x18FFFFFF;
-    public static final int ACCENT = 0xFF4F8EFF;
-    public static final int ACCENT_DIM = 0x552E5A8A;
+    public static int accent() {
+        var c = dev.aero.client.AeroClient.CONFIG;
+        return c == null ? 0xFF4F8EFF : (c.uiAccent | 0xFF000000);
+    }
     public static final int FILL = 0xA812101A;
     public static final int FILL_DEEP = 0xA00A0910;
     public static final int FILL_LIFT = 0xB01A1826;
@@ -237,7 +239,7 @@ public final class UiDraw {
     public static void card(DrawContext c, int x, int y, int w, int h, int fill, boolean accentBar) {
         roundRect(c, x, y, w, h, Math.min(12, Math.min(w, h) / 2), fill);
         if (accentBar) {
-            roundRect(c, x + 3, y + 5, 3, h - 10, 1, ACCENT);
+            roundRect(c, x + 3, y + 5, 3, h - 10, 1, accent());
         }
     }
 
@@ -247,7 +249,7 @@ public final class UiDraw {
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {
-        roundRect(c, x, y + 3, 28, 10, 0, on ? ACCENT : 0x66302C3C);
+        roundRect(c, x, y + 3, 28, 10, 0, on ? accent() : 0x66302C3C);
         int knobX = on ? x + 15 : x + 1;
         roundRect(c, knobX, y, 13, 16, 0, on ? 0xFFF8F5FF : 0xD0AAA5B8);
         roundBorder(c, knobX, y, 13, 16, 0, on ? 0x66FFFFFF : 0x22000000);
@@ -256,7 +258,7 @@ public final class UiDraw {
     public static void slider(DrawContext c, int x, int y, int w, float t) {
         roundRect(c, x, y, w, 6, 3, 0x66221F2E);
         int filled = Math.max(4, (int) (w * Math.max(0f, Math.min(1f, t))));
-        roundRect(c, x, y, filled, 6, 3, ACCENT);
+        roundRect(c, x, y, filled, 6, 3, accent());
         roundRect(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0xFFF6F1FF);
         roundBorder(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0x66FFFFFF);
     }

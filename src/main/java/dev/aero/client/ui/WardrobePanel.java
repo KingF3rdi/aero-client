@@ -18,7 +18,6 @@ import java.util.List;
 public final class WardrobePanel {
     private static final int TEXT = 0xFFF3F0F8;
     private static final int MUTED = 0xFF8E889C;
-    private static final int ACCENT = 0xFF4F8EFF;
     private static final int PAD = 8;
 
     private static final String[] TAB_NAMES = {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges", "Shields"};
@@ -233,7 +232,7 @@ public final class WardrobePanel {
         String glyph = item == null ? "" : Cosmetics.glyph(kind, item.id());
         if (kind == Cosmetics.Kind.BADGE && item == null) {
             glyph = "A";
-            color = ACCENT;
+            color = UiDraw.accent();
         }
         int w = tr.getWidth(glyph) + tr.getWidth(name + ": gg") + 24;
         int x = midX - w / 2;
