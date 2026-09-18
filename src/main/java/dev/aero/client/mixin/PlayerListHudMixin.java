@@ -14,8 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public class PlayerListHudMixin {
     @Inject(method = "getPlayerName", at = @At("RETURN"), cancellable = true, require = 0)
     private void aero$badge(PlayerListEntry entry, CallbackInfoReturnable<Text> cir) {
-        if (ClientUsers.isUser(entry.getProfile().id())) {
-            cir.setReturnValue(ClientUsers.badge().append(cir.getReturnValue()));
+        java.util.UUID id = entry.getProfile().id();
+        if (ClientUsers.isUser(id)) {
+            cir.setReturnValue(ClientUsers.badge(id).append(cir.getReturnValue()));
         }
     }
 }

@@ -443,7 +443,9 @@ public final class Modules {
                 .settingColor("Count color", () -> c.totemColor, v -> c.totemColor = v)
                 .nestLast("Use color")
                 .setting("Style", () -> c.totemStyle, v -> c.totemStyle = v, "Boxed", "Plain")
-                .setting("Pops next to name", () -> c.totemPopsOnNametag, v -> c.totemPopsOnNametag = v));
+                .setting("Pops next to name", () -> c.totemPopsOnNametag, v -> c.totemPopsOnNametag = v)
+                .setting("Pop effect", () -> c.totemPopFx, v -> c.totemPopFx = v, "Off", "Burst", "Spiral", "Rings", "Hearts", "Soul")
+                .settingColor("Pop effect color", () -> c.totemPopFxColor, v -> c.totemPopFxColor = v));
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.TOTEM_COUNTER);
         add(new Module("Item Highlighter", "Outline standard PvP items in hotbar and inv", Category.HUD,
                 () -> c.itemHighlighter, v -> c.itemHighlighter = v)

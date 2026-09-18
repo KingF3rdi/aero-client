@@ -49,6 +49,7 @@ public class ClickGuiScreenLegacy extends Screen {
             "Emotes", "Chat tags", "Badges"
     };
 
+    private final WardrobePanel wardrobe = new WardrobePanel();
     private final Screen parent;
     private final boolean pauseGame;
     private Category filter;
@@ -61,8 +62,6 @@ public class ClickGuiScreenLegacy extends Screen {
     private int cosTab;
     private int cosSel;
     private int friendSel = -1;
-    private String cosSearch = "";
-    private boolean cosSearchFocus;
     private String friendDraft = "";
     private boolean friendFocus;
     private String playerLookup = "";
@@ -111,8 +110,8 @@ public class ClickGuiScreenLegacy extends Screen {
     private void layoutPanel() {
         int maxW = Math.max(8, width - 24);
         int maxH = Math.max(8, height - 24);
-        pw = Math.min(maxW, 540);
-        ph = Math.min(maxH, 310);
+        pw = Math.min(maxW, topTab == 1 ? 900 : 540);
+        ph = Math.min(maxH, topTab == 1 ? 540 : 310);
         if (pw < 460) {
             SIDE_W = Math.max(76, pw * 22 / 100);
             RIGHT_W = Math.max(96, pw * 30 / 100);
@@ -285,7 +284,7 @@ public class ClickGuiScreenLegacy extends Screen {
             UiDraw.glass(context, ox, oy, pw, ph, 0x9A10162A, 20);
             drawTop(context, mouseX, mouseY);
             if (topTab == 1) {
-                drawYou(context, mouseX, mouseY);
+                wardrobe.render(context, mouseX, mouseY, ox, oy + TOP, pw, ph - TOP);
             } else if (topTab == 2) {
                 drawFriends(context, mouseX, mouseY);
             } else {
@@ -639,146 +638,6 @@ public class ClickGuiScreenLegacy extends Screen {
         return ownSkinKey();
     }
 
-    private void drawYou(DrawContext context, int mx, int my) {
-        int y0 = oy + TOP;
-        int y1 = oy + ph;
-        int left = youLeft();
-        int mid = youMid();
-        int right = youRight();
-        int leftW = mid - left - 8;
-        int midW = right - mid - 8;
-        Cosmetics.Kind kind = Cosmetics.kindForTab(cosTab);
-        java.util.List<Cosmetics.Item> items = Cosmetics.of(kind, cosSearch);
-        String equipped = Cosmetics.equipped(kind);
-
-        UiDraw.innerCard(context, left, y0 + 6, leftW, ph - TOP - 14);
-        UiDraw.innerCard(context, mid, y0 + 6, midW, ph - TOP - 14);
-        UiDraw.innerCard(context, right + 2, y0 + 6, RIGHT_W - 10, ph - TOP - 14);
-
-        int lx = left + 10;
-        int lw = leftW - 20;
-        UiDraw.field(context, lx, y0 + 16, lw, 22, playerLookupFocus);
-        String look = playerLookup.isEmpty() && !playerLookupFocus ? "Look up a player…" : playerLookup + (playerLookupFocus ? "|" : "");
-        context.drawText(textRenderer, Text.literal(fit(look, lw - 16)), lx + 8, y0 + 22,
-                playerLookup.isEmpty() && !playerLookupFocus ? MUTED : TEXT, false);
-
-        String name = AccountManager.currentName();
-        SkinPreview.requestOwn();
-        if (!playerLookup.isBlank()) {
-            SkinPreview.requestLookup(playerLookup);
-        }
-        String key = wardrobeSkinKey();
-        if (SkinPreview.ready(key)) {
-            SkinPreview.drawHead(context, key, lx, y0 + 48, 28);
-        } else {
-            UiDraw.roundRect(context, lx, y0 + 48, 28, 28, 8, 0xFFC8A0E8);
-        }
-        context.drawText(textRenderer, Text.literal(fit(name, lw - 40)), lx + 36, y0 + 52, TEXT, false);
-        String status = AccountManager.status.get();
-        if (status == null || status.isBlank()) {
-            status = MinecraftClient.getInstance().player != null ? "In world" : "Menu";
-        }
-        context.drawText(textRenderer, Text.literal(fit(status, lw - 40)), lx + 36, y0 + 64, MUTED, false);
-
-        int rowY = y0 + 92;
-        context.drawText(textRenderer, Text.literal("Friends"), lx, rowY, MUTED, false);
-        context.drawText(textRenderer, Text.literal(String.valueOf(FriendStore.size())), lx + lw - textRenderer.getWidth(String.valueOf(FriendStore.size())), rowY, TEXT, false);
-        UiDraw.divider(context, lx, rowY + 16, lw);
-        context.drawText(textRenderer, Text.literal("Account"), lx, rowY + 28, MUTED, false);
-        context.drawText(textRenderer, Text.literal(AccountManager.account != null ? "Microsoft" : "Offline"),
-                lx + lw - textRenderer.getWidth(AccountManager.account != null ? "Microsoft" : "Offline"), rowY + 28, TEXT, false);
-
-        boolean signed = AccountManager.account != null;
-        String sign = signed ? "Sign out" : "Sign in with Microsoft";
-        boolean signH = inside(mx, my, lx, y1 - 38, lw, 22);
-        UiDraw.pill(context, lx, y1 - 38, lw, 22, signH);
-        context.drawText(textRenderer, Text.literal(sign),
-                lx + Math.max(8, (lw - textRenderer.getWidth(sign)) / 2), y1 - 32, TEXT, false);
-
-        int tabY = y0 + 16;
-        int tx = mid + 10;
-        String[] tabs = new String[COS_TABS.length + COS_EXTRA.length];
-        System.arraycopy(COS_TABS, 0, tabs, 0, COS_TABS.length);
-        System.arraycopy(COS_EXTRA, 0, tabs, COS_TABS.length, COS_EXTRA.length);
-        for (int i = 0; i < tabs.length; i++) {
-            boolean on = cosTab == i;
-            int tw = Math.max(48, textRenderer.getWidth(tabs[i]) + 16);
-            if (tx + tw > mid + midW - 8) {
-                tx = mid + 10;
-                tabY += 22;
-            }
-            boolean h = inside(mx, my, tx, tabY, tw, 20);
-            UiDraw.pill(context, tx, tabY, tw - 4, 20, on || h);
-            context.drawText(textRenderer, Text.literal(tabs[i]),
-                    tx + (tw - 4 - textRenderer.getWidth(tabs[i])) / 2, tabY + 6, on || h ? TEXT : MUTED, false);
-            tx += tw;
-        }
-
-        int searchY = tabY + 26;
-        UiDraw.field(context, mid + 10, searchY, midW - 20, 22, cosSearchFocus);
-        String hint = cosSearch.isEmpty() && !cosSearchFocus ? "Search cosmetics…" : cosSearch + (cosSearchFocus ? "|" : "");
-        context.drawText(textRenderer, Text.literal(fit(hint, midW - 36)), mid + 18, searchY + 6,
-                cosSearch.isEmpty() && !cosSearchFocus ? MUTED : TEXT, false);
-
-        int gx = mid + 10;
-        int gy = searchY + 32;
-        int cell = 56;
-        int gap = 8;
-        int cols = Math.max(1, (midW - 20) / (cell + gap));
-        context.enableScissor(mid + 8, gy, mid + midW - 8, y1 - 16);
-        try {
-            for (int i = 0; i < items.size(); i++) {
-                Cosmetics.Item item = items.get(i);
-                int col = i % cols;
-                int row = i / cols;
-                int cx = gx + col * (cell + gap);
-                int cy = gy + row * (cell + 20);
-                if (cy + cell > y1 - 16) {
-                    break;
-                }
-                boolean sel = equipped.equals(item.id());
-                UiDraw.roundRect(context, cx, cy, cell, cell, 8, item.color());
-                if (sel) {
-                    UiDraw.roundBorder(context, cx - 1, cy - 1, cell + 2, cell + 2, 8, ACCENT);
-                }
-                context.drawText(textRenderer, Text.literal(fit(item.name(), cell)), cx + 4, cy + cell + 4, MUTED, false);
-            }
-            if (items.isEmpty()) {
-                context.drawText(textRenderer, Text.literal("Nothing in this tab."), gx, gy + 8, MUTED, false);
-            }
-        } finally {
-            context.disableScissor();
-        }
-
-        int rx = right + 14;
-        context.drawText(textRenderer, Text.literal("Preview"), rx, y0 + 16, MUTED, false);
-        int px = rx + 18;
-        int py = y0 + 36;
-        int belowPreviewY = Math.min(y1 - 72, py + 140);
-        context.enableScissor(right + 8, py - 2, ox + pw - 12, belowPreviewY);
-        try {
-            // Prefer the live, slowly-spinning 3D preview (own player, or the looked-up player if
-            // they're online in this world) over the flat static body render - only falls back to
-            // the flat skin when there's no live entity to spin (an offline looked-up player).
-            var liveEntity = playerLookup.isBlank() ? MinecraftClient.getInstance().player : onlinePlayerEntity(playerLookup);
-            if (liveEntity != null) {
-                CosmeticPreview.spin(context, right + 70, py + 110, 38, liveEntity);
-            } else if (SkinPreview.ready(key)) {
-                SkinPreview.drawBody(context, key, px, py, 4);
-            } else {
-                UiDraw.roundRect(context, px + 12, py, 48, 120, 12, 0x6614101C);
-                context.drawText(textRenderer, Text.literal("Loading skin…"), px, py + 52, MUTED, false);
-            }
-        } catch (Throwable ignored) {
-        } finally {
-            context.disableScissor();
-        }
-        String eqName = equipped == null || equipped.isBlank() ? "None" : equipped;
-        context.drawText(textRenderer, Text.literal("Equipped"), rx, belowPreviewY + 8, MUTED, false);
-        context.drawText(textRenderer, Text.literal(fit(eqName, RIGHT_W - 36)), rx, belowPreviewY + 20, TEXT, false);
-        context.drawText(textRenderer, Text.literal(kind.name()), rx, belowPreviewY + 34, MUTED, false);
-    }
-
     /** The friend's live PlayerEntity if they're currently in this world/server, else null. */
     private static net.minecraft.entity.player.PlayerEntity onlinePlayerEntity(String name) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -1117,85 +976,16 @@ public class ClickGuiScreenLegacy extends Screen {
             searchFocus = false;
             friendFocus = false;
             playerLookupFocus = false;
-            return clickYou(mx, my);
+            return wardrobe.click(mx, my, ox, oy + TOP, pw, ph - TOP);
         }
         if (topTab == 2) {
             searchFocus = false;
-            cosSearchFocus = false;
+            wardrobe.searchFocus = false;
             return clickFriends(mx, my);
         }
-        cosSearchFocus = false;
+        wardrobe.searchFocus = false;
         friendFocus = false;
         return clickClient(mx, my);
-    }
-
-    private boolean clickYou(int mx, int my) {
-        int y0 = oy + TOP;
-        int y1 = oy + ph;
-        int left = youLeft();
-        int mid = youMid();
-        int right = youRight();
-        int leftW = mid - left - 8;
-        int midW = right - mid - 8;
-        int lx = left + 10;
-        int lw = leftW - 20;
-
-        if (inside(mx, my, lx, y0 + 16, lw, 22)) {
-            playerLookupFocus = true;
-            cosSearchFocus = false;
-            return true;
-        }
-        playerLookupFocus = false;
-        if (inside(mx, my, lx, y1 - 38, lw, 22)) {
-            if (AccountManager.account != null) {
-                AccountManager.logout();
-            } else {
-                AccountManager.startLogin();
-            }
-            return true;
-        }
-
-        int tabY = y0 + 16;
-        int tx = mid + 10;
-        String[] tabs = new String[COS_TABS.length + COS_EXTRA.length];
-        System.arraycopy(COS_TABS, 0, tabs, 0, COS_TABS.length);
-        System.arraycopy(COS_EXTRA, 0, tabs, COS_TABS.length, COS_EXTRA.length);
-        for (int i = 0; i < tabs.length; i++) {
-            int tw = Math.max(48, textRenderer.getWidth(tabs[i]) + 16);
-            if (tx + tw > mid + midW - 8) {
-                tx = mid + 10;
-                tabY += 22;
-            }
-            if (inside(mx, my, tx, tabY, tw - 4, 20)) {
-                cosTab = i;
-                return true;
-            }
-            tx += tw;
-        }
-        int searchY = tabY + 26;
-        cosSearchFocus = inside(mx, my, mid + 10, searchY, midW - 20, 22);
-        Cosmetics.Kind kind = Cosmetics.kindForTab(cosTab);
-        java.util.List<Cosmetics.Item> items = Cosmetics.of(kind, cosSearch);
-        int gx = mid + 10;
-        int gy = searchY + 32;
-        int cell = 56;
-        int gap = 8;
-        int cols = Math.max(1, (midW - 20) / (cell + gap));
-        for (int i = 0; i < items.size(); i++) {
-            int col = i % cols;
-            int row = i / cols;
-            int cx = gx + col * (cell + gap);
-            int cy = gy + row * (cell + 20);
-            if (cy + cell > y1 - 16) {
-                break;
-            }
-            if (inside(mx, my, cx, cy, cell, cell)) {
-                Cosmetics.equip(kind, items.get(i).id());
-                cosSel = i;
-                return true;
-            }
-        }
-        return true;
     }
 
     private boolean clickFriends(int mx, int my) {
@@ -1466,6 +1256,9 @@ public class ClickGuiScreenLegacy extends Screen {
 
     @Override
     public boolean mouseDragged(Click click, double deltaX, double deltaY) {
+        if (topTab == 1 && wardrobe.drag(deltaX)) {
+            return true;
+        }
         if (draggingSetting != null) {
             applySliderDrag(draggingSetting, dragBarX, dragBarW, (int) click.x());
             return true;
@@ -1475,6 +1268,7 @@ public class ClickGuiScreenLegacy extends Screen {
 
     @Override
     public boolean mouseReleased(Click click) {
+        wardrobe.release();
         if (draggingSetting != null) {
             AeroClient.CONFIG.save();
             draggingSetting = null;
@@ -1485,6 +1279,11 @@ public class ClickGuiScreenLegacy extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+        if (topTab == 1) {
+            layoutPanel();
+            wardrobe.scroll((int) mouseX, (int) mouseY, verticalAmount);
+            return true;
+        }
         if (topTab == 2) {
             friendScroll = (int) Math.max(0, friendScroll - verticalAmount * 16);
             return true;
@@ -1552,13 +1351,13 @@ public class ClickGuiScreenLegacy extends Screen {
                 return true;
             }
         }
-        if (cosSearchFocus) {
-            if (key == GLFW.GLFW_KEY_BACKSPACE && !cosSearch.isEmpty()) {
-                cosSearch = cosSearch.substring(0, cosSearch.length() - 1);
+        if (wardrobe.searchFocus) {
+            if (key == GLFW.GLFW_KEY_BACKSPACE && !wardrobe.search.isEmpty()) {
+                wardrobe.search = wardrobe.search.substring(0, wardrobe.search.length() - 1);
                 return true;
             }
             if (key == GLFW.GLFW_KEY_ESCAPE) {
-                cosSearchFocus = false;
+                wardrobe.searchFocus = false;
                 return true;
             }
         }
@@ -1625,8 +1424,8 @@ public class ClickGuiScreenLegacy extends Screen {
             playerLookup += Character.toString(cp);
             return true;
         }
-        if (cosSearchFocus && cp >= 32 && cp != 127) {
-            cosSearch += Character.toString(cp);
+        if (wardrobe.searchFocus && cp >= 32 && cp != 127) {
+            wardrobe.search += Character.toString(cp);
             return true;
         }
         if (friendFocus && cp >= 32 && cp != 127) {

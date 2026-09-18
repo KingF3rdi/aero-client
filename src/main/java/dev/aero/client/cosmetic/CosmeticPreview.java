@@ -10,34 +10,18 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 /**
- * Renders a live 3D entity model into a GUI panel, slowly auto-spinning instead of the vanilla
- * inventory preview's cursor-follow (which only tracks the mouse across a ~60 degree window, not a
- * full rotation). Built directly on the same render-state + DrawContext.addEntity primitives that
- * InventoryScreen.drawEntity itself uses internally, so it works for any live LivingEntity - our
- * own player, or another player found in the world (see WardrobeScreen usage) - without needing
- * that method's mouse-driven rotation math or the reflection this used to go through.
+ * Renders a live 3D entity model into a GUI panel at a fixed, user-controlled rotation (no
+ * auto-spin). Built on the same render-state + DrawContext.addEntity primitives vanilla's
+ * InventoryScreen uses, so the cosmetic feature renderer draws on it exactly like in the world.
  */
 public final class CosmeticPreview {
     public static volatile boolean drawing;
 
     private CosmeticPreview() {}
 
-    /** Own player preview - kept for compatibility with existing call sites (mouseX/Y unused now). */
-    public static void player(DrawContext context, int x, int y, int size, float mouseX, float mouseY) {
-        spin(context, x, y, size, MinecraftClient.getInstance().player);
-    }
-
-    /** Preview for any live LivingEntity, e.g. an online friend found via world.getPlayers(). */
-    public static void spin(DrawContext context, int x, int y, int size, LivingEntity entity) {
-        if (entity == null || context == null) {
-            return;
-        }
-        int s = Math.max(20, Math.min(size, 64));
-        int x1 = x - s;
-        int y1 = y - s * 2;
-        int x2 = x + s;
-        int y2 = y + 8;
-        if (x2 <= x1 || y2 <= y1) {
+    /** yaw in degrees: 180 faces the camera. scale = pixels per block. */
+    public static void show(DrawContext context, int x1, int y1, int x2, int y2, float scale, float yaw, LivingEntity entity) {
+        if (entity == null || context == null || x2 <= x1 || y2 <= y1) {
             return;
         }
         drawing = true;
@@ -47,10 +31,8 @@ public final class CosmeticPreview {
             EntityRenderState state = renderer.getAndUpdateRenderState(entity, 1.0F);
             state.light = 15728880;
             state.outlineColor = 0;
-            // One full turn every 9s - slow enough to read as idle rather than a distracting spin.
-            float spinYaw = (System.currentTimeMillis() % 9000L) / 9000f * 360f;
             if (state instanceof LivingEntityRenderState living && living.baseScale > 0f) {
-                living.bodyYaw = spinYaw;
+                living.bodyYaw = yaw;
                 living.relativeHeadYaw = 0f;
                 living.pitch = 0f;
                 living.width = living.width / living.baseScale;
@@ -59,12 +41,18 @@ public final class CosmeticPreview {
             }
             Vector3f offset = new Vector3f(0f, state.height / 2f + 0.0625f, 0f);
             Quaternionf rot = new Quaternionf().rotateZ((float) Math.PI);
-            Quaternionf tilt = new Quaternionf();
-            context.addEntity(state, s, offset, rot, tilt, x1, y1, x2, y2);
+            context.addEntity(state, scale, offset, rot, new Quaternionf(), x1, y1, x2, y2);
         } catch (Throwable t) {
             t.printStackTrace();
         } finally {
             drawing = false;
         }
+    }
+
+    /** Gentle sway preview for small panels (friends list). */
+    public static void spin(DrawContext context, int x, int y, int size, LivingEntity entity) {
+        int s = Math.max(20, Math.min(size, 64));
+        float yaw = 180f + (float) Math.sin(System.currentTimeMillis() / 1500.0) * 30f;
+        show(context, x - s, y - s * 2, x + s, y + 8, s, yaw, entity);
     }
 }

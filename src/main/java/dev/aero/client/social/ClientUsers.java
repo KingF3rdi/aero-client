@@ -26,13 +26,24 @@ public final class ClientUsers {
     private static final long REFRESH_MS = 10 * 60 * 1000L;
     private static final Set<UUID> USERS = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, String> NAMES = new ConcurrentHashMap<>();
+    private static final Map<UUID, String> BADGES = new ConcurrentHashMap<>();
     private static volatile long lastFetch;
     private static final Style STYLE = Style.EMPTY.withColor(TextColor.fromRgb(0x4F8EFF)).withBold(true);
 
     private ClientUsers() {}
 
-    public static MutableText badge() {
-        return Text.literal("A ").setStyle(STYLE);
+    /** The user's chosen badge (own: equipped one; others: from the public list), else the plain blue A. */
+    public static MutableText badge(UUID id) {
+        MinecraftClient mc = MinecraftClient.getInstance();
+        String badgeId = mc.player != null && id != null && id.equals(mc.player.getUuid())
+                ? dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.BADGE)
+                : BADGES.getOrDefault(id, "none");
+        var item = "none".equals(badgeId) ? null : dev.aero.client.cosmetic.Cosmetics.named(dev.aero.client.cosmetic.Cosmetics.Kind.BADGE, badgeId);
+        if (item == null) {
+            return Text.literal("A ").setStyle(STYLE);
+        }
+        String glyph = dev.aero.client.cosmetic.Cosmetics.glyph(dev.aero.client.cosmetic.Cosmetics.Kind.BADGE, item.id());
+        return Text.literal(glyph + " ").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(item.color() & 0xFFFFFF)).withBold(true));
     }
 
     public static boolean isUser(UUID id) {
@@ -67,11 +78,15 @@ public final class ClientUsers {
                     }
                     Set<UUID> ids = ConcurrentHashMap.newKeySet();
                     Map<UUID, String> names = new ConcurrentHashMap<>();
+                    Map<UUID, String> badges = new ConcurrentHashMap<>();
                     for (JsonElement e : JsonParser.parseString(res.body()).getAsJsonObject().getAsJsonArray("users")) {
                         try {
                             UUID id = UUID.fromString(e.getAsJsonObject().get("uuid").getAsString());
                             ids.add(id);
                             names.put(id, e.getAsJsonObject().get("name").getAsString());
+                            if (e.getAsJsonObject().has("badge")) {
+                                badges.put(id, e.getAsJsonObject().get("badge").getAsString());
+                            }
                         } catch (Exception ignored) {
                         }
                     }
@@ -79,17 +94,24 @@ public final class ClientUsers {
                     USERS.addAll(ids);
                     NAMES.clear();
                     NAMES.putAll(names);
+                    BADGES.clear();
+                    BADGES.putAll(badges);
                 })
                 .exceptionally(t -> null);
     }
 
-    /** Inserts the badge right before the first occurrence of a known user's name in a chat line. */
+    /** Inserts the user's badge right before the first occurrence of a known user's name in a chat line. */
     public static Text badgeChat(Text message) {
         refreshIfStale();
-        Set<String> names = Set.copyOf(NAMES.values());
+        Map<String, UUID> byName = new java.util.HashMap<>();
+        for (Map.Entry<UUID, String> e : NAMES.entrySet()) {
+            byName.put(e.getValue(), e.getKey());
+        }
         MinecraftClient mc = MinecraftClient.getInstance();
-        String self = mc.player != null ? mc.player.getName().getString() : null;
-        if (names.isEmpty() && self == null) {
+        if (mc.player != null) {
+            byName.put(mc.player.getName().getString(), mc.player.getUuid());
+        }
+        if (byName.isEmpty()) {
             return message;
         }
         MutableText out = Text.empty();
@@ -98,23 +120,19 @@ public final class ClientUsers {
             String rest = str;
             while (!done[0]) {
                 int best = -1;
-                for (String n : names) {
-                    int i = indexOfWord(rest, n);
+                UUID who = null;
+                for (Map.Entry<String, UUID> n : byName.entrySet()) {
+                    int i = indexOfWord(rest, n.getKey());
                     if (i >= 0 && (best < 0 || i < best)) {
                         best = i;
-                    }
-                }
-                if (self != null) {
-                    int i = indexOfWord(rest, self);
-                    if (i >= 0 && (best < 0 || i < best)) {
-                        best = i;
+                        who = n.getValue();
                     }
                 }
                 if (best < 0) {
                     break;
                 }
                 out.append(Text.literal(rest.substring(0, best)).setStyle(style));
-                out.append(badge());
+                out.append(badge(who));
                 rest = rest.substring(best);
                 done[0] = true;
             }

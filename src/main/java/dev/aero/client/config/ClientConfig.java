@@ -330,6 +330,10 @@ public class ClientConfig {
     public String equippedTag = "none";
     public String equippedBadge = "none";
     public String equippedKillEffect = "none";
+    public String equippedMace = "none";
+    public java.util.Map<String, Integer> cosmeticVariant = new java.util.HashMap<>();
+    public String totemPopFx = "Burst";
+    public int totemPopFxColor = 0xFF4F8EFF;
 
     public boolean fpsBoost = false;
     public boolean noShadows = false;

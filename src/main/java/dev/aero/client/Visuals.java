@@ -733,6 +733,7 @@ public final class Visuals {
             return;
         }
         TOTEM_POPS.merge(entity.getUuid(), 1, Integer::sum);
+        dev.aero.client.cosmetic.CosmeticEffects.onTotemPop(entity);
     }
 
     public static int totemPopsFor(java.util.UUID uuid) {

@@ -1,176 +1,302 @@
 package dev.aero.client.cosmetic;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.OverlayTexture;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.RenderLayers;
-import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.entity.feature.FeatureRenderer;
 import net.minecraft.client.render.entity.feature.FeatureRendererContext;
 import net.minecraft.client.render.entity.model.PlayerEntityModel;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.Identifier;
 import org.joml.Quaternionf;
 
 /**
- * Real 3D cosmetics (cape, wings, headwear, pet) drawn as small flat-colored boxes on the local
- * player's model. Being a normal feature renderer, the same code shows up in third person / F5 and
- * in the wardrobe's live preview, so what you preview is exactly what you get in game. Client-only:
- * other players can't see your cosmetics (there is no shared backend), and first person hides your
- * own model, so use F5 to see them.
+ * Real 3D, animated cosmetics (cape, wings, headwear, pet) drawn as small flat-colored boxes on the
+ * local player's model. As a normal feature renderer the same code shows up in third person and in
+ * the wardrobe's live preview. Client-only: other players can't see your cosmetics, and first person
+ * hides your own model, so use F5 to see them.
  */
 public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel> {
-    private static final Identifier WHITE = Identifier.of("minecraft", "textures/block/white_concrete.png");
-    private static final int FULLBRIGHT = 0xF000F0;
+    private static final int FB = CubeDraw.FULLBRIGHT;
+
+    private MatrixStack m;
+    private OrderedRenderCommandQueue q;
+    private RenderLayer layer;
+    private int light;
+    private float t;
+    private float speed;
 
     public CosmeticFeatureRenderer(FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel> context) {
         super(context);
     }
 
     @Override
-    public void render(MatrixStack m, OrderedRenderCommandQueue q, int light, PlayerEntityRenderState state,
+    public void render(MatrixStack matrices, OrderedRenderCommandQueue queue, int light, PlayerEntityRenderState state,
                        float yaw, float pitch) {
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || state.id != mc.player.getId() || state.invisible) {
             return;
         }
+        this.m = matrices;
+        this.q = queue;
+        this.light = light;
+        this.layer = RenderLayers.entityCutoutNoCull(CubeDraw.WHITE);
+        this.t = (System.currentTimeMillis() % 100000L) / 1000f;
+        this.speed = (float) Math.min(1.0, mc.player.getVelocity().horizontalLength() * 5.0);
         PlayerEntityModel model = getContextModel();
-        RenderLayer layer = RenderLayers.entityCutoutNoCull(WHITE);
-        float t = (System.currentTimeMillis() % 100000L) / 1000f;
 
-        Cosmetics.Item cape = item(Cosmetics.Kind.CAPE);
-        Cosmetics.Item wings = item(Cosmetics.Kind.WINGS);
-        Cosmetics.Item pet = item(Cosmetics.Kind.PET);
-        if (cape != null || wings != null || pet != null) {
+        int cape = Cosmetics.equippedColor(Cosmetics.Kind.CAPE);
+        int wings = Cosmetics.equippedColor(Cosmetics.Kind.WINGS);
+        if (cape != 0 || wings != 0) {
             m.push();
             model.body.applyTransform(m);
-            if (cape != null) {
-                box(m, q, layer, 0, 0, 2.6f, 0, 0, 12, 10, 24, 1, cape.color(), light);
-                box(m, q, layer, 0, 0, 2.7f, 0, 0, 1, 10, 2, 1.2f, shade(cape.color(), 1.35f), light);
+            if (cape != 0) {
+                cape(cape, Cosmetics.equipped(Cosmetics.Kind.CAPE));
             }
-            if (wings != null) {
-                wings(m, q, layer, wings, t, light);
-            }
-            if (pet != null) {
-                float bob = (float) Math.sin(t * 2.2) * 1.2f;
-                box(m, q, layer, 10, -4 + bob, 0, 0, 0, 0, 3.5f, 3.5f, 3.5f, pet.color(), FULLBRIGHT);
-                box(m, q, layer, 10, -6.5f + bob, 0, 0, 0, 0, 1.8f, 1.8f, 1.8f, shade(pet.color(), 1.4f), FULLBRIGHT);
+            if (wings != 0) {
+                wings(wings, Cosmetics.equipped(Cosmetics.Kind.WINGS));
             }
             m.pop();
         }
 
-        Cosmetics.Item head = item(Cosmetics.Kind.HEAD);
-        if (head != null) {
+        int head = Cosmetics.equippedColor(Cosmetics.Kind.HEAD);
+        if (head != 0) {
             m.push();
             model.head.applyTransform(m);
-            headwear(m, q, layer, head, light);
+            headwear(head, Cosmetics.equipped(Cosmetics.Kind.HEAD));
             m.pop();
+        }
+
+        int pet = Cosmetics.equippedColor(Cosmetics.Kind.PET);
+        if (pet != 0) {
+            pet(pet, Cosmetics.equipped(Cosmetics.Kind.PET));
         }
     }
 
-    private void wings(MatrixStack m, OrderedRenderCommandQueue q, RenderLayer layer, Cosmetics.Item item, float t, int light) {
-        boolean dragon = "dragon".equals(item.id());
-        int feathers = dragon ? 3 : 5;
-        float flap = (float) Math.sin(t * 2.4) * 7f;
+    // ---- cape ---------------------------------------------------------------------------------
+
+    private void cape(int c, String id) {
+        float sway = 5f + speed * 22f + (float) Math.sin(t * 1.7) * 3f;
+        int dark = CubeDraw.shade(c, 0.55f);
+        int slices = 5;
+        for (int i = 0; i < slices; i++) {
+            int col = CubeDraw.mix(c, dark, i / (float) (slices - 1));
+            if ("glitch".equals(id) && (i + (int) (t * 6)) % 2 == 0) {
+                col = CubeDraw.shade(col, 1.5f);
+            }
+            box(0, 0, 2.4f, sway, 0, 0, 0, 2.4f + i * 4.8f, 0, 10, 4.9f, 1, col, light);
+        }
+        int trim = CubeDraw.shade(c, 1.4f);
+        box(0, 0, 2.4f, sway, 0, 0, 0, 0.7f, -0.15f, 10.4f, 1.4f, 1.4f, trim, light);
+        box(0, 0, 2.4f, sway, 0, 0, -4.9f, 12, 0, 0.8f, 24, 1.2f, trim, light);
+        box(0, 0, 2.4f, sway, 0, 0, 4.9f, 12, 0, 0.8f, 24, 1.2f, trim, light);
+    }
+
+    // ---- wings --------------------------------------------------------------------------------
+
+    private void feather(int side, float px, float py, float pz, float theta, float len, float w, int col, int lt) {
+        box(side * px, py, pz, 0, 0, side * theta, 0, -len / 2f, 0, w, len, 0.8f, col, lt);
+    }
+
+    private void wings(int c, String id) {
+        float flap = (float) Math.sin(t * 2.4) * (7f + speed * 10f);
         for (int side = -1; side <= 1; side += 2) {
-            for (int i = 0; i < feathers; i++) {
-                float theta = 22 + i * (dragon ? 26 : 16) + flap;
-                float len = dragon ? 20 - i * 3 : 17 - i * 2.5f;
-                float width = dragon ? 2.2f : 3.2f;
-                int col = shade(item.color(), i % 2 == 0 ? 1.0f : 0.85f);
-                box(m, q, layer, side * 2.5f, 2, 3f + i * 0.35f, side * theta, 0, -len / 2f, width, len, 0.8f, col, light);
+            switch (id) {
+                case "dragon" -> {
+                    int bone = 0xFF4A2A22;
+                    for (int i = 0; i < 9; i++) {
+                        float th = 18 + i * 9.5f + flap;
+                        float len = 15 + (float) Math.sin(i * 0.55) * 6f;
+                        feather(side, 2.5f, 2, 3f + i * 0.12f, th, len, 3.2f, CubeDraw.shade(c, i % 2 == 0 ? 1f : 0.82f), light);
+                    }
+                    for (int i = 0; i < 3; i++) {
+                        feather(side, 2.5f, 2, 3.9f, 24 + i * 32 + flap, 22 - i * 2, 1.4f, bone, light);
+                    }
+                }
+                case "fairy" -> {
+                    fairyWing(side, 9, -3, 6, 9.5f, 24 + flap, c);
+                    fairyWing(side, 7, 8, 4, 6.5f, 62 + flap, CubeDraw.shade(c, 0.85f));
+                }
+                case "aurora" -> {
+                    for (int i = 0; i < 7; i++) {
+                        float th = 16 + i * 13f + flap;
+                        int col = CubeDraw.mix(0xFF4FE8D8, 0xFFB060FF, ((float) Math.sin(t * 1.4 + i * 0.6) + 1f) / 2f);
+                        feather(side, 2.5f, 2, 3f + i * 0.3f, th, 19 - i * 1.6f, 3.2f, col, FB);
+                    }
+                }
+                case "aegis" -> {
+                    for (int i = 0; i < 4; i++) {
+                        float th = 28 + i * 20f + flap * 0.5f;
+                        float len = 17 - i * 2.4f;
+                        feather(side, 2.5f, 2, 3f + i * 0.5f, th, len, 4.2f, CubeDraw.shade(c, 1f - i * 0.08f), light);
+                        feather(side, 2.5f, 2, 3.5f + i * 0.5f, th, len, 1.2f, 0xFFE8B84A, light);
+                    }
+                }
+                default -> {
+                    int n = 6;
+                    for (int i = 0; i < n; i++) {
+                        float th = 16 + i * 14f + flap;
+                        feather(side, 2.5f, 2, 3f + i * 0.3f, th, 19 - i * 2.2f, 3.4f, CubeDraw.shade(c, i % 2 == 0 ? 1f : 0.86f), light);
+                    }
+                    for (int i = 0; i < 4; i++) {
+                        feather(side, 2.5f, 2, 3f + i * 0.3f - 0.4f, 24 + i * 16f + flap, 9 - i, 3f, CubeDraw.shade(c, 0.7f), light);
+                    }
+                }
             }
         }
     }
 
-    private void headwear(MatrixStack m, OrderedRenderCommandQueue q, RenderLayer layer, Cosmetics.Item item, int light) {
-        int c = item.color();
-        switch (item.id()) {
+    private void fairyWing(int side, float cx, float cy, float rx, float ry, float tilt, int c) {
+        int n = 12;
+        for (int i = 0; i < n; i++) {
+            double a = i * Math.PI * 2 / n;
+            float x = (float) Math.cos(a) * rx;
+            float y = (float) Math.sin(a) * ry;
+            double tr = Math.toRadians(side * -tilt * 0.5);
+            float rxp = (float) (x * Math.cos(tr) - y * Math.sin(tr));
+            float ryp = (float) (x * Math.sin(tr) + y * Math.cos(tr));
+            box(side * (cx + rxp), cy - 4 + ryp, 3.2f, 0, 0, 0, 0, 0, 0, 1.5f, 1.5f, 0.8f, c, FB);
+        }
+        box(side * cx, cy - 4, 3.1f, 0, 0, 0, 0, 0, 0, rx * 1.3f, ry * 1.3f, 0.5f, CubeDraw.shade(c, 0.6f), light);
+    }
+
+    // ---- headwear -----------------------------------------------------------------------------
+
+    private void headwear(int c, String id) {
+        switch (id) {
             case "halo" -> {
-                for (int k = 0; k < 10; k++) {
-                    double a = k * Math.PI * 2 / 10;
-                    box(m, q, layer, (float) Math.cos(a) * 5.2f, -11.5f, (float) Math.sin(a) * 5.2f, 0, 0, 0, 2.2f, 0.9f, 2.2f, c, FULLBRIGHT);
+                float bob = (float) Math.sin(t * 2) * 0.6f;
+                for (int k = 0; k < 12; k++) {
+                    double a = k * Math.PI * 2 / 12 + t * 1.2;
+                    box((float) Math.cos(a) * 5.2f, -12f + bob, (float) Math.sin(a) * 5.2f, 0, 0, 0, 0, 0, 0, 1.9f, 0.9f, 1.9f,
+                            CubeDraw.shade(c, 0.85f + 0.3f * ((k % 3) / 2f)), FB);
                 }
             }
             case "horns" -> {
                 for (int s = -1; s <= 1; s += 2) {
-                    box(m, q, layer, s * 3.6f, -8.2f, 0, s * -18, 0, -2, 1.8f, 4, 1.8f, c, light);
-                    box(m, q, layer, s * 5f, -12.4f, 0, s * -32, 0, -1, 1.2f, 3, 1.2f, shade(c, 1.4f), light);
+                    box(s * 3.4f, -8f, 0, 0, 0, s * -22, 0, -2, 0, 2f, 4.5f, 2f, c, light);
+                    box(s * 4.6f, -11.6f, 0, 0, 0, s * -40, 0, -1.5f, 0, 1.4f, 3.2f, 1.4f, CubeDraw.shade(c, 1.4f), light);
                 }
             }
             case "crown" -> {
-                box(m, q, layer, 0, -9f, 4.3f, 0, 0, 0, 8.6f, 2, 1, c, FULLBRIGHT);
-                box(m, q, layer, 0, -9f, -4.3f, 0, 0, 0, 8.6f, 2, 1, c, FULLBRIGHT);
-                box(m, q, layer, 4.3f, -9f, 0, 0, 0, 0, 1, 2, 8.6f, c, FULLBRIGHT);
-                box(m, q, layer, -4.3f, -9f, 0, 0, 0, 0, 1, 2, 8.6f, c, FULLBRIGHT);
+                int g = CubeDraw.shade(c, 1f);
+                box(0, -9f, 4.3f, 0, 0, 0, 0, 0, 0, 8.8f, 2, 1, g, FB);
+                box(0, -9f, -4.3f, 0, 0, 0, 0, 0, 0, 8.8f, 2, 1, g, FB);
+                box(4.3f, -9f, 0, 0, 0, 0, 0, 0, 0, 1, 2, 8.8f, g, FB);
+                box(-4.3f, -9f, 0, 0, 0, 0, 0, 0, 0, 1, 2, 8.8f, g, FB);
                 for (int sx = -1; sx <= 1; sx += 2) {
                     for (int sz = -1; sz <= 1; sz += 2) {
-                        box(m, q, layer, sx * 4.3f, -11.2f, sz * 4.3f, 0, 0, 0, 1.2f, 2.6f, 1.2f, shade(c, 1.25f), FULLBRIGHT);
+                        float glint = 1.1f + 0.3f * (float) Math.sin(t * 3 + sx + sz * 2);
+                        box(sx * 4.3f, -11.4f, sz * 4.3f, 0, 0, 0, 0, 0, 0, 1.3f, 2.8f, 1.3f, CubeDraw.shade(c, glint), FB);
                     }
                 }
+                box(0, -10.2f, -4.4f, 0, 0, 0, 0, 0, 0, 1.4f, 1.4f, 0.8f, 0xFFE0405A, FB);
             }
             case "cat" -> {
+                float twitch = (float) Math.pow(Math.max(0, Math.sin(t * 2.6)), 8) * 16f;
                 for (int s = -1; s <= 1; s += 2) {
-                    box(m, q, layer, s * 3f, -9.4f, 0, s * -10, 0, 0, 2.8f, 3, 1.2f, c, light);
-                    box(m, q, layer, s * 3f, -9.2f, -0.2f, s * -10, 0, 0, 1.4f, 1.6f, 1.2f, 0xFFF4A0B8, light);
+                    float rot = s * -(10 + (s > 0 ? twitch : 0));
+                    box(s * 3f, -8.6f, 0, 0, 0, rot, 0, -1.4f, 0, 3f, 3.2f, 1.2f, c, light);
+                    box(s * 3f, -8.6f, -0.35f, 0, 0, rot, 0, -1.2f, 0, 1.6f, 1.8f, 1.1f, 0xFFF4A0B8, light);
                 }
             }
-            default -> box(m, q, layer, 0, -10, 0, 0, 0, 0, 4, 2, 4, c, light);
+            default -> box(0, -10, 0, 0, 0, 0, 0, 0, 0, 4, 2, 4, c, light);
         }
     }
 
-    private static Cosmetics.Item item(Cosmetics.Kind kind) {
-        String id = Cosmetics.equipped(kind);
-        return "none".equals(id) ? null : Cosmetics.named(kind, id);
-    }
+    // ---- pets ---------------------------------------------------------------------------------
 
-    private static int shade(int argb, float f) {
-        int r = Math.min(255, (int) (((argb >> 16) & 0xFF) * f));
-        int g = Math.min(255, (int) (((argb >> 8) & 0xFF) * f));
-        int b = Math.min(255, (int) ((argb & 0xFF) * f));
-        return 0xFF000000 | (r << 16) | (g << 8) | b;
-    }
-
-    /** Box in model-space pixels: pivot (px,py,pz), rotated rotZ degrees about Z, drawn centered at offset (ox,oy). */
-    private static void box(MatrixStack m, OrderedRenderCommandQueue q, RenderLayer layer,
-                            float px, float py, float pz, float rotZ, float ox, float oy,
-                            float w, float h, float d, int argb, int light) {
+    private void pet(int c, String id) {
         m.push();
-        m.translate(px / 16f, py / 16f, pz / 16f);
-        if (rotZ != 0) {
-            m.multiply(new Quaternionf().rotateZ((float) Math.toRadians(rotZ)));
+        // Model root space: y = 24 px is the ground. Beside the player, slightly ahead.
+        m.translate(19f / 16f, 24f / 16f, -3f / 16f);
+        float walk = (float) Math.sin(t * 11) * 32f * speed;
+        switch (id) {
+            case "bee" -> bee(c);
+            case "fox" -> fox(c, walk);
+            default -> axolotl(c, walk);
         }
-        m.translate(ox / 16f, oy / 16f, 0);
-        float a = w / 32f;
-        float b = h / 32f;
-        float c = d / 32f;
-        int col = argb | 0xFF000000;
-        q.submitCustom(m, layer, (e, vc) -> cube(e, vc, a, b, c, col, light));
         m.pop();
     }
 
-    private static void cube(MatrixStack.Entry e, VertexConsumer vc, float a, float b, float c, int col, int light) {
-        face(e, vc, col, light, 1, 0, 0, a, -b, -c, a, -b, c, a, b, c, a, b, -c);
-        face(e, vc, col, light, -1, 0, 0, -a, -b, c, -a, -b, -c, -a, b, -c, -a, b, c);
-        face(e, vc, col, light, 0, 1, 0, -a, b, -c, a, b, -c, a, b, c, -a, b, c);
-        face(e, vc, col, light, 0, -1, 0, -a, -b, c, a, -b, c, a, -b, -c, -a, -b, -c);
-        face(e, vc, col, light, 0, 0, 1, -a, -b, c, a, -b, c, a, b, c, -a, b, c);
-        face(e, vc, col, light, 0, 0, -1, a, -b, -c, -a, -b, -c, -a, b, -c, a, b, -c);
+    private void axolotl(int c, float walk) {
+        int belly = CubeDraw.shade(c, 1.12f);
+        int gill = CubeDraw.shade(c, 0.62f);
+        box(0, -3.6f, 0, 0, 0, 0, 0, 0, 0, 6, 4.6f, 9.5f, c, light);
+        box(0, -3.1f, 0, 0, 0, 0, 0, 0, 0, 6.1f, 1.6f, 9.6f, belly, light);
+        box(0, -4.7f, -6.4f, 0, 0, 0, 0, 0, 0, 7.4f, 5f, 5f, c, light);
+        for (int s = -1; s <= 1; s += 2) {
+            box(s * 1.9f, -5.4f, -8.95f, 0, 0, 0, 0, 0, 0, 1.1f, 1.1f, 0.5f, 0xFF161018, FB);
+            for (int j = 0; j < 3; j++) {
+                box(s * 4.8f, -6.4f + j * 1.5f, -6.4f, 0, 0, s * (12 - j * 12), 0, 0, 0, 2.6f, 0.9f, 0.9f, gill, light);
+            }
+        }
+        float wag = (float) Math.sin(t * 3.2) * 14f;
+        box(0, -3.6f, 4.5f, 0, wag, 0, 0, 0, 3.2f, 2.6f, 4.4f, 7.5f, c, light);
+        box(0, -5.6f, 4.5f, 0, wag, 0, 0, 0, 3.2f, 0.9f, 2.2f, 7f, gill, light);
+        for (int i = 0; i < 4; i++) {
+            float x = (i % 2 == 0 ? -1 : 1) * 3.2f;
+            float z = i < 2 ? -3.2f : 3f;
+            box(x, -2.2f, z, (i % 3 == 0 ? walk : -walk), 0, 0, 0, 1.2f, 0, 1.8f, 2.4f, 2f, gill, light);
+        }
     }
 
-    private static void face(MatrixStack.Entry e, VertexConsumer vc, int col, int light, float nx, float ny, float nz,
-                             float x1, float y1, float z1, float x2, float y2, float z2,
-                             float x3, float y3, float z3, float x4, float y4, float z4) {
-        vertex(e, vc, x1, y1, z1, 0, 0, col, light, nx, ny, nz);
-        vertex(e, vc, x2, y2, z2, 1, 0, col, light, nx, ny, nz);
-        vertex(e, vc, x3, y3, z3, 1, 1, col, light, nx, ny, nz);
-        vertex(e, vc, x4, y4, z4, 0, 1, col, light, nx, ny, nz);
+    private void bee(int c) {
+        float bob = (float) Math.sin(t * 2.6) * 1.4f;
+        float y = -15f + bob;
+        int black = 0xFF1E1A12;
+        box(0, y, 0, 0, 0, 0, 0, 0, 0, 5.4f, 5.4f, 8.4f, c, light);
+        box(0, y, -1.2f, 0, 0, 0, 0, 0, 0, 5.6f, 5.6f, 1.7f, black, light);
+        box(0, y, 2.2f, 0, 0, 0, 0, 0, 0, 5.6f, 5.6f, 1.7f, black, light);
+        for (int s = -1; s <= 1; s += 2) {
+            box(s * 1.6f, y - 0.4f, -4.3f, 0, 0, 0, 0, 0, 0, 1.4f, 1.8f, 0.6f, black, FB);
+            box(s * 1.2f, y - 3.6f, -3.4f, 0, 0, s * 18, 0, 0, 0, 0.5f, 2f, 0.5f, black, light);
+            float fl = 32f + (float) Math.sin(t * 38) * 24f;
+            box(s * 1.2f, y - 2.9f, -0.6f, 0, 0, s * fl, s * 3.4f, 0, 0, 6.2f, 0.5f, 3.4f, 0xFFE8F4FF, FB);
+        }
+        box(0, y + 1.6f, 4.9f, 0, 0, 0, 0, 0, 0, 1f, 1f, 2.2f, black, light);
     }
 
-    private static void vertex(MatrixStack.Entry e, VertexConsumer vc, float x, float y, float z, float u, float v,
-                               int col, int light, float nx, float ny, float nz) {
-        vc.vertex(e, x, y, z).color(col).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(e, nx, ny, nz);
+    private void fox(int c, float walk) {
+        int white = 0xFFF4EEE4;
+        int dark = 0xFF3A2418;
+        box(0, -8.2f, 0, 0, 0, 0, 0, 0, 0, 6, 5f, 10, c, light);
+        box(0, -7.2f, -3.8f, 0, 0, 0, 0, 0, 0, 4.2f, 3.2f, 1.2f, white, light);
+        box(0, -9.6f, -7.2f, 0, 0, 0, 0, 0, 0, 6.2f, 5f, 5f, c, light);
+        box(0, -8.4f, -10.3f, 0, 0, 0, 0, 0, 0, 3.2f, 2.2f, 2.8f, white, light);
+        box(0, -9f, -11.8f, 0, 0, 0, 0, 0, 0, 1.2f, 1.1f, 0.5f, dark, light);
+        for (int s = -1; s <= 1; s += 2) {
+            box(s * 2f, -13.2f, -7.2f, 0, 0, 0, 0, 0, 0, 2f, 2.6f, 1.2f, c, light);
+            box(s * 2f, -14.2f, -7.2f, 0, 0, 0, 0, 0, 0, 1.4f, 1f, 1.1f, dark, light);
+            box(s * 1.9f, -10.4f, -9.75f, 0, 0, 0, 0, 0, 0, 1f, 1f, 0.5f, 0xFF141010, FB);
+        }
+        float wag = (float) Math.sin(t * 4.2) * 16f;
+        box(0, -8.6f, 5f, -30, wag, 0, 0, 0, 4.4f, 4.2f, 4.2f, 9f, c, light);
+        box(0, -8.6f, 5f, -30, wag, 0, 0, 0, 8.6f, 4.3f, 4.3f, 2.6f, white, light);
+        for (int i = 0; i < 4; i++) {
+            float x = (i % 2 == 0 ? -1 : 1) * 2.1f;
+            float z = i < 2 ? -3.4f : 3.4f;
+            box(x, -5.4f, z, (i % 3 == 0 ? walk : -walk), 0, 0, 0, 2.6f, 0, 2f, 5.2f, 2f, dark, light);
+        }
+    }
+
+    // ---- box helper ---------------------------------------------------------------------------
+
+    /** Box in model-space pixels: pivot, rotation (deg) about X/Y/Z, then drawn centered at offset (ox,oy,oz). */
+    private void box(float px, float py, float pz, float rotX, float rotY, float rotZ,
+                     float ox, float oy, float oz, float w, float h, float d, int argb, int lt) {
+        m.push();
+        m.translate(px / 16f, py / 16f, pz / 16f);
+        if (rotX != 0 || rotY != 0 || rotZ != 0) {
+            m.multiply(new Quaternionf().rotateY((float) Math.toRadians(rotY))
+                    .rotateX((float) Math.toRadians(rotX)).rotateZ((float) Math.toRadians(rotZ)));
+        }
+        m.translate(ox / 16f, oy / 16f, oz / 16f);
+        float a = w / 32f;
+        float b = h / 32f;
+        float cc = d / 32f;
+        q.submitCustom(m, layer, (e, vc) -> CubeDraw.cube(e, vc, a, b, cc, argb, lt));
+        m.pop();
     }
 }

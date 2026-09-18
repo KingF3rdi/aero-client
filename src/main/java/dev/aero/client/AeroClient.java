@@ -56,6 +56,7 @@ public class AeroClient implements ClientModInitializer {
         registerOptimizers();
         WorldOverlayRenderer.register();
         registerCosmeticRenderer();
+        dev.aero.client.cosmetic.CosmeticEffects.register();
         ClientTickEvents.END_CLIENT_TICK.register(AeroClient::tick);
     }
 
@@ -178,7 +179,6 @@ public class AeroClient implements ClientModInitializer {
             tickEmoteWheel(client);
             dev.aero.client.Visuals.tickZoom();
             dev.aero.client.Visuals.tickAutoText(client);
-            dev.aero.client.cosmetic.CosmeticEffects.tick(client);
             DiscordRpc.tick();
         } catch (Throwable ignored) {
         }

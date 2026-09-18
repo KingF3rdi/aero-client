@@ -8,9 +8,12 @@ import java.util.List;
 import java.util.Locale;
 
 public final class Cosmetics {
-    public enum Kind { CAPE, WINGS, HEAD, TRAIL, PET, EMOTE, TAG, BADGE, KILL_EFFECT, NONE }
+    public enum Kind { CAPE, WINGS, HEAD, TRAIL, PET, EMOTE, TAG, BADGE, KILL_EFFECT, MACE, NONE }
 
     public record Item(String id, String name, Kind kind, int color) {}
+
+    /** Alternative colors offered as the dots under each item; index 0 is the item's own color. */
+    private static final int[] ALT = {0xFFFF6B9B, 0xFF6BE8FF, 0xFF8CFF6B, 0xFFFFC94D};
 
     private static final List<Item> ALL = new ArrayList<>();
 
@@ -22,42 +25,69 @@ public final class Cosmetics {
         cape("cobalt", "Cobalt", 0xFF3A4A9A);
         cape("copper", "Copper", 0xFFB06050);
         cape("creeper", "Creeper", 0xFF3CB04A);
-        cape("glitch", "Glitch", 0xFF1A1A1A);
+        cape("glitch", "Glitch", 0xFF2A2A2A);
         cape("grass", "Grass", 0xFF2E8B4A);
         cape("migrator", "Migrator", 0xFFC04040);
         cape("minecart", "Minecart", 0xFF8B5A2B);
         cape("minecon", "Minecon 2011", 0xFFB03030);
         cape("aurora", "Aurora", 0xFF4F8EFF);
-        cape("void", "Void", 0xFF221833);
+        cape("void", "Void", 0xFF3A2860);
         wings("none", "None", 0xFF2A2A32);
         wings("angel", "Angel", 0xFFF6F2FC);
-        wings("dragon", "Dragon", 0xFF6A3048);
-        wings("phantom", "Phantom", 0xFF3A4A68);
+        wings("dragon", "Dragon", 0xFFB03828);
+        wings("fairy", "Fairy", 0xFFFF9BD0);
+        wings("aurora", "Aurora", 0xFF4FC8D8);
+        wings("aegis", "Aegis", 0xFFB8BCC8);
+        wings("phantom", "Phantom", 0xFF5A6A9A);
         wings("feather", "Feather", 0xFFE8E0D0);
         head("none", "None", 0xFF2A2A32);
-        head("halo", "Halo", 0xFFE8C878);
-        head("horns", "Horns", 0xFF6A3040);
-        head("crown", "Crown", 0xFFE8C878);
+        head("halo", "Halo", 0xFFFFD86B);
+        head("horns", "Horns", 0xFFB04050);
+        head("crown", "Crown", 0xFFFFC94D);
         head("cat", "Cat ears", 0xFFD8A070);
         trail("none", "None", 0xFF2A2A32);
         trail("spark", "Spark", 0xFF4F8EFF);
-        trail("heart", "Heart", 0xFFF4C8DC);
+        trail("heart", "Heart", 0xFFFF7BAA);
         trail("snow", "Snow", 0xFFE8F0F8);
+        trail("void", "Void", 0xFF9B5BFF);
+        trail("gold", "Gold", 0xFFFFC94D);
+        trail("magma", "Magma", 0xFFFF6A2A);
+        trail("plasma", "Plasma", 0xFFD060FF);
+        trail("spirit", "Spirit", 0xFFB8E8F0);
         pet("none", "None", 0xFF2A2A32);
         pet("axolotl", "Axolotl", 0xFFF4A0B8);
-        pet("bee", "Bee", 0xFFE8C878);
-        pet("fox", "Fox", 0xFFE09050);
+        pet("bee", "Bee", 0xFFFFD040);
+        pet("fox", "Fox", 0xFFE8802A);
         emote("wave", "Wave", 0xFF4F8EFF);
         emote("clap", "Clap", 0xFFE8C878);
+        emote("gg", "GG", 0xFF8CFF6B);
+        emote("o7", "o7", 0xFFFF6B9B);
         tag("none", "None", 0xFF2A2A32);
-        tag("og", "OG", 0xFFE8C878);
+        tag("og", "OG", 0xFFFFC94D);
+        tag("star", "Star", 0xFFFFD86B);
+        tag("heart", "Heart", 0xFFFF6B9B);
+        tag("skull", "Skull", 0xFFC8C8D8);
+        tag("bolt", "Bolt", 0xFF6BE8FF);
         badge("none", "None", 0xFF2A2A32);
         badge("staff", "Staff", 0xFF4F8EFF);
         badge("beta", "Beta", 0xFF88C0D0);
+        badge("supporter", "Supporter", 0xFFFF6B9B);
+        badge("dev", "Dev", 0xFF8CFF6B);
         killEffect("none", "None", 0xFF2A2A32);
         killEffect("spark", "Spark", 0xFF4F8EFF);
         killEffect("ember", "Ember", 0xFFFF7A45);
         killEffect("venom", "Venom", 0xFF7ED957);
+        killEffect("lightning", "Lightning", 0xFFE8F0FF);
+        killEffect("soul", "Soul", 0xFF6BE8FF);
+        killEffect("void", "Void", 0xFF9B5BFF);
+        killEffect("totem", "Totem", 0xFF8CE060);
+        killEffect("nova", "Nova", 0xFFFF9B4D);
+        mace("none", "None", 0xFF2A2A32);
+        mace("slam", "Slam", 0xFFFF9B4D);
+        mace("quake", "Quake", 0xFFB8946A);
+        mace("thunder", "Thunder", 0xFFE8F0FF);
+        mace("crater", "Crater", 0xFF8A6A50);
+        mace("nova", "Nova", 0xFFD060FF);
     }
 
     private Cosmetics() {}
@@ -83,12 +113,19 @@ public final class Cosmetics {
             case 2 -> Kind.HEAD;
             case 3 -> Kind.TRAIL;
             case 4 -> Kind.KILL_EFFECT;
-            case 5 -> Kind.NONE;
+            case 5 -> Kind.MACE;
             case 6 -> Kind.PET;
             case 7 -> Kind.EMOTE;
             case 8 -> Kind.TAG;
             case 9 -> Kind.BADGE;
             default -> Kind.CAPE;
+        };
+    }
+
+    public static boolean hasVariants(Kind kind) {
+        return switch (kind) {
+            case CAPE, WINGS, HEAD, TRAIL, KILL_EFFECT, MACE, PET -> true;
+            default -> false;
         };
     }
 
@@ -107,6 +144,7 @@ public final class Cosmetics {
             case TAG -> nz(c.equippedTag);
             case BADGE -> nz(c.equippedBadge);
             case KILL_EFFECT -> nz(c.equippedKillEffect);
+            case MACE -> nz(c.equippedMace);
             case NONE -> "none";
         };
     }
@@ -127,6 +165,7 @@ public final class Cosmetics {
             case TAG -> c.equippedTag = value;
             case BADGE -> c.equippedBadge = value;
             case KILL_EFFECT -> c.equippedKillEffect = value;
+            case MACE -> c.equippedMace = value;
             case NONE -> {
                 return;
             }
@@ -143,43 +182,78 @@ public final class Cosmetics {
         return null;
     }
 
+    /** The 5 selectable colors of an item: its own, then the shared alternates. */
+    public static int variantColor(Item item, int index) {
+        return index <= 0 || index > ALT.length ? item.color : ALT[index - 1];
+    }
+
+    public static int variantCount() {
+        return ALT.length + 1;
+    }
+
+    public static int variantIndex(Kind kind, String id) {
+        ClientConfig c = AeroClient.CONFIG;
+        if (c == null || c.cosmeticVariant == null) {
+            return 0;
+        }
+        return c.cosmeticVariant.getOrDefault(kind.name() + ":" + id, 0);
+    }
+
+    public static void setVariant(Kind kind, String id, int index) {
+        ClientConfig c = AeroClient.CONFIG;
+        if (c == null) {
+            return;
+        }
+        if (c.cosmeticVariant == null) {
+            c.cosmeticVariant = new java.util.HashMap<>();
+        }
+        c.cosmeticVariant.put(kind.name() + ":" + id, index);
+        c.save();
+    }
+
+    /** Color of the equipped item of a kind with its chosen variant applied, or 0 when nothing is equipped. */
+    public static int equippedColor(Kind kind) {
+        String id = equipped(kind);
+        if ("none".equals(id)) {
+            return 0;
+        }
+        Item item = named(kind, id);
+        return item == null ? 0 : variantColor(item, variantIndex(kind, id));
+    }
+
+    /** Text glyph shown for chat tags and name badges. */
+    public static String glyph(Kind kind, String id) {
+        if (kind == Kind.BADGE) {
+            return switch (id) {
+                case "staff" -> "✦";
+                case "beta" -> "β";
+                case "supporter" -> "♥";
+                case "dev" -> "</>";
+                default -> "A";
+            };
+        }
+        return switch (id) {
+            case "og" -> "OG";
+            case "star" -> "★";
+            case "heart" -> "♥";
+            case "skull" -> "☠";
+            case "bolt" -> "⚡";
+            default -> "";
+        };
+    }
+
     private static String nz(String s) {
         return s == null || s.isBlank() ? "none" : s;
     }
 
-    private static void cape(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.CAPE, color));
-    }
-
-    private static void wings(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.WINGS, color));
-    }
-
-    private static void head(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.HEAD, color));
-    }
-
-    private static void trail(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.TRAIL, color));
-    }
-
-    private static void pet(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.PET, color));
-    }
-
-    private static void emote(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.EMOTE, color));
-    }
-
-    private static void tag(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.TAG, color));
-    }
-
-    private static void badge(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.BADGE, color));
-    }
-
-    private static void killEffect(String id, String name, int color) {
-        ALL.add(new Item(id, name, Kind.KILL_EFFECT, color));
-    }
+    private static void cape(String id, String name, int color) { ALL.add(new Item(id, name, Kind.CAPE, color)); }
+    private static void wings(String id, String name, int color) { ALL.add(new Item(id, name, Kind.WINGS, color)); }
+    private static void head(String id, String name, int color) { ALL.add(new Item(id, name, Kind.HEAD, color)); }
+    private static void trail(String id, String name, int color) { ALL.add(new Item(id, name, Kind.TRAIL, color)); }
+    private static void pet(String id, String name, int color) { ALL.add(new Item(id, name, Kind.PET, color)); }
+    private static void emote(String id, String name, int color) { ALL.add(new Item(id, name, Kind.EMOTE, color)); }
+    private static void tag(String id, String name, int color) { ALL.add(new Item(id, name, Kind.TAG, color)); }
+    private static void badge(String id, String name, int color) { ALL.add(new Item(id, name, Kind.BADGE, color)); }
+    private static void killEffect(String id, String name, int color) { ALL.add(new Item(id, name, Kind.KILL_EFFECT, color)); }
+    private static void mace(String id, String name, int color) { ALL.add(new Item(id, name, Kind.MACE, color)); }
 }

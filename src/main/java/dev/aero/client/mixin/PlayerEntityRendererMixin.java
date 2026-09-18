@@ -40,13 +40,15 @@ public class PlayerEntityRendererMixin {
         if (state == null || !(entity instanceof PlayerEntity player)) {
             return;
         }
-        Text result = state.playerName != null ? state.playerName : state.displayName;
+        // Only displayName is drawn as the nametag; playerName is a separate second label, so
+        // writing our edits to both made the name show up twice.
+        Text result = state.displayName;
         if (result == null) {
             return;
         }
         boolean changed = false;
         if (dev.aero.client.social.ClientUsers.isUser(player.getUuid())) {
-            result = dev.aero.client.social.ClientUsers.badge().append(result);
+            result = dev.aero.client.social.ClientUsers.badge(player.getUuid()).append(result);
             changed = true;
         }
 
@@ -107,7 +109,6 @@ public class PlayerEntityRendererMixin {
         }
 
         if (changed) {
-            state.playerName = result;
             state.displayName = result;
         }
     }
