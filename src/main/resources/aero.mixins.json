@@ -40,7 +40,8 @@
     "HandledScreenScaleMixin",
     "CreativeInventoryScaleMixin",
     "TitleScreenMixin",
-    "PlayerListHudMixin"
+    "PlayerListHudMixin",
+    "EntityStatusMixin"
   ],
   "injectors": {
     "defaultRequire": 0

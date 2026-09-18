@@ -91,8 +91,7 @@ public class PlayerEntityRendererMixin {
             changed = true;
         }
 
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemPopsOnNametag
-                && (AeroClient.CONFIG.totemCounter || AeroClient.CONFIG.nametagBadge)) {
+        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemPopsOnNametag) {
             try {
                 int pops = dev.aero.client.Visuals.totemPopsFor(player.getUuid());
                 if (pops > 0) {

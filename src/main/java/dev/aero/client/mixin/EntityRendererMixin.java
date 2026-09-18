@@ -86,7 +86,7 @@ public class EntityRendererMixin {
             }
         }
 
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemCounter && AeroClient.CONFIG.totemPopsOnNametag) {
+        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemPopsOnNametag) {
             try {
                 int pops = dev.aero.client.Visuals.totemPopsFor(entity.getUuid());
                 if (pops > 0) {
