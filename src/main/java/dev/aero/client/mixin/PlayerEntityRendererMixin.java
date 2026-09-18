@@ -9,7 +9,9 @@ import net.minecraft.client.render.state.CameraRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.PlayerLikeEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TextColor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -44,7 +46,8 @@ public class PlayerEntityRendererMixin {
         if (result == null) {
             return;
         }
-        boolean changed = false;
+        result = Text.literal("A ").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(0x4F8EFF)).withBold(true)).append(result);
+        boolean changed = true;
 
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametags && AeroClient.CONFIG.nametagPing) {
             MinecraftClient mc = MinecraftClient.getInstance();
