@@ -16,7 +16,14 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 public class ChatHudMixin {
     @ModifyVariable(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), argsOnly = true, require = 0)
     private Text aero$stamp(Text message) {
-        if (AeroClient.CONFIG == null || !AeroClient.CONFIG.chatTimestamps || message == null) {
+        if (message == null) {
+            return message;
+        }
+        try {
+            message = dev.aero.client.social.ClientUsers.badgeChat(message);
+        } catch (Throwable ignored) {
+        }
+        if (AeroClient.CONFIG == null || !AeroClient.CONFIG.chatTimestamps) {
             return message;
         }
         return Text.literal(Visuals.clockPrefix()).append(message);
