@@ -167,6 +167,7 @@ public class AeroClient implements ClientModInitializer {
             tickEmoteWheel(client);
             dev.aero.client.Visuals.tickZoom();
             dev.aero.client.Visuals.tickAutoText(client);
+            dev.aero.client.cosmetic.CosmeticEffects.tick(client);
             DiscordRpc.tick();
         } catch (Throwable ignored) {
         }

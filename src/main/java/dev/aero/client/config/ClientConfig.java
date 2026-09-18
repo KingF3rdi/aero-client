@@ -329,6 +329,7 @@ public class ClientConfig {
     public String equippedEmote = "wave";
     public String equippedTag = "none";
     public String equippedBadge = "none";
+    public String equippedKillEffect = "none";
 
     public boolean fpsBoost = false;
     public boolean noShadows = false;

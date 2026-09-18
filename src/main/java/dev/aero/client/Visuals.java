@@ -630,8 +630,17 @@ public final class Visuals {
     /** Matches your own kill in a chat death-message line for the Auto Text module (no server hook exists client-side). */
     public static boolean matchesOwnKill(String chatLine) {
         ClientConfig c = cfg();
+        if (c == null || !c.autoText) {
+            return false;
+        }
+        return isOwnKillLine(chatLine);
+    }
+
+    /** Same death-message detection as matchesOwnKill, but independent of the Auto Text toggle - used
+     * by cosmetic kill effects, which should fire whether or not Auto Text is enabled. */
+    public static boolean isOwnKillLine(String chatLine) {
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (c == null || !c.autoText || chatLine == null || mc.player == null) {
+        if (chatLine == null || mc.player == null) {
             return false;
         }
         String name = dev.aero.client.auth.AccountManager.currentName();

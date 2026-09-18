@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Locale;
 
 public final class Cosmetics {
-    public enum Kind { CAPE, WINGS, HEAD, TRAIL, PET, EMOTE, TAG, BADGE, NONE }
+    public enum Kind { CAPE, WINGS, HEAD, TRAIL, PET, EMOTE, TAG, BADGE, KILL_EFFECT, NONE }
 
     public record Item(String id, String name, Kind kind, int color) {}
 
@@ -54,6 +54,10 @@ public final class Cosmetics {
         badge("none", "None", 0xFF2A2A32);
         badge("staff", "Staff", 0xFF4F8EFF);
         badge("beta", "Beta", 0xFF88C0D0);
+        killEffect("none", "None", 0xFF2A2A32);
+        killEffect("spark", "Spark", 0xFF4F8EFF);
+        killEffect("ember", "Ember", 0xFFFF7A45);
+        killEffect("venom", "Venom", 0xFF7ED957);
     }
 
     private Cosmetics() {}
@@ -78,7 +82,8 @@ public final class Cosmetics {
             case 1 -> Kind.WINGS;
             case 2 -> Kind.HEAD;
             case 3 -> Kind.TRAIL;
-            case 4, 5 -> Kind.NONE;
+            case 4 -> Kind.KILL_EFFECT;
+            case 5 -> Kind.NONE;
             case 6 -> Kind.PET;
             case 7 -> Kind.EMOTE;
             case 8 -> Kind.TAG;
@@ -101,6 +106,7 @@ public final class Cosmetics {
             case EMOTE -> nz(c.equippedEmote);
             case TAG -> nz(c.equippedTag);
             case BADGE -> nz(c.equippedBadge);
+            case KILL_EFFECT -> nz(c.equippedKillEffect);
             case NONE -> "none";
         };
     }
@@ -120,6 +126,7 @@ public final class Cosmetics {
             case EMOTE -> c.equippedEmote = value;
             case TAG -> c.equippedTag = value;
             case BADGE -> c.equippedBadge = value;
+            case KILL_EFFECT -> c.equippedKillEffect = value;
             case NONE -> {
                 return;
             }
@@ -170,5 +177,9 @@ public final class Cosmetics {
 
     private static void badge(String id, String name, int color) {
         ALL.add(new Item(id, name, Kind.BADGE, color));
+    }
+
+    private static void killEffect(String id, String name, int color) {
+        ALL.add(new Item(id, name, Kind.KILL_EFFECT, color));
     }
 }

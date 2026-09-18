@@ -61,7 +61,8 @@ public final class CosmeticPreview {
             Quaternionf rot = new Quaternionf().rotateZ((float) Math.PI);
             Quaternionf tilt = new Quaternionf();
             context.addEntity(state, s, offset, rot, tilt, x1, y1, x2, y2);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            t.printStackTrace();
         } finally {
             drawing = false;
         }

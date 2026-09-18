@@ -42,6 +42,10 @@ public class ChatHudMixin {
         if (message == null) {
             return;
         }
-        dev.aero.client.Visuals.onChatLine(message.getString());
+        String line = message.getString();
+        dev.aero.client.Visuals.onChatLine(line);
+        if (dev.aero.client.Visuals.isOwnKillLine(line)) {
+            dev.aero.client.cosmetic.CosmeticEffects.onKill();
+        }
     }
 }
