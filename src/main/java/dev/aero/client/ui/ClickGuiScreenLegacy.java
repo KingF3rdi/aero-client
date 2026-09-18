@@ -39,6 +39,8 @@ public class ClickGuiScreenLegacy extends Screen {
 
     private static final int TOP = 36;
     private static final int ROW_H = 32;
+    private static final int NAV_H = 20;
+    private static final int NAV_STEP = 22;
     private int SIDE_W = 168;
     private int RIGHT_W = 248;
 
@@ -367,26 +369,27 @@ public class ClickGuiScreenLegacy extends Screen {
         context.drawText(textRenderer, Text.literal(fit(q, SIDE_W - 36)), x0 + 16, sy + 7,
                 search.isEmpty() && !searchFocus ? MUTED : TEXT, false);
 
-        sy += 34;
+        sy += 30;
         nav(context, mx, my, sy, null, "All", AeroClient.MODULES.menuCount(), !boundKeysOnly && filter == null);
-        sy += 28;
+        sy += NAV_STEP;
         for (Category category : Category.values()) {
             if (!category.inSidebar()) {
                 continue;
             }
             nav(context, mx, my, sy, category, category.title, AeroClient.MODULES.count(category),
                     !boundKeysOnly && filter == category);
-            sy += 28;
+            sy += NAV_STEP;
         }
-        sy += 10;
-        boolean boundH = inside(mx, my, x0 + 8, sy, SIDE_W - 16, 24);
+        sy += 4;
+        UiDraw.divider(context, x0 + 14, sy - 3, SIDE_W - 28);
+        boolean boundH = inside(mx, my, x0 + 8, sy, SIDE_W - 16, NAV_H);
         if (boundKeysOnly) {
-            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, 24, 8, PILL_ON);
-            UiDraw.roundRect(context, x0 + 8, sy + 5, 3, 14, 1, ACCENT);
+            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, NAV_H, 8, PILL_ON);
+            UiDraw.roundRect(context, x0 + 8, sy + 4, 3, NAV_H - 8, 1, ACCENT);
         } else if (boundH) {
-            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, 24, 8, 0x8014121C);
+            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, NAV_H, 8, 0x8014121C);
         }
-        context.drawText(textRenderer, Text.literal("Bound keys"), x0 + 16, sy + 8,
+        context.drawText(textRenderer, Text.literal("Bound keys"), x0 + 18, sy + 6,
                 boundKeysOnly ? TEXT : MUTED, false);
 
         int hy = y1 - 34;
@@ -398,16 +401,16 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private void nav(DrawContext context, int mx, int my, int y, Category category, String name, int count, boolean on) {
-        boolean h = inside(mx, my, ox + 8, y, SIDE_W - 16, 24);
+        boolean h = inside(mx, my, ox + 8, y, SIDE_W - 16, NAV_H);
         if (on) {
-            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, 24, 8, PILL_ON);
-            UiDraw.roundRect(context, ox + 8, y + 5, 3, 14, 1, ACCENT);
+            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, NAV_H, 8, PILL_ON);
+            UiDraw.roundRect(context, ox + 8, y + 4, 3, NAV_H - 8, 1, ACCENT);
         } else if (h) {
-            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, 24, 8, 0x8014121C);
+            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, NAV_H, 8, 0x8014121C);
         }
-        context.drawText(textRenderer, Text.literal(name), ox + 18, y + 8, on ? TEXT : MUTED, false);
+        context.drawText(textRenderer, Text.literal(name), ox + 18, y + 6, on ? TEXT : MUTED, false);
         String n = String.valueOf(count);
-        context.drawText(textRenderer, Text.literal(n), ox + SIDE_W - 16 - textRenderer.getWidth(n), y + 8, MUTED, false);
+        context.drawText(textRenderer, Text.literal(n), ox + SIDE_W - 16 - textRenderer.getWidth(n), y + 6, MUTED, false);
     }
 
     private void drawList(DrawContext context, int mx, int my) {
@@ -1024,28 +1027,28 @@ public class ClickGuiScreenLegacy extends Screen {
             return true;
         }
 
-        int sy = oy + TOP + 42;
-        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, 24)) {
+        int sy = oy + TOP + 40;
+        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, NAV_H)) {
             filter = null;
             boundKeysOnly = false;
             rebuild();
             return true;
         }
-        sy += 28;
+        sy += NAV_STEP;
         for (Category category : Category.values()) {
             if (!category.inSidebar()) {
                 continue;
             }
-            if (inside(mx, my, ox + 8, sy, SIDE_W - 16, 24)) {
+            if (inside(mx, my, ox + 8, sy, SIDE_W - 16, NAV_H)) {
                 filter = category;
                 boundKeysOnly = false;
                 rebuild();
                 return true;
             }
-            sy += 28;
+            sy += NAV_STEP;
         }
-        sy += 10;
-        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, 24)) {
+        sy += 4;
+        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, NAV_H)) {
             boundKeysOnly = true;
             filter = null;
             rebuild();
