@@ -169,7 +169,7 @@ public final class OverlayHud {
             }
         }
 
-        if (cfg.potionHud) {
+        if (cfg.potionHud && !mc.options.playerListKey.isPressed()) {
             try {
                 Collection<StatusEffectInstance> effects = mc.player.getStatusEffects();
                 int y = cfg.potionY;
