@@ -142,6 +142,8 @@ public class ClientConfig {
     public boolean hideInvModel = false;
     public boolean hideInvTransparent = false;
     public boolean totemCounter = false;
+    public boolean totemAutoColor = true;
+    public int totemResetKey = 291;
     public boolean totemHud = true;
     public boolean totemOwnOnly = true;
     public boolean totemUseColor = true;

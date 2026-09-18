@@ -175,6 +175,7 @@ public class AeroClient implements ClientModInitializer {
             }
             HudStats.tick(client);
             tickModuleToggleKeys(client);
+            tickTotemReset(client);
             tickRenderDistanceOverride(client);
             tickUnfocusedCpu(client);
             tickEmoteWheel(client);
@@ -183,6 +184,20 @@ public class AeroClient implements ClientModInitializer {
             DiscordRpc.tick();
         } catch (Throwable ignored) {
         }
+    }
+
+    private static boolean totemResetWasDown;
+
+    private static void tickTotemReset(MinecraftClient client) {
+        if (CONFIG == null || !CONFIG.totemCounter || client.currentScreen != null || client.getWindow() == null) {
+            totemResetWasDown = false;
+            return;
+        }
+        boolean down = GLFW.glfwGetKey(client.getWindow().getHandle(), CONFIG.totemResetKey) == GLFW.GLFW_PRESS;
+        if (down && !totemResetWasDown) {
+            dev.aero.client.Visuals.resetTotemPops();
+        }
+        totemResetWasDown = down;
     }
 
     /** Generic Toggle Key support: works for every module, present or future, with no per-module wiring. */

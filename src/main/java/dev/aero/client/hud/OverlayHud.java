@@ -145,7 +145,8 @@ public final class OverlayHud {
             context.drawItem(new ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING), iconX, iconY);
             String count = String.valueOf(totems);
             int cw = mc.textRenderer.getWidth(count);
-            int col = cfg.totemUseColor ? (cfg.totemColor | 0xFF000000) : TEXT;
+            int col = cfg.totemAutoColor ? (totems >= 3 ? 0xFF55FF55 : totems == 2 ? 0xFFFFD040 : 0xFFFF5555)
+                    : cfg.totemUseColor ? (cfg.totemColor | 0xFF000000) : TEXT;
             context.drawText(mc.textRenderer, Text.literal(count), iconX + 8 - cw / 2, iconY + 18, col, true);
         }
 

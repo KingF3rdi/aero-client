@@ -443,6 +443,8 @@ public final class Modules {
                 () -> c.totemCounter, v -> c.totemCounter = v)
                 .setting("Show HUD", () -> c.totemHud, v -> c.totemHud = v)
                 .setting("Own Totems", () -> c.totemOwnOnly, v -> c.totemOwnOnly = v)
+                .setting("Auto color (green/yellow/red)", () -> c.totemAutoColor, v -> c.totemAutoColor = v)
+                .settingAction("Reset pops", "Reset (F10)", dev.aero.client.Visuals::resetTotemPops)
                 .setting("Use color", () -> c.totemUseColor, v -> c.totemUseColor = v)
                 .settingColor("Count color", () -> c.totemColor, v -> c.totemColor = v)
                 .nestLast("Use color")

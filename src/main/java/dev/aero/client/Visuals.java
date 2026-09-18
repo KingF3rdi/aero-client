@@ -736,6 +736,14 @@ public final class Visuals {
         dev.aero.client.cosmetic.CosmeticEffects.onTotemPop(entity);
     }
 
+    public static void resetTotemPops() {
+        TOTEM_POPS.clear();
+        var mc = net.minecraft.client.MinecraftClient.getInstance();
+        if (mc.player != null) {
+            mc.player.sendMessage(net.minecraft.text.Text.literal("Totem pops reset"), true);
+        }
+    }
+
     public static int totemPopsFor(java.util.UUID uuid) {
         return uuid == null ? 0 : TOTEM_POPS.getOrDefault(uuid, 0);
     }
