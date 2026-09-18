@@ -86,6 +86,11 @@ public class Module {
         return this;
     }
 
+    public Module settingKey(String name, IntGet get, IntSet set) {
+        settings.add(Setting.key(name, get, set));
+        return this;
+    }
+
     public Module settingAction(String name, String button) {
         settings.add(Setting.action(name, button, null));
         return this;
@@ -130,7 +135,7 @@ public class Module {
 
     public static final class Setting {
         public enum Kind {
-            BOOL, INT, FLOAT, CHOICE, TEXT, COLOR, ACTION
+            BOOL, INT, FLOAT, CHOICE, TEXT, COLOR, ACTION, KEY
         }
 
         public String nestUnder;
@@ -196,6 +201,10 @@ public class Module {
 
         public static Setting text(String name, Supplier<String> get, Consumer<String> set) {
             return new Setting(name, Kind.TEXT, null, null, null, null, null, null, get, set, null, 0, 0, 0, 0);
+        }
+
+        public static Setting key(String name, IntGet get, IntSet set) {
+            return new Setting(name, Kind.KEY, null, null, get, set, null, null, null, null, null, 0, 0, 0, 0);
         }
 
         public static Setting color(String name, IntGet get, IntSet set) {

@@ -1,6 +1,7 @@
 package dev.aero.client.hud;
 
 import dev.aero.client.AeroClient;
+import dev.aero.client.Visuals;
 import dev.aero.client.config.ClientConfig;
 import dev.aero.client.module.Module;
 import dev.aero.client.ui.UiDraw;
@@ -113,7 +114,8 @@ public final class OverlayHud {
             hudLine(context, mc, cfg, cfg.fpsX, cfg.fpsY, fps(mc) + " FPS", cfg.fpsShadow);
         }
         if (cfg.pingHud) {
-            hudLine(context, mc, cfg, cfg.pingX, cfg.pingY, ping(mc) + " ms", cfg.pingShadow);
+            int pms = ping(mc);
+            hudLine(context, mc, cfg, cfg.pingX, cfg.pingY, pms + " ms", cfg.pingShadow, Visuals.pingColor(pms) | 0xFF000000);
         }
         if (cfg.cpsHud) {
             hudLine(context, mc, cfg, cfg.fpsX, cfg.fpsY + 12, HudStats.cps() + " CPS");
@@ -148,7 +150,7 @@ public final class OverlayHud {
             context.drawItem(new ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING), iconX, iconY);
             String count = String.valueOf(totems);
             int cw = mc.textRenderer.getWidth(count);
-            int col = cfg.totemAutoColor ? (totems >= 3 ? 0xFF55FF55 : totems == 2 ? 0xFFFFD040 : 0xFFFF5555)
+            int col = cfg.totemAutoColor ? (totems >= 3 ? cfg.totemColGood : totems == 2 ? cfg.totemColWarn : cfg.totemColBad) | 0xFF000000
                     : cfg.totemUseColor ? (cfg.totemColor | 0xFF000000) : TEXT;
             context.drawText(mc.textRenderer, Text.literal(count), iconX + 8 - cw / 2, iconY + 18, col, true);
         }
@@ -787,6 +789,10 @@ public final class OverlayHud {
     private static final java.util.HashMap<String, Object[]> LINE_CACHE = new java.util.HashMap<>();
 
     private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line, boolean shadow) {
+        hudLine(context, mc, cfg, x, y, line, shadow, TEXT);
+    }
+
+    private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line, boolean shadow, int textColor) {
         Object[] cached = LINE_CACHE.get(line);
         if (cached == null) {
             if (LINE_CACHE.size() > 96) {
@@ -798,7 +804,7 @@ public final class OverlayHud {
         int w = (Integer) cached[1];
         UiDraw.roundRect(context, x, y, w, 14, 5, 0x9912101A);
         context.fill(x + 3, y + 3, x + 5, y + 11, cfg.panelAccent | 0xFF000000);
-        context.drawText(mc.textRenderer, (Text) cached[0], x + 8, y + 3, TEXT, shadow);
+        context.drawText(mc.textRenderer, (Text) cached[0], x + 8, y + 3, textColor, shadow);
     }
 
     private static String sprintText(MinecraftClient mc, ClientConfig cfg) {

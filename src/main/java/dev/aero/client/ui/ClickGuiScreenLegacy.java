@@ -100,6 +100,30 @@ public class ClickGuiScreenLegacy extends Screen {
         wardrobe.debugTab(cos);
     }
 
+    private Module.Setting colorOpen;
+    private Module.Setting hueDrag;
+    private int hueBarX;
+    private int hueBarW;
+    private Module.Setting keyCapture;
+    private static final int[] PRESETS = {0xFF5555, 0xFF9F43, 0xFFD93D, 0x55FF55, 0x4FD8FF, 0x4F8EFF, 0xB06BFF, 0xFFFFFF};
+
+    private static String keyLabel(int key) {
+        if (key < 0) {
+            return "None";
+        }
+        if (key >= 290 && key <= 301) {
+            return "F" + (key - 289);
+        }
+        String n = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, 0);
+        return n != null ? n.toUpperCase(java.util.Locale.ROOT) : "Key " + key;
+    }
+
+    private void applyHue(Module.Setting setting, int barX, int barW, int mx) {
+        float t = Math.max(0f, Math.min(1f, (mx - barX) / (float) Math.max(1, barW)));
+        int rgb = java.awt.Color.HSBtoRGB(t, 0.85f, 1f) & 0xFFFFFF;
+        setting.intSet.set(0xFF000000 | rgb);
+    }
+
     private int settingsScroll;
     private int settingsContentH;
     private Module scrollModule;
@@ -578,9 +602,7 @@ public class ClickGuiScreenLegacy extends Screen {
         Module.ModuleStyle style = selected.style();
         String keyLabel = "Emotes".equals(selected.name) ? "Hold Key" : "Toggle Key";
         context.drawText(textRenderer, Text.literal(keyLabel), x + 14, y + 4, MUTED, false);
-        String keyName = capturingKeybind == selected ? "Press a key..."
-                : style.toggleKey < 0 ? "None" : org.lwjgl.glfw.GLFW.glfwGetKeyName(style.toggleKey, 0) != null
-                ? org.lwjgl.glfw.GLFW.glfwGetKeyName(style.toggleKey, 0).toUpperCase(java.util.Locale.ROOT) : "Key " + style.toggleKey;
+        String keyName = capturingKeybind == selected ? "Press a key..." : keyLabel(style.toggleKey);
         int kpw = pillW(keyLabel);
         int kpx = x + RIGHT_W - 14 - kpw;
         UiDraw.pill(context, kpx, y - 3, kpw, 20, capturingKeybind == selected);
@@ -662,6 +684,15 @@ public class ClickGuiScreenLegacy extends Screen {
                 }
                 context.drawText(textRenderer, Text.literal(shown), tx + 6, y + 17, focused ? TEXT : MUTED, false);
                 y += 34;
+            } else if (setting.kind == Module.Setting.Kind.KEY) {
+                context.drawText(textRenderer, Text.literal(setting.name), tx, y + 4, TEXT, false);
+                String kl = keyCapture == setting ? "Press a key..." : keyLabel(setting.intGet.get());
+                int kw2 = Math.max(52, Math.min(RIGHT_W - 28 - textRenderer.getWidth(setting.name) - 6, textRenderer.getWidth(kl) + 16));
+                int kx2 = x + RIGHT_W - 14 - kw2;
+                UiDraw.pill(context, kx2, y - 3, kw2, 20, keyCapture == setting);
+                String shown2 = fit(kl, kw2 - 8);
+                context.drawText(textRenderer, Text.literal(shown2), kx2 + (kw2 - textRenderer.getWidth(shown2)) / 2, y + 3, TEXT, false);
+                y += 26;
             } else if (setting.kind == Module.Setting.Kind.COLOR) {
                 context.drawText(textRenderer, Text.literal(setting.name), tx, y + 4, TEXT, false);
                 int rgb = setting.intGet.get() & 0xFFFFFF;
@@ -672,6 +703,24 @@ public class ClickGuiScreenLegacy extends Screen {
                 }
                 UiDraw.raised(context, x + RIGHT_W - 36, y, 18, 12, 0xFF000000 | rgb);
                 y += 22;
+                if (colorOpen == setting) {
+                    int barX = tx;
+                    int barW = RIGHT_W - 28 - indent;
+                    for (int i = 0; i < barW; i++) {
+                        int hc = java.awt.Color.HSBtoRGB(i / (float) barW, 0.85f, 1f) & 0xFFFFFF;
+                        context.fill(barX + i, y, barX + i + 1, y + 10, 0xFF000000 | hc);
+                    }
+                    UiDraw.roundBorder(context, barX - 1, y - 1, barW + 2, 12, 3, 0x33FFFFFF);
+                    int sw2 = Math.min(16, (barW - 4) / PRESETS.length - 3);
+                    for (int i = 0; i < PRESETS.length; i++) {
+                        int px2 = barX + i * (sw2 + 3);
+                        UiDraw.roundRect(context, px2, y + 15, sw2, sw2, 3, 0xFF000000 | PRESETS[i]);
+                        if ((rgb & 0xFFFFFF) == PRESETS[i]) {
+                            UiDraw.roundBorder(context, px2 - 1, y + 14, sw2 + 2, sw2 + 2, 3, 0xFFFFFFFF);
+                        }
+                    }
+                    y += 20 + sw2 + 6;
+                }
             } else if (setting.kind == Module.Setting.Kind.ACTION) {
                 if (setting.group) {
                     context.drawText(textRenderer, Text.literal(groupExpanded(setting) ? "v" : ">"), tx, y + 4, MUTED, false);
@@ -1351,15 +1400,42 @@ public class ClickGuiScreenLegacy extends Screen {
                     return true;
                 }
                 y += 34;
+            } else if (setting.kind == Module.Setting.Kind.KEY) {
+                if (inside(mx, my, tx, y - 3, RIGHT_W - 28 - indent, 20)) {
+                    keyCapture = setting;
+                    focusedTextSetting = null;
+                    return true;
+                }
+                y += 26;
             } else if (setting.kind == Module.Setting.Kind.COLOR) {
                 if (inside(mx, my, x + 14, y - 2, RIGHT_W - 28, 20)) {
-                    colorFocus = setting;
+                    colorOpen = colorOpen == setting ? null : setting;
+                    colorFocus = null;
                     focusedTextSetting = null;
                     accentFocus = false;
-                    colorDraft = String.format("#%06X", setting.intGet.get() & 0xFFFFFF);
                     return true;
                 }
                 y += 22;
+                if (colorOpen == setting) {
+                    int barX = tx;
+                    int barW = RIGHT_W - 28 - indent;
+                    if (inside(mx, my, barX, y - 1, barW, 12)) {
+                        hueDrag = setting;
+                        hueBarX = barX;
+                        hueBarW = barW;
+                        applyHue(setting, barX, barW, mx);
+                        return true;
+                    }
+                    int sw2 = Math.min(16, (barW - 4) / PRESETS.length - 3);
+                    for (int i = 0; i < PRESETS.length; i++) {
+                        if (inside(mx, my, barX + i * (sw2 + 3), y + 15, sw2, sw2)) {
+                            setting.intSet.set(0xFF000000 | PRESETS[i]);
+                            AeroClient.CONFIG.save();
+                            return true;
+                        }
+                    }
+                    y += 20 + sw2 + 6;
+                }
             } else if (setting.kind == Module.Setting.Kind.ACTION) {
                 String lab = setting.actionLabel == null ? "Open" : setting.actionLabel;
                 int aw = Math.max(52, textRenderer.getWidth(lab) + 16);
@@ -1402,6 +1478,10 @@ public class ClickGuiScreenLegacy extends Screen {
         if (topTab == 1 && wardrobe.drag(deltaX)) {
             return true;
         }
+        if (hueDrag != null) {
+            applyHue(hueDrag, hueBarX, hueBarW, (int) click.x());
+            return true;
+        }
         if (draggingSetting != null) {
             applySliderDrag(draggingSetting, dragBarX, dragBarW, (int) click.x());
             return true;
@@ -1412,6 +1492,11 @@ public class ClickGuiScreenLegacy extends Screen {
     @Override
     public boolean mouseReleased(Click click) {
         wardrobe.release();
+        if (hueDrag != null) {
+            AeroClient.CONFIG.save();
+            hueDrag = null;
+            return true;
+        }
         if (draggingSetting != null) {
             AeroClient.CONFIG.save();
             draggingSetting = null;
@@ -1442,6 +1527,14 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     public boolean handleKey(int key) {
+        if (keyCapture != null) {
+            if (key != GLFW.GLFW_KEY_ESCAPE) {
+                keyCapture.intSet.set(key == GLFW.GLFW_KEY_BACKSPACE ? -1 : key);
+                AeroClient.CONFIG.save();
+            }
+            keyCapture = null;
+            return true;
+        }
         if (capturingKeybind != null) {
             capturingKeybind.style().toggleKey = key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_BACKSPACE ? -1 : key;
             AeroClient.CONFIG.save();

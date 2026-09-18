@@ -42,7 +42,10 @@
     "TitleScreenMixin",
     "PlayerListHudMixin",
     "EntityStatusMixin",
-    "ToastManagerMixin"
+    "ToastManagerMixin",
+    "DamageTintBodyMixin",
+    "DamageTintArmorMixin",
+    "DamageTintEquipmentMixin"
   ],
   "injectors": {
     "defaultRequire": 0

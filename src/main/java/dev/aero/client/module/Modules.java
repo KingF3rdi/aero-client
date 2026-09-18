@@ -18,6 +18,8 @@ public final class Modules {
                 () -> c.uiBoost, v -> c.uiBoost = v)
                 .setting("Skip screen overlays", () -> c.uiBoostOverlays, v -> c.uiBoostOverlays = v)
                 .setting("Skip toasts", () -> c.uiBoostToasts, v -> c.uiBoostToasts = v));
+        add(new Module("Max FPS", "Unlocks the frame cap and turns V-Sync off on every start", Category.PERFORMANCE,
+                () -> c.autoMaxFps, v -> c.autoMaxFps = v));
         add(new Module("Particle Limit", "Caps world particles for more FPS", Category.PERFORMANCE,
                 () -> c.particleLimiter, v -> c.particleLimiter = v)
                 .setting("Max", () -> c.maxParticles, v -> c.maxParticles = v, 10, 400));
@@ -138,8 +140,15 @@ public final class Modules {
         add(new Module("Nametags", "Own-name and nametag scale", Category.RENDER,
                 () -> c.nametags, v -> c.nametags = v)
                 .settingF("Scale", () -> (double) c.nametagScale, v -> c.nametagScale = (float) v, 0.5, 3)
+                .settingF("Height offset", () -> (double) c.nametagYOffset, v -> c.nametagYOffset = (float) v, -1, 2)
                 .setting("Show Own Nametag", () -> c.ownNametag, v -> c.ownNametag = v)
                 .setting("\"L\" badge for friends", () -> c.nametagBadge, v -> c.nametagBadge = v));
+        add(new Module("Client Badge", "Blue A next to Aero Client users in nametags, tab list and chat", Category.RENDER,
+                () -> c.badgeEnabled, v -> c.badgeEnabled = v)
+                .setting("Who", () -> c.badgeMode, v -> c.badgeMode = v, "All clients", "Friends only")
+                .setting("Nametags", () -> c.badgeNametag, v -> c.badgeNametag = v)
+                .setting("Tab list", () -> c.badgeTab, v -> c.badgeTab = v)
+                .setting("Chat", () -> c.badgeChat, v -> c.badgeChat = v));
         add(new Module("Time Changer", "Client-only world time", Category.RENDER,
                 () -> c.timeChanger, v -> c.timeChanger = v)
                 .setting("Time", () -> c.timePreset, v -> c.timePreset = v, "Day", "Noon", "Sunset", "Night", "Midnight", "Custom")
@@ -414,7 +423,13 @@ public final class Modules {
                 .setting("Shadow", () -> c.pingShadow, v -> c.pingShadow = v)
                 .setting("Next to names", () -> c.nametagPing, v -> c.nametagPing = v)
                 .setting("Side", () -> c.pingSide, v -> c.pingSide = v, "Left", "Right")
-                .setting("Divider", () -> c.pingDivider, v -> c.pingDivider = v));
+                .setting("Divider", () -> c.pingDivider, v -> c.pingDivider = v)
+                .setting("Color by latency", () -> c.pingColorByLatency, v -> c.pingColorByLatency = v)
+                .settingColor("Good color", () -> c.pingColGood, v -> c.pingColGood = v)
+                .settingColor("OK color", () -> c.pingColWarn, v -> c.pingColWarn = v)
+                .settingColor("High color", () -> c.pingColBad, v -> c.pingColBad = v)
+                .setting("OK from (ms)", () -> c.pingWarnMs, v -> c.pingWarnMs = v, 10, 300)
+                .setting("High from (ms)", () -> c.pingBadMs, v -> c.pingBadMs = v, 20, 500));
         add(new Module("Potion HUD", "Active effect list", Category.HUD,
                 () -> c.potionHud, v -> c.potionHud = v)
                 .setting("Icons", () -> c.potionIcons, v -> c.potionIcons = v)
@@ -443,8 +458,12 @@ public final class Modules {
                 () -> c.totemCounter, v -> c.totemCounter = v)
                 .setting("Show HUD", () -> c.totemHud, v -> c.totemHud = v)
                 .setting("Own Totems", () -> c.totemOwnOnly, v -> c.totemOwnOnly = v)
-                .setting("Auto color (green/yellow/red)", () -> c.totemAutoColor, v -> c.totemAutoColor = v)
-                .settingAction("Reset pops", "Reset (F10)", dev.aero.client.Visuals::resetTotemPops)
+                .setting("Auto color (by amount)", () -> c.totemAutoColor, v -> c.totemAutoColor = v)
+                .settingColor("Good color", () -> c.totemColGood, v -> c.totemColGood = v)
+                .settingColor("Warn color", () -> c.totemColWarn, v -> c.totemColWarn = v)
+                .settingColor("Bad color", () -> c.totemColBad, v -> c.totemColBad = v)
+                .settingAction("Reset pops", "Reset", dev.aero.client.Visuals::resetTotemPops)
+                .settingKey("Reset key", () -> c.totemResetKey, v -> c.totemResetKey = v)
                 .setting("Use color", () -> c.totemUseColor, v -> c.totemUseColor = v)
                 .settingColor("Count color", () -> c.totemColor, v -> c.totemColor = v)
                 .nestLast("Use color")

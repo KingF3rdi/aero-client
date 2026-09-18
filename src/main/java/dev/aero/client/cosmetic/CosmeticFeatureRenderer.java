@@ -26,6 +26,39 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
     private int light;
     private float t;
     private float speed;
+    private java.util.UUID who;
+    private boolean self;
+
+    private static boolean AeroClient_showOthers() {
+        var c = dev.aero.client.AeroClient.CONFIG;
+        return c == null || c.showOthersCosmetics;
+    }
+
+    private String idOf(Cosmetics.Kind kind) {
+        if (self) {
+            return Cosmetics.equipped(kind);
+        }
+        String key = switch (kind) {
+            case CAPE -> "cape";
+            case WINGS -> "wings";
+            case HEAD -> "head";
+            case PET -> "pet";
+            default -> "none";
+        };
+        return dev.aero.client.social.ClientUsers.cosmeticOf(who, key);
+    }
+
+    private int colorOf(Cosmetics.Kind kind) {
+        if (self) {
+            return Cosmetics.equippedColor(kind);
+        }
+        String id = idOf(kind);
+        if ("none".equals(id)) {
+            return 0;
+        }
+        Cosmetics.Item item = Cosmetics.named(kind, id);
+        return item == null ? 0 : item.color();
+    }
 
     public CosmeticFeatureRenderer(FeatureRendererContext<PlayerEntityRenderState, PlayerEntityModel> context) {
         super(context);
@@ -35,9 +68,24 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
     public void render(MatrixStack matrices, OrderedRenderCommandQueue queue, int light, PlayerEntityRenderState state,
                        float yaw, float pitch) {
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || state.id != mc.player.getId() || state.invisible) {
+        if (mc.player == null || mc.world == null || state.invisible) {
             return;
         }
+        boolean self = state.id == mc.player.getId();
+        java.util.UUID who = null;
+        if (self) {
+            who = mc.player.getUuid();
+        } else {
+            var other = mc.world.getEntityById(state.id);
+            if (other instanceof net.minecraft.entity.player.PlayerEntity p && AeroClient_showOthers()) {
+                who = p.getUuid();
+            }
+            if (who == null || !dev.aero.client.social.ClientUsers.hasCosmetics(who)) {
+                return;
+            }
+        }
+        this.who = who;
+        this.self = self;
         this.m = matrices;
         this.q = queue;
         this.light = light;
@@ -46,31 +94,31 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
         this.speed = (float) Math.min(1.0, mc.player.getVelocity().horizontalLength() * 5.0);
         PlayerEntityModel model = getContextModel();
 
-        int cape = Cosmetics.equippedColor(Cosmetics.Kind.CAPE);
-        int wings = Cosmetics.equippedColor(Cosmetics.Kind.WINGS);
+        int cape = colorOf(Cosmetics.Kind.CAPE);
+        int wings = colorOf(Cosmetics.Kind.WINGS);
         if (cape != 0 || wings != 0) {
             m.push();
             model.body.applyTransform(m);
             if (cape != 0) {
-                cape(cape, Cosmetics.equipped(Cosmetics.Kind.CAPE));
+                cape(cape, idOf(Cosmetics.Kind.CAPE));
             }
             if (wings != 0) {
-                wings(wings, Cosmetics.equipped(Cosmetics.Kind.WINGS));
+                wings(wings, idOf(Cosmetics.Kind.WINGS));
             }
             m.pop();
         }
 
-        int head = Cosmetics.equippedColor(Cosmetics.Kind.HEAD);
+        int head = colorOf(Cosmetics.Kind.HEAD);
         if (head != 0) {
             m.push();
             model.head.applyTransform(m);
-            headwear(head, Cosmetics.equipped(Cosmetics.Kind.HEAD));
+            headwear(head, idOf(Cosmetics.Kind.HEAD));
             m.pop();
         }
 
-        int pet = Cosmetics.equippedColor(Cosmetics.Kind.PET);
+        int pet = colorOf(Cosmetics.Kind.PET);
         if (pet != 0) {
-            pet(pet, Cosmetics.equipped(Cosmetics.Kind.PET));
+            pet(pet, idOf(Cosmetics.Kind.PET));
         }
     }
 

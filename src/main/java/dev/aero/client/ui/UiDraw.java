@@ -196,21 +196,22 @@ public final class UiDraw {
         roundRect(c, x, y, w, h, r, (alpha << 24) | (fill & 0xFFFFFF));
         int in = (int) Math.ceil(r * 0.4);
         if (w > in * 2 + 4 && h > in * 2 + 4) {
-            // Frost: bright at the top fading out, faint blue pooling at the bottom.
+            // Frost: bright at the top fading out, faint blue pooling at the bottom. Inset on all four
+            // sides so the rectangle's corners stay inside the rounded outline instead of poking out.
             int mid = y + h / 2;
-            c.fillGradient(x + in, y + 1, x + w - in, mid, 0x2CFFFFFF, 0x06FFFFFF);
-            c.fillGradient(x + in, mid, x + w - in, y + h - 1, 0x06FFFFFF, 0x184F8EFF);
+            c.fillGradient(x + in, y + in, x + w - in, mid, 0x2CFFFFFF, 0x06FFFFFF);
+            c.fillGradient(x + in, mid, x + w - in, y + h - in, 0x06FFFFFF, 0x184F8EFF);
         }
         roundBorder(c, x, y, w, h, r, 0x46FFFFFF);
         if (w > 20) {
-            roundRect(c, x + 12, y + 1, w - 24, 2, 1, 0x55FFFFFF);
+            roundRect(c, x + r, y + 1, w - r * 2, 2, 1, 0x55FFFFFF);
         }
     }
 
     public static void innerCard(DrawContext c, int x, int y, int w, int h) {
         roundRect(c, x, y, w, h, 14, 0x5E0E0E18);
         if (w > 20 && h > 20) {
-            c.fillGradient(x + 6, y + 1, x + w - 6, y + Math.min(h / 2, 30), 0x16FFFFFF, 0x00FFFFFF);
+            c.fillGradient(x + 6, y + 4, x + w - 6, y + Math.min(h / 2, 30), 0x16FFFFFF, 0x00FFFFFF);
         }
         roundBorder(c, x, y, w, h, 14, 0x26FFFFFF);
     }

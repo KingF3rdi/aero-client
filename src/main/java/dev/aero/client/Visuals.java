@@ -387,6 +387,16 @@ public final class Visuals {
      * there) - so tinting here naturally only affects third-person self-view and other players,
      * with no separate perspective check needed. Replaces the old full-screen flash entirely.
      */
+    /** RGB for a latency reading, per the Ping module's good/ok/high colors and thresholds. */
+    public static int pingColor(int ms) {
+        ClientConfig c = cfg();
+        if (c == null || !c.pingColorByLatency) {
+            return 0xB8B0C8;
+        }
+        int col = ms >= c.pingBadMs ? c.pingColBad : ms >= c.pingWarnMs ? c.pingColWarn : c.pingColGood;
+        return col & 0xFFFFFF;
+    }
+
     public static float damageTintStrength(Entity entity) {
         ClientConfig c = cfg();
         if (c == null || !c.damageTint || !(entity instanceof PlayerEntity player) || player.hurtTime <= 0) {
@@ -580,10 +590,14 @@ public final class Visuals {
     public static Integer shieldModelTint() {
         ClientConfig c = cfg();
         PlayerEntity holder = shieldHolder.get();
-        if (c == null || !c.shieldTweaks || holder == null) {
+        if (c == null || holder == null) {
             return null;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
+        int cosmetic = holder == mc.player ? dev.aero.client.cosmetic.Cosmetics.equippedColor(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD) : 0;
+        if (!c.shieldTweaks) {
+            return cosmetic == 0 ? null : (Integer) cosmetic;
+        }
         if (c.shieldOwnOnly && mc.player != null && holder != mc.player) {
             return null;
         }
@@ -592,6 +606,8 @@ public final class Visuals {
             rgb = c.shieldDisabledColor;
         } else if (holder.isBlocking() && c.shieldBlocking) {
             rgb = c.shieldBlockingColor;
+        } else if (cosmetic != 0) {
+            rgb = cosmetic;
         } else if (c.shieldReady) {
             rgb = c.shieldReadyColor;
         } else {
@@ -825,8 +841,12 @@ public final class Visuals {
                         if (gmBlock.find()) {
                             java.util.regex.Matcher tierNum = java.util.regex.Pattern
                                     .compile("\"tier\"\\s*:\\s*(\\d+)").matcher(gmBlock.group(1));
+                            java.util.regex.Matcher posNum = java.util.regex.Pattern
+                                    .compile("\"pos\"\\s*:\\s*(\\d+)").matcher(gmBlock.group(1));
                             if (tierNum.find()) {
-                                tier = "T" + tierNum.group(1);
+                                boolean low = posNum.find() && "1".equals(posNum.group(1));
+                                boolean retired = gmBlock.group(1).contains("\"retired\":true");
+                                tier = (retired ? "R" : "") + (low ? "LT" : "HT") + tierNum.group(1);
                             }
                         }
                     }

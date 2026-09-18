@@ -21,8 +21,8 @@ public final class WardrobePanel {
     private static final int ACCENT = 0xFF4F8EFF;
     private static final int PAD = 8;
 
-    private static final String[] TAB_NAMES = {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges"};
-    private static final int[] TAB_ORDER = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    private static final String[] TAB_NAMES = {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges", "Shields"};
+    private static final int[] TAB_ORDER = {0, 1, 2, 3, 4, 5, 6, 10, 7, 8, 9};
 
     public String search = "";
     public boolean searchFocus;
@@ -42,7 +42,7 @@ public final class WardrobePanel {
     private void layout(int x, int y, int w, int h) {
         top = y + PAD;
         height = h - PAD * 2;
-        step = Math.max(12, Math.min(21, (height - headerH() - 6) / 10));
+        step = Math.max(12, Math.min(21, (height - headerH() - 6) / 11));
         lx = x + PAD;
         lw = Math.min(150, w * 21 / 100);
         rw = Math.min(310, w * 38 / 100);
@@ -96,6 +96,7 @@ public final class WardrobePanel {
         Cosmetics.Kind kind = kind();
 
         drawLeft(ctx, tr, mx, my);
+        drawLeftButtons(ctx, tr, mx, my);
 
         UiDraw.innerCard(ctx, cx, top, cw, height);
         ctx.drawText(tr, Text.literal(TAB_NAMES[tab]), cx + 12, top + 10, TEXT, false);
@@ -124,7 +125,7 @@ public final class WardrobePanel {
 
         int y = top + headerH();
         for (int i = 0; i < TAB_ORDER.length; i++) {
-            if (i == 8) {
+            if (TAB_ORDER[i] == 8) {
                 ctx.fill(lx + 12, y + 1, lx + lw - 12, y + 2, 0x22FFFFFF);
                 y += 5;
             }
@@ -138,6 +139,38 @@ public final class WardrobePanel {
             ctx.drawText(tr, Text.literal(TAB_NAMES[TAB_ORDER[i]]), lx + 14, y + (step - 2 - 8) / 2 + 1, on || hover ? TEXT : MUTED, false);
             y += step;
         }
+    }
+
+    private void drawLeftButtons(DrawContext ctx, TextRenderer tr, int mx, int my) {
+        int by = top + height - 24;
+        int half = (lw - 20) / 2;
+        boolean others = AeroClient.CONFIG == null || AeroClient.CONFIG.showOthersCosmetics;
+        boolean h1 = in(mx, my, lx + 8, by, half, 18);
+        UiDraw.pill(ctx, lx + 8, by, half, 18, others || h1);
+        String t1 = others ? "Others on" : "Others off";
+        ctx.drawText(tr, Text.literal(fit(tr, t1, half - 6)), lx + 8 + (half - tr.getWidth(fit(tr, t1, half - 6))) / 2, by + 5,
+                others ? 0xFF8CFF6B : MUTED, false);
+        boolean h2 = in(mx, my, lx + 12 + half, by, half, 18);
+        UiDraw.pill(ctx, lx + 12 + half, by, half, 18, h2);
+        ctx.drawText(tr, Text.literal("Copy"), lx + 12 + half + (half - tr.getWidth("Copy")) / 2, by + 5, h2 ? TEXT : MUTED, false);
+    }
+
+    /** JSON line to paste into the public users list so other Aero Client users see this profile. */
+    private static String profileJson() {
+        var mc = MinecraftClient.getInstance();
+        String uuid = mc.player != null ? mc.player.getUuid().toString() : "";
+        StringBuilder cos = new StringBuilder();
+        String[][] kinds = {{"cape", "CAPE"}, {"wings", "WINGS"}, {"head", "HEAD"}, {"pet", "PET"}};
+        for (String[] k : kinds) {
+            String id = Cosmetics.equipped(Cosmetics.Kind.valueOf(k[1]));
+            if (!"none".equals(id)) {
+                cos.append(cos.length() == 0 ? "" : ", ").append('"').append(k[0]).append("\": \"").append(id).append('"');
+            }
+        }
+        String badge = Cosmetics.equipped(Cosmetics.Kind.BADGE);
+        return "{ \"name\": \"" + AccountManager.currentName() + "\", \"uuid\": \"" + uuid + "\""
+                + ("none".equals(badge) ? "" : ", \"badge\": \"" + badge + "\"")
+                + ", \"cosmetics\": { " + cos + " } }";
     }
 
     private void drawPreview(DrawContext ctx, TextRenderer tr, int mx, int my, Cosmetics.Kind kind, float t) {
@@ -322,9 +355,22 @@ public final class WardrobePanel {
         Cosmetics.Kind kind = kind();
         searchFocus = false;
 
+        int by = top + height - 24;
+        int halfB = (lw - 20) / 2;
+        if (in(mx, my, lx + 8, by, halfB, 18)) {
+            if (AeroClient.CONFIG != null) {
+                AeroClient.CONFIG.showOthersCosmetics = !AeroClient.CONFIG.showOthersCosmetics;
+                AeroClient.CONFIG.save();
+            }
+            return true;
+        }
+        if (in(mx, my, lx + 12 + halfB, by, halfB, 18)) {
+            MinecraftClient.getInstance().keyboard.setClipboard(profileJson());
+            return true;
+        }
         int ty = top + headerH();
         for (int i = 0; i < TAB_ORDER.length; i++) {
-            if (i == 8) {
+            if (TAB_ORDER[i] == 8) {
                 ty += 5;
             }
             if (in(mx, my, lx + 6, ty, lw - 12, step - 2)) {

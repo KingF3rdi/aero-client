@@ -176,12 +176,31 @@ public class AeroClient implements ClientModInitializer {
             HudStats.tick(client);
             tickModuleToggleKeys(client);
             tickTotemReset(client);
+            applyMaxFps(client);
             tickRenderDistanceOverride(client);
             tickUnfocusedCpu(client);
             tickEmoteWheel(client);
             dev.aero.client.Visuals.tickZoom();
             dev.aero.client.Visuals.tickAutoText(client);
             DiscordRpc.tick();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static boolean maxFpsApplied;
+
+    /** Once per launch: unlock the frame cap and turn V-Sync off so the client runs as fast as the PC allows. */
+    private static void applyMaxFps(MinecraftClient client) {
+        if (maxFpsApplied || client.options == null || CONFIG == null) {
+            return;
+        }
+        maxFpsApplied = true;
+        if (!CONFIG.autoMaxFps) {
+            return;
+        }
+        try {
+            client.options.getMaxFps().setValue(260);
+            client.options.getEnableVsync().setValue(false);
         } catch (Throwable ignored) {
         }
     }

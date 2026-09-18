@@ -1,6 +1,9 @@
 package dev.aero.client.mixin;
 
 import dev.aero.client.AeroClient;
+import dev.aero.client.Icons;
+import dev.aero.client.Visuals;
+import dev.aero.client.social.ClientUsers;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.entity.PlayerEntityRenderer;
@@ -9,6 +12,8 @@ import net.minecraft.client.render.state.CameraRenderState;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.PlayerLikeEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -20,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * PlayerEntityRenderer overrides updateRenderState/renderLabelIfPresent/hasLabel from the base
  * EntityRenderer, so a mixin on the base class (see EntityRendererMixin) never actually runs for
  * players - virtual dispatch always calls this override instead. Every player-nametag feature
- * (ping, TierTagger, totem pop count, own-nametag, scale) has to hook here instead.
+ * (badge, ping, TierTagger, totem pop count, own-nametag, scale/position) has to hook here instead.
  */
 @Mixin(value = PlayerEntityRenderer.class, priority = 2000)
 public class PlayerEntityRendererMixin {
@@ -46,62 +51,69 @@ public class PlayerEntityRendererMixin {
         if (result == null) {
             return;
         }
+        var cfg = AeroClient.CONFIG;
+        if (cfg == null) {
+            return;
+        }
+        MinecraftClient mc = MinecraftClient.getInstance();
         boolean changed = false;
-        if (dev.aero.client.social.ClientUsers.isUser(player.getUuid())) {
-            result = dev.aero.client.social.ClientUsers.badge(player.getUuid()).append(result);
+
+        if (ClientUsers.showBadge(player.getUuid(), player.getName().getString(), "nametag")) {
+            result = ClientUsers.badge(player.getUuid()).append(result);
             changed = true;
         }
 
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametagPing) {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            if (mc.getNetworkHandler() != null) {
-                try {
-                    var entry = mc.getNetworkHandler().getPlayerListEntry(player.getUuid());
-                    if (entry != null) {
-                        String ping = entry.getLatency() + "ms";
-                        String div = AeroClient.CONFIG.pingDivider ? " | " : " ";
-                        result = "Left".equalsIgnoreCase(AeroClient.CONFIG.pingSide)
-                                ? Text.literal("§7" + ping + "§r" + div).append(result)
-                                : result.copy().append(Text.literal(div + "§7" + ping));
-                        changed = true;
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.tierTagger) {
-            MinecraftClient mc = MinecraftClient.getInstance();
-            boolean self = mc.player != null && player == mc.player;
-            if (!self || AeroClient.CONFIG.tierShowOwn) {
-                try {
-                    String tier = dev.aero.client.Visuals.tierFor(player.getUuid(), AeroClient.CONFIG.tierGamemode);
-                    if (tier != null && !tier.isBlank()) {
-                        String tag = " §7[§b" + tier + "§7]";
-                        result = "Right".equalsIgnoreCase(AeroClient.CONFIG.tierSide)
-                                ? result.copy().append(Text.literal(tag))
-                                : Text.literal(tag.stripLeading() + " §r").append(result);
-                        changed = true;
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-
-        // There's no way for a pure client mod to know whether an arbitrary player on someone
-        // else's server is running this client too (that needs the server's cooperation), so this
-        // only marks players already on your own friends list rather than claiming to detect them.
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametagBadge
-                && dev.aero.client.social.FriendStore.isFriend(player.getName().getString())) {
-            result = Text.literal("★ ").setStyle(net.minecraft.text.Style.EMPTY.withColor(0xFFC94D)).append(result);
-            changed = true;
-        }
-
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.totemPopsOnNametag) {
+        if (cfg.nametagPing && mc.getNetworkHandler() != null) {
             try {
-                int pops = dev.aero.client.Visuals.totemPopsFor(player.getUuid());
+                var entry = mc.getNetworkHandler().getPlayerListEntry(player.getUuid());
+                if (entry != null) {
+                    int ms = entry.getLatency();
+                    MutableText ping = Text.literal(ms + "ms").setStyle(Style.EMPTY.withColor(Visuals.pingColor(ms) & 0xFFFFFF));
+                    String div = cfg.pingDivider ? " | " : " ";
+                    result = "Left".equalsIgnoreCase(cfg.pingSide)
+                            ? Text.empty().append(ping).append(Text.literal(div)).append(result)
+                            : result.copy().append(Text.literal(div)).append(ping);
+                    changed = true;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+
+        if (cfg.tierTagger) {
+            boolean self = mc.player != null && player == mc.player;
+            if (!self || cfg.tierShowOwn) {
+                try {
+                    String tier = Visuals.tierFor(player.getUuid(), cfg.tierGamemode);
+                    if (tier != null && !tier.isBlank()) {
+                        MutableText tag = Text.empty();
+                        if (cfg.tierGamemodeIcon) {
+                            tag.append(Icons.mode(cfg.tierGamemode)).append(Text.literal(" "));
+                        }
+                        tag.append(Text.literal(tier).setStyle(Style.EMPTY.withColor(Icons.tierColor(tier)).withBold(true)));
+                        result = "Right".equalsIgnoreCase(cfg.tierSide)
+                                ? result.copy().append(Text.literal(" ")).append(tag)
+                                : Text.empty().append(tag).append(Text.literal(" ")).append(result);
+                        changed = true;
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+
+        // No way for a pure client mod to tell who else runs this client except the public list, so
+        // this star only marks players already on your own friends list.
+        if (cfg.nametagBadge && dev.aero.client.social.FriendStore.isFriend(player.getName().getString())) {
+            result = Text.literal("★ ").setStyle(Style.EMPTY.withColor(0xFFC94D)).append(result);
+            changed = true;
+        }
+
+        if (cfg.totemPopsOnNametag) {
+            try {
+                int pops = Visuals.totemPopsFor(player.getUuid());
                 if (pops > 0) {
-                    result = result.copy().append(Text.literal(" §7(§d" + pops + " pop" + (pops == 1 ? "" : "s") + "§7)"));
+                    int col = pops >= 3 ? cfg.totemColBad : pops == 2 ? cfg.totemColWarn : cfg.totemColGood;
+                    result = result.copy().append(Text.literal(" ")).append(Icons.totem())
+                            .append(Text.literal(" " + pops).setStyle(Style.EMPTY.withColor(col & 0xFFFFFF).withBold(true)));
                     changed = true;
                 }
             } catch (Throwable ignored) {
@@ -119,6 +131,7 @@ public class PlayerEntityRendererMixin {
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametags && matrices != null) {
             float s = Math.max(0.5F, AeroClient.CONFIG.nametagScale);
             matrices.push();
+            matrices.translate(0.0, AeroClient.CONFIG.nametagYOffset, 0.0);
             net.minecraft.util.math.Vec3d p = state == null ? null : state.nameLabelPos;
             if (p != null && s != 1f) {
                 // Text hangs 0.2 blocks below its anchor, 0.5 above the head: scale around the anchor so

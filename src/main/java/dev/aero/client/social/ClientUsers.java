@@ -27,6 +27,17 @@ public final class ClientUsers {
     private static final Set<UUID> USERS = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, String> NAMES = new ConcurrentHashMap<>();
     private static final Map<UUID, String> BADGES = new ConcurrentHashMap<>();
+    private static final Map<UUID, Map<String, String>> COSMETICS = new ConcurrentHashMap<>();
+
+    /** The cosmetic id another listed user has for a kind ("cape", "wings", "head", "pet"), or "none". */
+    public static String cosmeticOf(UUID id, String kind) {
+        Map<String, String> m = id == null ? null : COSMETICS.get(id);
+        return m == null ? "none" : m.getOrDefault(kind, "none");
+    }
+
+    public static boolean hasCosmetics(UUID id) {
+        return id != null && COSMETICS.containsKey(id);
+    }
     private static volatile long lastFetch;
     private static final Style STYLE = Style.EMPTY.withColor(TextColor.fromRgb(0x4F8EFF)).withBold(true);
 
@@ -44,6 +55,28 @@ public final class ClientUsers {
         }
         String glyph = dev.aero.client.cosmetic.Cosmetics.glyph(dev.aero.client.cosmetic.Cosmetics.Kind.BADGE, item.id());
         return Text.literal(glyph + " ").setStyle(Style.EMPTY.withColor(TextColor.fromRgb(item.color() & 0xFFFFFF)).withBold(true));
+    }
+
+    /** Whether to draw the client badge for a listed user at a place ("nametag", "tab", "chat"), per the Client Badge module. */
+    public static boolean showBadge(UUID id, String name, String place) {
+        var c = dev.aero.client.AeroClient.CONFIG;
+        if (c == null || !c.badgeEnabled) {
+            return false;
+        }
+        boolean on = switch (place) {
+            case "nametag" -> c.badgeNametag;
+            case "tab" -> c.badgeTab;
+            default -> c.badgeChat;
+        };
+        if (!on || !isUser(id)) {
+            return false;
+        }
+        if ("Friends only".equals(c.badgeMode)) {
+            MinecraftClient mc = MinecraftClient.getInstance();
+            boolean self = mc.player != null && id.equals(mc.player.getUuid());
+            return self || (name != null && FriendStore.isFriend(name));
+        }
+        return true;
     }
 
     public static boolean isUser(UUID id) {
@@ -79,6 +112,7 @@ public final class ClientUsers {
                     Set<UUID> ids = ConcurrentHashMap.newKeySet();
                     Map<UUID, String> names = new ConcurrentHashMap<>();
                     Map<UUID, String> badges = new ConcurrentHashMap<>();
+                    Map<UUID, Map<String, String>> cosmetics = new ConcurrentHashMap<>();
                     for (JsonElement e : JsonParser.parseString(res.body()).getAsJsonObject().getAsJsonArray("users")) {
                         try {
                             UUID id = UUID.fromString(e.getAsJsonObject().get("uuid").getAsString());
@@ -86,6 +120,13 @@ public final class ClientUsers {
                             names.put(id, e.getAsJsonObject().get("name").getAsString());
                             if (e.getAsJsonObject().has("badge")) {
                                 badges.put(id, e.getAsJsonObject().get("badge").getAsString());
+                            }
+                            if (e.getAsJsonObject().has("cosmetics")) {
+                                Map<String, String> cm = new java.util.HashMap<>();
+                                for (var en : e.getAsJsonObject().getAsJsonObject("cosmetics").entrySet()) {
+                                    cm.put(en.getKey().toLowerCase(java.util.Locale.ROOT), en.getValue().getAsString());
+                                }
+                                cosmetics.put(id, cm);
                             }
                         } catch (Exception ignored) {
                         }
@@ -96,6 +137,8 @@ public final class ClientUsers {
                     NAMES.putAll(names);
                     BADGES.clear();
                     BADGES.putAll(badges);
+                    COSMETICS.clear();
+                    COSMETICS.putAll(cosmetics);
                 })
                 .exceptionally(t -> null);
     }
@@ -111,6 +154,7 @@ public final class ClientUsers {
         if (mc.player != null) {
             byName.put(mc.player.getName().getString(), mc.player.getUuid());
         }
+        byName.entrySet().removeIf(e -> !showBadge(e.getValue(), e.getKey(), "chat"));
         if (byName.isEmpty()) {
             return message;
         }

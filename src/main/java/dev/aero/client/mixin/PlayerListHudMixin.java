@@ -15,7 +15,7 @@ public class PlayerListHudMixin {
     @Inject(method = "getPlayerName", at = @At("RETURN"), cancellable = true, require = 0)
     private void aero$badge(PlayerListEntry entry, CallbackInfoReturnable<Text> cir) {
         java.util.UUID id = entry.getProfile().id();
-        if (ClientUsers.isUser(id)) {
+        if (ClientUsers.showBadge(id, entry.getProfile().name(), "tab")) {
             cir.setReturnValue(ClientUsers.badge(id).append(cir.getReturnValue()));
         }
     }

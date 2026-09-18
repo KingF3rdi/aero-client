@@ -28,6 +28,9 @@ public class HeldItemRendererMixin {
     )
     private float aero$fixShieldEquip(float equipProgress) {
         var c = AeroClient.CONFIG;
+        if (c != null && c.handTweaks && c.handRestart) {
+            return 0.0F;
+        }
         boolean fixAnim = c != null && c.shieldTweaks && (c.shieldFixAnim || dev.aero.client.OptimizerMods.shieldFixes());
         boolean optimizer = c != null && (c.shieldOptimizer && c.shieldOptimizerInstant || dev.aero.client.Optimizer.shield());
         if (c == null || !(fixAnim || optimizer)) {

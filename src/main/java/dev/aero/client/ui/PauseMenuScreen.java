@@ -70,9 +70,10 @@ public class PauseMenuScreen extends Screen {
         UiDraw.glass(context, px, py, 360, 168, 0xC414121E, 20);
 
         int cx = vw() / 2;
-        context.drawText(textRenderer, Text.literal("AERO"), cx - 78, py + 18, TEXT, false);
-        context.drawText(textRenderer, Text.literal("LAUNCHER"), cx + 10, py + 18, TEXT, false);
-        drawBolt(context, cx - 2, py + 20);
+        String title = "AERO CLIENT";
+        int tw = textRenderer.getWidth(title) + 20;
+        UiDraw.aeroMark(context, cx - tw / 2, py + 14, 14, 0xFF4F8EFF);
+        context.drawText(textRenderer, Text.literal(title), cx - tw / 2 + 20, py + 18, TEXT, false);
         context.drawText(textRenderer, Text.literal("Right Shift opens the client menu"),
                 cx - textRenderer.getWidth("Right Shift opens the client menu") / 2, py + 36, MUTED, false);
 
