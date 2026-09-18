@@ -37,6 +37,27 @@ public final class CubeDraw {
         vc.vertex(e, x, y, z).color(col).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(e, nx, ny, nz);
     }
 
+    /** Cape box using the standard 64x32 cape texture layout: outside = (1,1)-(11,17), inside = (12,1)-(22,17). */
+    public static void capeBox(MatrixStack.Entry e, VertexConsumer vc, float a, float b, float c, int light) {
+        int w = 0xFFFFFFFF;
+        uvFace(e, vc, w, light, 0, 0, 1, -a, -b, c, a, -b, c, a, b, c, -a, b, c, 1f / 64, 1f / 32, 11f / 64, 17f / 32);
+        uvFace(e, vc, w, light, 0, 0, -1, a, -b, -c, -a, -b, -c, -a, b, -c, a, b, -c, 12f / 64, 1f / 32, 22f / 64, 17f / 32);
+        uvFace(e, vc, w, light, 1, 0, 0, a, -b, -c, a, -b, c, a, b, c, a, b, -c, 0f, 1f / 32, 1f / 64, 17f / 32);
+        uvFace(e, vc, w, light, -1, 0, 0, -a, -b, c, -a, -b, -c, -a, b, -c, -a, b, c, 11f / 64, 1f / 32, 12f / 64, 17f / 32);
+        uvFace(e, vc, w, light, 0, 1, 0, -a, b, -c, a, b, -c, a, b, c, -a, b, c, 11f / 64, 0f, 21f / 64, 1f / 32);
+        uvFace(e, vc, w, light, 0, -1, 0, -a, -b, c, a, -b, c, a, -b, -c, -a, -b, -c, 1f / 64, 0f, 11f / 64, 1f / 32);
+    }
+
+    private static void uvFace(MatrixStack.Entry e, VertexConsumer vc, int col, int light, float nx, float ny, float nz,
+                               float x1, float y1, float z1, float x2, float y2, float z2,
+                               float x3, float y3, float z3, float x4, float y4, float z4,
+                               float u0, float v0, float u1, float v1) {
+        vertex(e, vc, x1, y1, z1, u0, v0, col, light, nx, ny, nz);
+        vertex(e, vc, x2, y2, z2, u1, v0, col, light, nx, ny, nz);
+        vertex(e, vc, x3, y3, z3, u1, v1, col, light, nx, ny, nz);
+        vertex(e, vc, x4, y4, z4, u0, v1, col, light, nx, ny, nz);
+    }
+
     public static int shade(int argb, float f) {
         int r = Math.min(255, (int) (((argb >> 16) & 0xFF) * f));
         int g = Math.min(255, (int) (((argb >> 8) & 0xFF) * f));

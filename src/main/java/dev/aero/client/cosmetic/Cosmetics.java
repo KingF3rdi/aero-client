@@ -19,19 +19,24 @@ public final class Cosmetics {
 
     static {
         cape("none", "None", 0xFF2A2A32);
-        cape("15th", "15th Anniv.", 0xFFE8C878);
-        cape("beacon", "Beacon", 0xFFB8E8F0);
-        cape("cherry", "Cherry Blossom", 0xFFF4C8DC);
-        cape("cobalt", "Cobalt", 0xFF3A4A9A);
-        cape("copper", "Copper", 0xFFB06050);
-        cape("creeper", "Creeper", 0xFF3CB04A);
-        cape("glitch", "Glitch", 0xFF2A2A2A);
-        cape("grass", "Grass", 0xFF2E8B4A);
         cape("migrator", "Migrator", 0xFFC04040);
-        cape("minecart", "Minecart", 0xFF8B5A2B);
-        cape("minecon", "Minecon 2011", 0xFFB03030);
-        cape("aurora", "Aurora", 0xFF4F8EFF);
-        cape("void", "Void", 0xFF3A2860);
+        cape("vanilla", "Vanilla", 0xFF4A90C8);
+        cape("minecon2011", "Minecon 2011", 0xFFB03030);
+        cape("minecon2012", "Minecon 2012", 0xFF6A4A8A);
+        cape("minecon2013", "Minecon 2013", 0xFF3A7A4A);
+        cape("minecon2015", "Minecon 2015", 0xFFC8A040);
+        cape("minecon2016", "Minecon 2016", 0xFF5A6A8A);
+        cape("mojang", "Mojang", 0xFFB02020);
+        cape("mojang_studios", "Mojang Studios", 0xFFD84A3A);
+        cape("cherry", "Cherry Blossom", 0xFFF4C8DC);
+        cape("15th", "15th Anniversary", 0xFFE8C878);
+        cape("copper", "Copper", 0xFFB06050);
+        cape("founders", "Founder's", 0xFF8A6A3A);
+        cape("home", "Home", 0xFF5AA0D8);
+        cape("menace", "Menace", 0xFF3A3A48);
+        cape("purple_heart", "Purple Heart", 0xFF9A50C8);
+        cape("yearn", "Yearn", 0xFFC85A8A);
+        cape("zombie_horse", "Zombie Horse", 0xFF6A8A4A);
         wings("none", "None", 0xFF2A2A32);
         wings("angel", "Angel", 0xFFF6F2FC);
         wings("dragon", "Dragon", 0xFFB03828);
@@ -124,7 +129,7 @@ public final class Cosmetics {
 
     public static boolean hasVariants(Kind kind) {
         return switch (kind) {
-            case CAPE, WINGS, HEAD, TRAIL, KILL_EFFECT, MACE, PET -> true;
+            case WINGS, HEAD, TRAIL, KILL_EFFECT, MACE, PET -> true;
             default -> false;
         };
     }
