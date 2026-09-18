@@ -38,7 +38,8 @@
     "InventoryScreenScaleMixin",
     "RecipeBookScreenScaleMixin",
     "HandledScreenScaleMixin",
-    "CreativeInventoryScaleMixin"
+    "CreativeInventoryScaleMixin",
+    "TitleScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 0
