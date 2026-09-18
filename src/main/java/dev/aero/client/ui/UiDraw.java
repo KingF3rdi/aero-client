@@ -261,7 +261,7 @@ public final class UiDraw {
         c.fill(x, y, x + w, y + 1, 0x14FFFFFF);
     }
 
-    public static void larpMark(DrawContext c, int x, int y, int s, int color) {
+    public static void aeroMark(DrawContext c, int x, int y, int s, int color) {
         int m = Math.max(8, s);
         roundRect(c, x, y, m, m, 3, 0xFF1A1524);
         roundBorder(c, x, y, m, m, 3, color);

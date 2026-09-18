@@ -24,7 +24,7 @@ public final class FriendStore {
     private FriendStore() {}
 
     public static Path path() {
-        return FabricLoader.getInstance().getConfigDir().resolve("larp-friends.json");
+        return FabricLoader.getInstance().getConfigDir().resolve("aero-friends.json");
     }
 
     public static void load() {

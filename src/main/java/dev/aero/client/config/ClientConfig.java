@@ -278,7 +278,7 @@ public class ClientConfig {
     public boolean guiXp = true;
     public boolean guiAir = true;
     public boolean guiMount = true;
-    public String watermarkText = "Larp";
+    public String watermarkText = "Aero";
     public String watermarkSubtitle = "";
     public boolean watermarkRainbow = false;
     public boolean watermarkBg = true;
@@ -488,11 +488,11 @@ public class ClientConfig {
     public String soundControllerFilter = "";
 
     public static Path path() {
-        return FabricLoader.getInstance().getConfigDir().resolve("larp-launcher.json");
+        return FabricLoader.getInstance().getConfigDir().resolve("aero-client.json");
     }
 
     public static Path profilesDir() {
-        return FabricLoader.getInstance().getConfigDir().resolve("larp-launcher-profiles");
+        return FabricLoader.getInstance().getConfigDir().resolve("aero-client-profiles");
     }
 
     public static java.util.List<String> listProfiles() {

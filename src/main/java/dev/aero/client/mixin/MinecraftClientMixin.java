@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = MinecraftClient.class, priority = 2000)
 public class MinecraftClientMixin {
     @Unique
-    private boolean larpGuiHeld;
+    private boolean aeroGuiHeld;
 
     @Inject(method = "tick", at = @At("TAIL"), require = 0)
     private void aero$bind(CallbackInfo ci) {
@@ -24,7 +24,7 @@ public class MinecraftClientMixin {
             return;
         }
         boolean down = GLFW.glfwGetKey(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
-        if (down && !this.larpGuiHeld && mc.world != null) {
+        if (down && !this.aeroGuiHeld && mc.world != null) {
             Screen screen = mc.currentScreen;
             String name = screen == null ? "" : screen.getClass().getName();
             boolean chat = name.endsWith("ChatScreen") || name.endsWith("SleepingChatScreen");
@@ -34,6 +34,6 @@ public class MinecraftClientMixin {
                 mc.setScreen(Menus.clickGui(null, false));
             }
         }
-        this.larpGuiHeld = down;
+        this.aeroGuiHeld = down;
     }
 }

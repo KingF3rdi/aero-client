@@ -33,7 +33,7 @@ public final class SkinPreview {
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build();
     private static final ExecutorService IO = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "larp-skin");
+        Thread t = new Thread(r, "aero-skin");
         t.setDaemon(true);
         return t;
     });
@@ -274,8 +274,8 @@ public final class SkinPreview {
                 safe = "player";
             }
             final String label = safe;
-            Identifier id = Identifier.of("larp", "skin/" + label);
-            NativeImageBackedTexture tex = new NativeImageBackedTexture(() -> "larp-skin-" + label, image);
+            Identifier id = Identifier.of("aero", "skin/" + label);
+            NativeImageBackedTexture tex = new NativeImageBackedTexture(() -> "aero-skin-" + label, image);
             MinecraftClient.getInstance().getTextureManager().registerTexture(id, tex);
             tex.upload();
             TEX_SIZE.put(id.toString(), 64);

@@ -481,7 +481,7 @@ public final class Modules {
                 .setting("Fire", () -> c.ambienceFire, v -> c.ambienceFire = v));
         add(new Module("Emotes", "Hold a key for the emote wheel", Category.PLAYER,
                 () -> c.emotes, v -> c.emotes = v));
-        add(new Module("Discord RPC", "Show Larp Launcher on your Discord status", Category.MISC,
+        add(new Module("Discord RPC", "Show Aero Client on your Discord status", Category.MISC,
                 () -> c.discordRpc, v -> c.discordRpc = v)
                 .settingText("Client ID", () -> c.discordClientId, v -> c.discordClientId = v));
         add(new Module("Screenshot", "Capture, copy and share", Category.MISC,

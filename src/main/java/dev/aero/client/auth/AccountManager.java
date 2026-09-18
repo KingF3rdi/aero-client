@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public final class AccountManager {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final ExecutorService IO = Executors.newSingleThreadExecutor(r -> {
-        Thread t = new Thread(r, "larp-msa");
+        Thread t = new Thread(r, "aero-msa");
         t.setDaemon(true);
         return t;
     });
@@ -35,7 +35,7 @@ public final class AccountManager {
     private AccountManager() {}
 
     public static Path file() {
-        return FabricLoader.getInstance().getConfigDir().resolve("larp-launcher-account.json");
+        return FabricLoader.getInstance().getConfigDir().resolve("aero-client-account.json");
     }
 
     public static void load() {

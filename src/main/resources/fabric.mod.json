@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "id": "larp",
+  "id": "aero",
   "version": "${version}",
-  "name": "Larp Launcher",
+  "name": "Aero Client",
   "description": "Lightweight Fabric client focused on FPS and a clean PvP HUD.",
-  "authors": ["Larp"],
+  "authors": ["Aero"],
   "environment": "client",
   "entrypoints": {
     "client": ["dev.aero.client.AeroClient"]

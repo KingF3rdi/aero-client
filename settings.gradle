@@ -6,4 +6,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'larp-launcher'
+rootProject.name = 'aero-client'

@@ -24,7 +24,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
 public class AeroClient implements ClientModInitializer {
-    public static final String MOD_ID = "larp";
+    public static final String MOD_ID = "aero";
     public static final String VERSION = "1.0";
     public static ClientConfig CONFIG = new ClientConfig();
     public static Modules MODULES;
@@ -92,7 +92,7 @@ public class AeroClient implements ClientModInitializer {
             Constructor<?> ctor = KeyBinding.class.getConstructor(
                     String.class, InputUtil.Type.class, int.class, cat);
             KeyBinding binding = (KeyBinding) ctor.newInstance(
-                    "key.larp.clickgui", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category);
+                    "key.aero.clickgui", InputUtil.Type.KEYSYM, GLFW.GLFW_KEY_RIGHT_SHIFT, category);
             return KeyBindingHelper.registerKeyBinding(binding);
         } catch (Throwable ignored) {
         }
@@ -100,10 +100,10 @@ public class AeroClient implements ClientModInitializer {
             Constructor<?> ctor = KeyBinding.class.getConstructor(
                     String.class, InputUtil.Type.class, int.class, String.class);
             KeyBinding binding = (KeyBinding) ctor.newInstance(
-                    "key.larp.clickgui",
+                    "key.aero.clickgui",
                     InputUtil.Type.KEYSYM,
                     GLFW.GLFW_KEY_RIGHT_SHIFT,
-                    "key.category.larp");
+                    "key.category.aero");
             return KeyBindingHelper.registerKeyBinding(binding);
         } catch (Throwable t) {
             return null;

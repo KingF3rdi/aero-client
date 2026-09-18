@@ -1,5 +1,5 @@
-# Larp Client (optional Mod)
+# Aero Client (optional Mod)
 
-Der **Larp Launcher** ist kein Mod. Starte `..\larp_launcher\START.bat`.
+Der **Aero Client Launcher** ist kein Mod, siehe `..\larp-launcher-tauri`.
 
 Dieser Ordner ist nur noch eine optionale Fabric-HUD-Mod, nicht der Launcher.

@@ -89,7 +89,7 @@ public class ClickGuiScreenLegacy extends Screen {
     private int dragBarW;
 
     public ClickGuiScreenLegacy(Screen parent, boolean pauseGame) {
-        super(Text.literal("Larp Launcher"));
+        super(Text.literal("Aero Client"));
         this.parent = parent;
         this.pauseGame = pauseGame;
     }
@@ -314,7 +314,7 @@ public class ClickGuiScreenLegacy extends Screen {
 
         UiDraw.roundRect(context, x0 + 12, y0 + 8, 18, 18, 6, ACCENT);
         context.drawText(textRenderer, Text.literal("L"), x0 + 17, y0 + 13, 0xFF1A1024, false);
-        context.drawText(textRenderer, Text.literal("Larp"), x0 + 34, y0 + 10, TEXT, false);
+        context.drawText(textRenderer, Text.literal("Aero"), x0 + 34, y0 + 10, TEXT, false);
         context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 34, y0 + 20, MUTED, false);
 
         int tabX = x0 + 86;
@@ -930,7 +930,7 @@ public class ClickGuiScreenLegacy extends Screen {
             case "Crosshair", "Crosshair Addons" -> iconTarget(context, x, y, col);
             case "Nametags" -> iconTag(context, x, y, col);
             case "Zoom" -> iconMagnifier(context, x, y, col);
-            case "Watermark" -> UiDraw.larpMark(context, x, y, 10, col);
+            case "Watermark" -> UiDraw.aeroMark(context, x, y, 10, col);
             default -> iconForCategory(context, module.category, x, y, col);
         }
     }

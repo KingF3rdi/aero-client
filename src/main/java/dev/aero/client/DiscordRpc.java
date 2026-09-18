@@ -97,7 +97,7 @@ public final class DiscordRpc {
     private static void sendActivity() throws Exception {
         long startedAt = System.currentTimeMillis() / 1000L;
         String json = "{\"cmd\":\"SET_ACTIVITY\",\"args\":{\"pid\":" + ProcessHandle.current().pid()
-                + ",\"activity\":{\"state\":\"Larp Launcher\",\"details\":\"Using the client\","
+                + ",\"activity\":{\"state\":\"Aero Client\",\"details\":\"Using the client\","
                 + "\"timestamps\":{\"start\":" + startedAt + "}}},\"nonce\":\"" + java.util.UUID.randomUUID() + "\"}";
         writeFrame(1, json);
     }

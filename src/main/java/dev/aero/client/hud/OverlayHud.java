@@ -923,7 +923,7 @@ public final class OverlayHud {
     }
 
     private static void drawWatermark(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
-        String brand = (cfg.watermarkText == null || cfg.watermarkText.isBlank() ? "LARP" : cfg.watermarkText);
+        String brand = (cfg.watermarkText == null || cfg.watermarkText.isBlank() ? "AERO" : cfg.watermarkText);
         int color = cfg.watermarkRainbow
                 ? java.awt.Color.HSBtoRGB((System.currentTimeMillis() % 4000L) / 4000f, 0.45f, 1f) | 0xFF000000
                 : TEXT;
@@ -940,7 +940,7 @@ public final class OverlayHud {
             UiDraw.roundRect(context, wx, wy, w, h, 8, 0xCC14121C);
             UiDraw.roundBorder(context, wx, wy, w, h, 8, 0x444F8EFF);
         }
-        UiDraw.larpMark(context, wx + 3, wy + 2, 12, ACCENT);
+        UiDraw.aeroMark(context, wx + 3, wy + 2, 12, ACCENT);
         context.drawText(mc.textRenderer, Text.literal(brand), wx + 18, wy + 4, color, cfg.watermarkShadow);
     }
 

@@ -20,7 +20,7 @@ public class PauseMenuScreen extends Screen {
     private int hover = -1;
 
     public PauseMenuScreen() {
-        super(Text.literal("Larp Launcher"));
+        super(Text.literal("Aero Client"));
     }
 
     /** Esc Menu Scale (GUI Tweaks) - independent of Minecraft's own GUI Scale option. */
@@ -70,7 +70,7 @@ public class PauseMenuScreen extends Screen {
         UiDraw.glass(context, px, py, 360, 168, 0xC414121E, 20);
 
         int cx = vw() / 2;
-        context.drawText(textRenderer, Text.literal("LARP"), cx - 78, py + 18, TEXT, false);
+        context.drawText(textRenderer, Text.literal("AERO"), cx - 78, py + 18, TEXT, false);
         context.drawText(textRenderer, Text.literal("LAUNCHER"), cx + 10, py + 18, TEXT, false);
         drawBolt(context, cx - 2, py + 20);
         context.drawText(textRenderer, Text.literal("Right Shift opens the client menu"),
@@ -189,7 +189,7 @@ public class PauseMenuScreen extends Screen {
                     dev.aero.client.AeroClient.MODULES.applyFpsPreset();
                 }
                 if (mc.player != null) {
-                    mc.player.sendMessage(Text.literal("Larp Launcher · FPS preset applied"), true);
+                    mc.player.sendMessage(Text.literal("Aero Client · FPS preset applied"), true);
                 }
                 mc.setScreen(null);
             }
