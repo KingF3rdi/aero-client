@@ -278,11 +278,11 @@ public class ClickGuiScreenLegacy extends Screen {
         UiDraw.menuOpen = true;
         try {
             layoutPanel();
-            context.fill(0, 0, width, height, BG);
+            context.fillGradient(0, 0, width, height, 0x3A0A1224, 0x54040810);
             if (AeroClient.MODULES == null) {
                 return;
             }
-            UiDraw.glass(context, ox, oy, pw, ph, 0xC414121E, 20);
+            UiDraw.glass(context, ox, oy, pw, ph, 0x9A10162A, 20);
             drawTop(context, mouseX, mouseY);
             if (topTab == 1) {
                 drawYou(context, mouseX, mouseY);

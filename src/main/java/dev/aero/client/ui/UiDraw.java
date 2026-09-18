@@ -190,17 +190,29 @@ public final class UiDraw {
 
     public static void glass(DrawContext c, int x, int y, int w, int h, int fill, int radius) {
         int r = Math.max(12, radius);
-        roundRect(c, x, y, w, h, r, fill);
-        sheen(c, x, y, w, h, r);
-        roundBorder(c, x, y, w, h, r, BORDER);
+        // Soft accent glow just outside the panel, then a see-through body so the world shows through.
+        roundRect(c, x - 2, y - 2, w + 4, h + 4, r + 2, 0x0C4F8EFF);
+        int alpha = Math.min(0xA8, (fill >>> 24));
+        roundRect(c, x, y, w, h, r, (alpha << 24) | (fill & 0xFFFFFF));
+        int in = (int) Math.ceil(r * 0.4);
+        if (w > in * 2 + 4 && h > in * 2 + 4) {
+            // Frost: bright at the top fading out, faint blue pooling at the bottom.
+            int mid = y + h / 2;
+            c.fillGradient(x + in, y + 1, x + w - in, mid, 0x2CFFFFFF, 0x06FFFFFF);
+            c.fillGradient(x + in, mid, x + w - in, y + h - 1, 0x06FFFFFF, 0x184F8EFF);
+        }
+        roundBorder(c, x, y, w, h, r, 0x46FFFFFF);
         if (w > 20) {
-            roundRect(c, x + 12, y + 1, w - 24, 2, 1, 0x22FFFFFF);
+            roundRect(c, x + 12, y + 1, w - 24, 2, 1, 0x55FFFFFF);
         }
     }
 
     public static void innerCard(DrawContext c, int x, int y, int w, int h) {
-        roundRect(c, x, y, w, h, 14, 0x99101018);
-        roundBorder(c, x, y, w, h, 14, 0x1AFFFFFF);
+        roundRect(c, x, y, w, h, 14, 0x5E0E0E18);
+        if (w > 20 && h > 20) {
+            c.fillGradient(x + 6, y + 1, x + w - 6, y + Math.min(h / 2, 30), 0x16FFFFFF, 0x00FFFFFF);
+        }
+        roundBorder(c, x, y, w, h, 14, 0x26FFFFFF);
     }
 
     public static void field(DrawContext c, int x, int y, int w, int h, boolean focused) {
