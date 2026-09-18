@@ -55,7 +55,18 @@ public class AeroClient implements ClientModInitializer {
         registerCobwebTweaks();
         registerOptimizers();
         WorldOverlayRenderer.register();
+        registerCosmeticRenderer();
         ClientTickEvents.END_CLIENT_TICK.register(AeroClient::tick);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void registerCosmeticRenderer() {
+        net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback.EVENT.register(
+                (type, renderer, helper, context) -> {
+                    if (type == net.minecraft.entity.EntityType.PLAYER) {
+                        helper.register(new dev.aero.client.cosmetic.CosmeticFeatureRenderer((net.minecraft.client.render.entity.feature.FeatureRendererContext) renderer));
+                    }
+                });
     }
 
     /** Cobweb Tweaks: recolor/see-through cobwebs via Fabric's own block color + render-layer APIs, no mixin needed. */
