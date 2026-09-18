@@ -39,8 +39,8 @@ public final class WardrobePanel {
         top = y + PAD;
         height = h - PAD * 2;
         lx = x + PAD;
-        lw = Math.min(150, w * 19 / 100);
-        rw = Math.min(310, w * 36 / 100);
+        lw = Math.min(150, w * 21 / 100);
+        rw = Math.min(310, w * 38 / 100);
         rx = x + w - PAD - rw;
         cx = lx + lw + PAD;
         cw = rx - PAD - cx;
@@ -55,11 +55,11 @@ public final class WardrobePanel {
     }
 
     private int previewTop() {
-        return top + 28;
+        return top + 24;
     }
 
     private int previewBottom() {
-        return top + height - 56;
+        return top + height - 46;
     }
 
     private boolean modelKind(Cosmetics.Kind k) {
@@ -67,7 +67,7 @@ public final class WardrobePanel {
     }
 
     private int cardH(Cosmetics.Kind k) {
-        return Cosmetics.hasVariants(k) ? 98 : 78;
+        return Cosmetics.hasVariants(k) ? 84 : 66;
     }
 
     private static String ownSkinKey() {
@@ -112,21 +112,21 @@ public final class WardrobePanel {
         ctx.drawText(tr, Text.literal(fit(tr, name, lw - 44)), hx + 30, hy + 3, TEXT, false);
         ctx.drawText(tr, Text.literal("Profile"), hx + 30, hy + 14, MUTED, false);
 
-        int y = top + 44;
+        int y = top + 42;
         for (int i = 0; i < TAB_ORDER.length; i++) {
             if (i == 8) {
-                ctx.fill(lx + 12, y + 2, lx + lw - 12, y + 3, 0x22FFFFFF);
-                y += 8;
+                ctx.fill(lx + 12, y + 1, lx + lw - 12, y + 2, 0x22FFFFFF);
+                y += 5;
             }
             boolean on = tab == TAB_ORDER[i];
-            boolean hover = in(mx, my, lx + 6, y, lw - 12, 22);
+            boolean hover = in(mx, my, lx + 6, y, lw - 12, 19);
             if (on) {
-                UiDraw.pill(ctx, lx + 6, y, lw - 12, 22, true);
+                UiDraw.pill(ctx, lx + 6, y, lw - 12, 19, true);
             } else if (hover) {
-                UiDraw.roundRect(ctx, lx + 6, y, lw - 12, 22, 11, 0x14FFFFFF);
+                UiDraw.roundRect(ctx, lx + 6, y, lw - 12, 19, 9, 0x14FFFFFF);
             }
-            ctx.drawText(tr, Text.literal(TAB_NAMES[TAB_ORDER[i]]), lx + 16, y + 7, on || hover ? TEXT : MUTED, false);
-            y += 26;
+            ctx.drawText(tr, Text.literal(TAB_NAMES[TAB_ORDER[i]]), lx + 14, y + 6, on || hover ? TEXT : MUTED, false);
+            y += 21;
         }
     }
 
@@ -164,7 +164,7 @@ public final class WardrobePanel {
             }
             arrow(ctx, tr, mx, my, px1 + 4, (py1 + py2) / 2 - 11, "<");
             arrow(ctx, tr, mx, my, px2 - 26, (py1 + py2) / 2 - 11, ">");
-            ctx.drawCenteredTextWithShadow(tr, Text.literal("Drag to rotate, scroll to zoom"), midX, top + height - 14, MUTED);
+            ctx.drawCenteredTextWithShadow(tr, Text.literal("Drag to rotate, scroll to zoom"), midX, previewBottom() - 10, MUTED);
         } else {
             drawChatPreview(ctx, tr, kind, item, color, midX, (py1 + py2) / 2);
         }
@@ -203,10 +203,10 @@ public final class WardrobePanel {
     }
 
     private void drawInfoBar(DrawContext ctx, TextRenderer tr, int mx, int my, Cosmetics.Kind kind) {
-        int y = top + height - 52;
+        int y = top + height - 40;
         int x = cx + 8;
         int w = cw - 16;
-        UiDraw.roundRect(ctx, x, y, w, 34, 10, 0xAA05060C);
+        UiDraw.roundRect(ctx, x, y, w, 32, 10, 0xAA05060C);
         String eq = Cosmetics.equipped(kind);
         Cosmetics.Item item = "none".equals(eq) ? null : Cosmetics.named(kind, eq);
         ctx.drawText(tr, Text.literal(TAB_NAMES[tab]), x + 10, y + 7, MUTED, false);
@@ -305,18 +305,18 @@ public final class WardrobePanel {
         Cosmetics.Kind kind = kind();
         searchFocus = false;
 
-        int ty = top + 44;
+        int ty = top + 42;
         for (int i = 0; i < TAB_ORDER.length; i++) {
             if (i == 8) {
-                ty += 8;
+                ty += 5;
             }
-            if (in(mx, my, lx + 6, ty, lw - 12, 22)) {
+            if (in(mx, my, lx + 6, ty, lw - 12, 19)) {
                 tab = TAB_ORDER[i];
                 scroll = 0;
                 search = "";
                 return true;
             }
-            ty += 26;
+            ty += 21;
         }
 
         int py1 = previewTop();
@@ -339,7 +339,7 @@ public final class WardrobePanel {
 
         String eq = Cosmetics.equipped(kind);
         int ix = cx + 8;
-        int iy = top + height - 52;
+        int iy = top + height - 40;
         if (!"none".equals(eq) && kind != Cosmetics.Kind.EMOTE && in(mx, my, ix + (cw - 16) - 80, iy + 7, 70, 20)) {
             Cosmetics.equip(kind, "none");
             return true;
