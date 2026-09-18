@@ -52,7 +52,7 @@ public class PlayerEntityRendererMixin {
             changed = true;
         }
 
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametags && AeroClient.CONFIG.nametagPing) {
+        if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametagPing) {
             MinecraftClient mc = MinecraftClient.getInstance();
             if (mc.getNetworkHandler() != null) {
                 try {

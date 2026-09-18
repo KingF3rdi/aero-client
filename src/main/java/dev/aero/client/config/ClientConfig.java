@@ -22,7 +22,7 @@ public class ClientConfig {
     public boolean pingHud = false;
     public boolean cpsHud = false;
     public boolean coordsHud = false;
-    public boolean potionHud = false;
+    public boolean potionHud = true;
     public boolean comboHud = false;
     public boolean keystrokes = false;
     public boolean armorHud = false;

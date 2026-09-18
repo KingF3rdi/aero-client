@@ -126,6 +126,9 @@ public final class OverlayHud {
                     String.format("%.0f  %.0f  %.0f", mc.player.getX(), mc.player.getY(), mc.player.getZ()),
                     cfg.coordsShadow);
         }
+        if (!cfg.musicPlayer) {
+            MediaSession.stop();
+        }
         if (cfg.musicPlayer) {
             String track = currentMusic(mc);
             if (!track.isBlank()) {
@@ -188,17 +191,27 @@ public final class OverlayHud {
                         text += (text.isEmpty() ? "" : "  ") + (sec / 60) + ":" + String.format("%02d", sec % 60);
                     }
                     if (cfg.potionIcons) {
-                        int col = 0xFF4F8EFF;
                         try {
-                            col = 0xFF000000 | (effect.getEffectType().value().getColor() & 0xFFFFFF);
-                        } catch (Throwable ignored) {
+                            var key = effect.getEffectType().getKey();
+                            net.minecraft.util.Identifier id = key.get().getValue();
+                            context.drawGuiTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
+                                    net.minecraft.util.Identifier.of(id.getNamespace(), "mob_effect/" + id.getPath()),
+                                    cfg.potionX, y - 1, 16, 16);
+                        } catch (Throwable t) {
+                            int col = 0xFF4F8EFF;
+                            try {
+                                col = 0xFF000000 | (effect.getEffectType().value().getColor() & 0xFFFFFF);
+                            } catch (Throwable ignored) {
+                            }
+                            UiDraw.roundRect(context, cfg.potionX, y, 12, 12, 3, col);
                         }
-                        UiDraw.roundRect(context, cfg.potionX, y, 12, 12, 3, col);
-                        hudLine(context, mc, cfg, cfg.potionX + 16, y, text);
+                        if (!text.isEmpty()) {
+                            hudLine(context, mc, cfg, cfg.potionX + 20, y, text);
+                        }
                     } else {
                         hudLine(context, mc, cfg, cfg.potionX, y, text);
                     }
-                    y += cfg.fastHud ? 13 : 17;
+                    y += 18;
                 }
             } catch (Throwable ignored) {
             }
@@ -793,6 +806,11 @@ public final class OverlayHud {
      * seconds anyway, so it's only actually resolved on a timer, same idea as fps()/ping() above.
      */
     private static String currentMusic(MinecraftClient mc) {
+        MediaSession.ensureStarted();
+        String external = MediaSession.track();
+        if (!external.isEmpty()) {
+            return external;
+        }
         long now = System.currentTimeMillis();
         if (now - musicAt < 1000) {
             return cachedMusic;
