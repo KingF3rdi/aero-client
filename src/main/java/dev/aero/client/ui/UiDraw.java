@@ -273,14 +273,16 @@ public final class UiDraw {
         c.fill(x, y, x + w, y + 1, 0x14FFFFFF);
     }
 
+    /** The brand mark: a plain bold blue "A". */
     public static void aeroMark(DrawContext c, int x, int y, int s, int color) {
         int m = Math.max(8, s);
-        roundRect(c, x, y, m, m, 3, 0xFF1A1524);
-        roundBorder(c, x, y, m, m, 3, color);
-        int cx = x + m / 2;
-        int cy = y + m / 2;
-        c.fill(cx - 1, y + 2, cx + 2, y + m - 2, color);
-        c.fill(x + 2, cy - 1, x + m - 2, cy + 2, color);
-        c.fill(x + 3, y + 3, x + 5, y + 5, 0x88FFFFFF);
+        var tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        float scale = m / 8f;
+        c.getMatrices().pushMatrix();
+        c.getMatrices().translate(x + (m - 6 * scale) / 2f, y + (m - 8 * scale) / 2f);
+        c.getMatrices().scale(scale, scale);
+        c.drawText(tr, net.minecraft.text.Text.literal("A").setStyle(net.minecraft.text.Style.EMPTY.withBold(true)
+                .withColor(color & 0xFFFFFF)), 0, 0, color | 0xFF000000, false);
+        c.getMatrices().popMatrix();
     }
 }

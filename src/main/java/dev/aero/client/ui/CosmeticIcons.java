@@ -67,13 +67,13 @@ public final class CosmeticIcons {
     }
 
     private static void cape(DrawContext c, Cosmetics.Item item, int col, int cx, int y, int w, int h, float t) {
-        net.minecraft.util.Identifier tex = dev.aero.client.cosmetic.CapeTextures.get(item.id());
+        var tex = dev.aero.client.cosmetic.CapeTextures.get(item.id());
         if (tex != null) {
             int scale = Math.max(1, Math.min(h - 6, 48) / 16);
             int cw = 10 * scale;
             int ch = 16 * scale;
-            c.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, tex, cx - cw / 2, y + (h - ch) / 2,
-                    1f, 1f, cw, ch, 10, 16, 64, 32);
+            c.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, tex.id(), cx - cw / 2, y + (h - ch) / 2,
+                    1f, 1f, cw, ch, 10, 16, tex.w(), tex.h());
             return;
         }
         int cw = Math.max(18, w / 3);

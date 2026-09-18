@@ -19,7 +19,10 @@ import java.util.Map;
  * plain colored cape.
  */
 public final class CapeTextures {
-    private static final Map<String, Identifier> CACHE = new HashMap<>();
+    /** A loaded cape texture and its pixel size (legacy capes are 22x17, newer ones 64x32). */
+    public record Tex(Identifier id, int w, int h) {}
+
+    private static final Map<String, Tex> CACHE = new HashMap<>();
 
     private CapeTextures() {}
 
@@ -28,21 +31,27 @@ public final class CapeTextures {
     }
 
     /** The texture for a cape id, or null when no file for it exists. */
-    public static Identifier get(String capeId) {
+    public static Tex get(String capeId) {
         if (CACHE.containsKey(capeId)) {
             return CACHE.get(capeId);
         }
-        Identifier found = load(capeId);
+        Tex found = load(capeId);
         CACHE.put(capeId, found);
         return found;
     }
 
-    private static Identifier load(String capeId) {
+    private static Tex load(String capeId) {
         MinecraftClient mc = MinecraftClient.getInstance();
         Identifier packed = Identifier.of("aero", "textures/cape/" + capeId + ".png");
         try {
-            if (mc.getResourceManager().getResource(packed).isPresent()) {
-                return packed;
+            var res = mc.getResourceManager().getResource(packed);
+            if (res.isPresent()) {
+                try (InputStream in = res.get().getInputStream()) {
+                    NativeImage img = NativeImage.read(in);
+                    Tex tex = new Tex(packed, img.getWidth(), img.getHeight());
+                    img.close();
+                    return tex;
+                }
             }
         } catch (Throwable ignored) {
         }
@@ -53,7 +62,7 @@ public final class CapeTextures {
                     NativeImage image = NativeImage.read(in);
                     Identifier id = Identifier.of("aero", "dyncape/" + capeId);
                     mc.getTextureManager().registerTexture(id, new NativeImageBackedTexture(() -> "aero cape " + capeId, image));
-                    return id;
+                    return new Tex(id, image.getWidth(), image.getHeight());
                 }
             }
         } catch (Throwable ignored) {

@@ -37,15 +37,17 @@ public final class CubeDraw {
         vc.vertex(e, x, y, z).color(col).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(e, nx, ny, nz);
     }
 
-    /** Cape box using the standard 64x32 cape texture layout: outside = (1,1)-(11,17), inside = (12,1)-(22,17). */
-    public static void capeBox(MatrixStack.Entry e, VertexConsumer vc, float a, float b, float c, int light) {
+    /** Cape box in the standard cape layout (outside = px (1,1)-(11,17), inside = (12,1)-(22,17)) for a texW x texH texture. */
+    public static void capeBox(MatrixStack.Entry e, VertexConsumer vc, float a, float b, float c, int light, int texW, int texH) {
         int w = 0xFFFFFFFF;
-        uvFace(e, vc, w, light, 0, 0, 1, -a, -b, c, a, -b, c, a, b, c, -a, b, c, 1f / 64, 1f / 32, 11f / 64, 17f / 32);
-        uvFace(e, vc, w, light, 0, 0, -1, a, -b, -c, -a, -b, -c, -a, b, -c, a, b, -c, 12f / 64, 1f / 32, 22f / 64, 17f / 32);
-        uvFace(e, vc, w, light, 1, 0, 0, a, -b, -c, a, -b, c, a, b, c, a, b, -c, 0f, 1f / 32, 1f / 64, 17f / 32);
-        uvFace(e, vc, w, light, -1, 0, 0, -a, -b, c, -a, -b, -c, -a, b, -c, -a, b, c, 11f / 64, 1f / 32, 12f / 64, 17f / 32);
-        uvFace(e, vc, w, light, 0, 1, 0, -a, b, -c, a, b, -c, a, b, c, -a, b, c, 11f / 64, 0f, 21f / 64, 1f / 32);
-        uvFace(e, vc, w, light, 0, -1, 0, -a, -b, c, a, -b, c, a, -b, -c, -a, -b, -c, 1f / 64, 0f, 11f / 64, 1f / 32);
+        float tw = texW;
+        float th = texH;
+        uvFace(e, vc, w, light, 0, 0, 1, -a, -b, c, a, -b, c, a, b, c, -a, b, c, 1 / tw, 1 / th, 11 / tw, 17 / th);
+        uvFace(e, vc, w, light, 0, 0, -1, a, -b, -c, -a, -b, -c, -a, b, -c, a, b, -c, 12 / tw, 1 / th, 22 / tw, 17 / th);
+        uvFace(e, vc, w, light, 1, 0, 0, a, -b, -c, a, -b, c, a, b, c, a, b, -c, 0f, 1 / th, 1 / tw, 17 / th);
+        uvFace(e, vc, w, light, -1, 0, 0, -a, -b, c, -a, -b, -c, -a, b, -c, -a, b, c, 11 / tw, 1 / th, 12 / tw, 17 / th);
+        uvFace(e, vc, w, light, 0, 1, 0, -a, b, -c, a, b, -c, a, b, c, -a, b, c, 11 / tw, 0f, 21 / tw, 1 / th);
+        uvFace(e, vc, w, light, 0, -1, 0, -a, -b, c, a, -b, c, a, -b, -c, -a, -b, -c, 1 / tw, 0f, 11 / tw, 1 / th);
     }
 
     private static void uvFace(MatrixStack.Entry e, VertexConsumer vc, int col, int light, float nx, float ny, float nz,

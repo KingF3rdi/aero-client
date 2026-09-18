@@ -307,7 +307,7 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private int listH() {
-        return ph - TOP - 12;
+        return ph - TOP - 22;
     }
 
     @Override
@@ -486,7 +486,7 @@ public class ClickGuiScreenLegacy extends Screen {
 
     private void drawList(DrawContext context, int mx, int my) {
         int x = listX();
-        int y0 = oy + TOP + 8;
+        int y0 = oy + TOP + 10;
         int w = listW();
         int view = listH();
         context.enableScissor(x, y0, x + w, y0 + view);
@@ -697,7 +697,7 @@ public class ClickGuiScreenLegacy extends Screen {
             context.disableScissor();
         }
         settingsContentH = y - contentStart + 12;
-        UiDraw.scrollbar(context, ox + pw - 8, viewTop, viewBottom - viewTop, settingsScroll, settingsContentH, viewBottom - viewTop);
+        UiDraw.scrollbar(context, ox + pw - 16, viewTop, viewBottom - viewTop, settingsScroll, settingsContentH, viewBottom - viewTop);
     }
 
     private int pillW(String label) {
@@ -710,7 +710,7 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private int settingsViewBottom() {
-        return oy + ph - 8;
+        return oy + ph - 12;
     }
 
     private int youLeft() {
@@ -1207,7 +1207,7 @@ public class ClickGuiScreenLegacy extends Screen {
         }
 
         int lx = listX();
-        int rowY = oy + TOP + 8 - scroll;
+        int rowY = oy + TOP + 10 - scroll;
         int w = listW();
         Category last = null;
         for (Module module : visible) {
@@ -1215,7 +1215,7 @@ public class ClickGuiScreenLegacy extends Screen {
                 last = module.category;
                 rowY += 22;
             }
-            if (inside(mx, my, lx, rowY, w, ROW_H - 2) && my >= oy + TOP + 8 && my <= oy + TOP + 8 + listH()) {
+            if (inside(mx, my, lx, rowY, w, ROW_H - 2) && my >= oy + TOP + 10 && my <= oy + TOP + 10 + listH()) {
                 if (selected != module) {
                     focusedTextSetting = null;
                     accentFocus = false;

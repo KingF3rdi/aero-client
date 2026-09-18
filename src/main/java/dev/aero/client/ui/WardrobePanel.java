@@ -28,7 +28,7 @@ public final class WardrobePanel {
     public boolean searchFocus;
     private int tab;
     private int scroll;
-    private float yaw = 200f;
+    private float yaw = 20f;
     private float zoom = 1f;
     private boolean dragging;
 
@@ -170,7 +170,14 @@ public final class WardrobePanel {
                 ctx.disableScissor();
             }
             if (player == null) {
-                ctx.drawText(tr, Text.literal("Join a world to see the preview"), midX - 70, (py1 + py2) / 2, MUTED, false);
+                var capeTex = kind == Cosmetics.Kind.CAPE && item != null ? dev.aero.client.cosmetic.CapeTextures.get(item.id()) : null;
+                if (capeTex != null) {
+                    int sc = Math.max(1, (py2 - py1 - 20) / 16);
+                    ctx.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, capeTex.id(), midX - 5 * sc, (py1 + py2) / 2 - 8 * sc,
+                            1f, 1f, 10 * sc, 16 * sc, 10, 16, capeTex.w(), capeTex.h());
+                } else {
+                    ctx.drawCenteredTextWithShadow(tr, Text.literal("Join a world to see the preview"), midX, (py1 + py2) / 2, MUTED);
+                }
             }
             arrow(ctx, tr, mx, my, px1 + 4, (py1 + py2) / 2 - 11, "<");
             arrow(ctx, tr, mx, my, px2 - 26, (py1 + py2) / 2 - 11, ">");
@@ -322,6 +329,7 @@ public final class WardrobePanel {
             }
             if (in(mx, my, lx + 6, ty, lw - 12, step - 2)) {
                 tab = TAB_ORDER[i];
+                yaw = tab == 0 ? 20f : 200f;
                 scroll = 0;
                 search = "";
                 return true;

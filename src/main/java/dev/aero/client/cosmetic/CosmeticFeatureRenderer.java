@@ -78,15 +78,15 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
 
     private void cape(int c, String id) {
         float sway = 5f + speed * 22f + (float) Math.sin(t * 1.7) * 3f;
-        net.minecraft.util.Identifier tex = CapeTextures.get(id);
+        CapeTextures.Tex tex = CapeTextures.get(id);
         if (tex != null) {
             m.push();
             m.translate(0, 0, 2.4f / 16f);
             m.multiply(new Quaternionf().rotateX((float) Math.toRadians(sway)));
             m.translate(0, 8f / 16f, 0);
-            RenderLayer capeLayer = RenderLayers.entityCutoutNoCull(tex);
+            RenderLayer capeLayer = RenderLayers.entityCutoutNoCull(tex.id());
             int lt = light;
-            q.submitCustom(m, capeLayer, (e, vc) -> CubeDraw.capeBox(e, vc, 5f / 16f, 8f / 16f, 0.5f / 16f, lt));
+            q.submitCustom(m, capeLayer, (e, vc) -> CubeDraw.capeBox(e, vc, 5f / 16f, 8f / 16f, 0.5f / 16f, lt, tex.w(), tex.h()));
             m.pop();
             return;
         }

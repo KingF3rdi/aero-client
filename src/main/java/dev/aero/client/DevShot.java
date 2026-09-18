@@ -63,7 +63,10 @@ public final class DevShot {
         switch (stage) {
             case 1 -> gui.debugSelect(0);
             case 2 -> gui.debugSelectByName("Totem Counter");
-            case 3 -> gui.debugTab(1, 0);
+            case 3 -> {
+                dev.aero.client.cosmetic.Cosmetics.equip(dev.aero.client.cosmetic.Cosmetics.Kind.CAPE, "migrator");
+                gui.debugTab(1, 0);
+            }
             case 4 -> gui.debugTab(1, 1);
             case 5 -> gui.debugTab(1, 3);
             case 6 -> gui.debugTab(1, 9);
