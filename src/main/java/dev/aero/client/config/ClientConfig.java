@@ -113,7 +113,7 @@ public class ClientConfig {
     public int handScale = 100;
     public boolean nametags = false;
     public float nametagScale = 1.0f;
-    public boolean nametagPing = true;
+    public boolean nametagPing = false;
     public String pingSide = "Right";
     public boolean pingDivider = false;
     public boolean ownNametag = false;

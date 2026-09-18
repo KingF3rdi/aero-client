@@ -263,15 +263,20 @@ public final class OverlayHud {
         if (cfg.saturationOverlay) {
             float sat = splashSaturation(mc);
             if (!(cfg.satHideFull && sat >= 20f)) {
-                int foodX = sw / 2 + 10;
-                int foodY = sh - 50;
-                int a = Math.max(10, Math.min(255, (int) (cfg.satOpacity / 100f * 255)));
+                // Hunger icons run right to left starting at sw/2 + 82, one row above the hotbar (sh - 39).
+                int foodY = sh - 39;
+                int a = Math.max(40, Math.min(255, (int) (cfg.satOpacity / 100f * 255)));
                 int col = (cfg.satColor & 0x00FFFFFF) | (a << 24);
+                int rim = (cfg.satColor & 0x00FFFFFF) | (Math.min(255, a + 60) << 24);
                 for (int i = 0; i < 10; i++) {
-                    int px = foodX + i * 8;
-                    if (sat > i) {
-                        context.fill(px, foodY, px + 6, foodY + 2, col);
+                    float fill = Math.max(0f, Math.min(2f, sat - i * 2f)) / 2f;
+                    if (fill <= 0f) {
+                        break;
                     }
+                    int px = sw / 2 + 82 - i * 8;
+                    int w = Math.max(2, Math.round(7 * fill));
+                    context.fill(px + 1, foodY + 1, px + 1 + w, foodY + 8, col);
+                    context.fill(px + 1, foodY + 8, px + 1 + w, foodY + 9, rim);
                 }
             }
         }
@@ -523,9 +528,15 @@ public final class OverlayHud {
         }
         float yaw = mc.player.getYaw();
         float pitch = mc.player.getPitch();
-        float delta = Math.abs(MathHelperAngle(yaw - lastYaw)) + Math.abs(pitch - lastPitch);
+        float dYaw = MathHelperAngle(yaw - lastYaw);
+        float dPitch = pitch - lastPitch;
+        float delta = Math.abs(dYaw) + Math.abs(dPitch);
         lastYaw = yaw;
         lastPitch = pitch;
+        if ("Simple".equalsIgnoreCase(cfg.motionBlurStyle)) {
+            renderSimpleBlur(context, cfg, sw, sh, dYaw, dPitch);
+            return;
+        }
         float strengthMul = "High".equalsIgnoreCase(cfg.motionBlurStrength) ? 1.6f
                 : "Low".equalsIgnoreCase(cfg.motionBlurStrength) ? 0.6f : 1.0f;
         int a = (int) Math.min(90, delta * 10f * strengthMul);
@@ -536,6 +547,33 @@ public final class OverlayHud {
         int color = a << 24;
         context.fill(0, 0, band, sh, color);
         context.fill(sw - band, 0, sw, sh, color);
+    }
+
+    /** Cheap blur stand-in: a faint veil plus streaks along the direction the camera is turning. */
+    private static void renderSimpleBlur(DrawContext context, ClientConfig cfg, int sw, int sh, float dYaw, float dPitch) {
+        float mul = "High".equalsIgnoreCase(cfg.motionBlurStrength) ? 1.6f
+                : "Low".equalsIgnoreCase(cfg.motionBlurStrength) ? 0.6f : 1.0f;
+        float speed = Math.abs(dYaw) + Math.abs(dPitch);
+        int veil = (int) Math.min(46, speed * 3f * mul);
+        if (veil < 3) {
+            return;
+        }
+        context.fill(0, 0, sw, sh, (veil << 24) | 0x0A0A12);
+        boolean horizontal = Math.abs(dYaw) >= Math.abs(dPitch);
+        int len = (int) Math.min(sw / 3f, 14 + speed * 9f * mul);
+        int alpha = Math.min(70, 16 + (int) (speed * 3f * mul));
+        int seed = (int) (System.nanoTime() / 16_000_000L);
+        for (int i = 0; i < 14; i++) {
+            int r = (seed * 31 + i * 7919) & 0x7FFFFFFF;
+            int along = r % Math.max(1, horizontal ? sh : sw);
+            int start = (r / 7) % Math.max(1, (horizontal ? sw : sh) - len);
+            int col = (alpha << 24) | 0xE8ECFF;
+            if (horizontal) {
+                context.fill(start, along, start + len, along + 1, col);
+            } else {
+                context.fill(along, start, along + 1, start + len, col);
+            }
+        }
     }
 
     private static float MathHelperAngle(float degrees) {

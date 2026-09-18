@@ -119,7 +119,16 @@ public class PlayerEntityRendererMixin {
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametags && matrices != null) {
             float s = Math.max(0.5F, AeroClient.CONFIG.nametagScale);
             matrices.push();
-            matrices.scale(s, s, s);
+            net.minecraft.util.math.Vec3d p = state == null ? null : state.nameLabelPos;
+            if (p != null && s != 1f) {
+                // Text hangs 0.2 blocks below its anchor, 0.5 above the head: scale around the anchor so
+                // the tag stays put, and only lift it once the bigger text would reach into the head.
+                float lift = Math.max(0f, 0.2f * s - 0.4f);
+                matrices.translate(0.0, lift, 0.0);
+                matrices.translate(p.x, p.y, p.z);
+                matrices.scale(s, s, s);
+                matrices.translate(-p.x, -p.y, -p.z);
+            }
         }
     }
 

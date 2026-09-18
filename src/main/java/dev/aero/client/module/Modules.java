@@ -138,9 +138,6 @@ public final class Modules {
         add(new Module("Nametags", "Own-name and nametag scale", Category.RENDER,
                 () -> c.nametags, v -> c.nametags = v)
                 .settingF("Scale", () -> (double) c.nametagScale, v -> c.nametagScale = (float) v, 0.5, 3)
-                .setting("Show Ping", () -> c.nametagPing, v -> c.nametagPing = v)
-                .setting("Ping Side", () -> c.pingSide, v -> c.pingSide = v, "Left", "Right")
-                .setting("Ping Divider", () -> c.pingDivider, v -> c.pingDivider = v)
                 .setting("Show Own Nametag", () -> c.ownNametag, v -> c.ownNametag = v)
                 .setting("\"L\" badge for friends", () -> c.nametagBadge, v -> c.nametagBadge = v));
         add(new Module("Time Changer", "Client-only world time", Category.RENDER,
@@ -219,7 +216,7 @@ public final class Modules {
                 .setting("Teams", () -> c.hitboxTeams, v -> c.hitboxTeams = v));
         add(new Module("Motion Blur", "Smear the view as it moves", Category.RENDER,
                 () -> c.motionBlur, v -> c.motionBlur = v)
-                .setting("Style", () -> c.motionBlurStyle, v -> c.motionBlurStyle = v, "Trail", "Smooth")
+                .setting("Style", () -> c.motionBlurStyle, v -> c.motionBlurStyle = v, "Trail", "Smooth", "Simple")
                 .setting("Strength", () -> c.motionBlurStrength, v -> c.motionBlurStrength = v, "Low", "Medium", "High"));
         add(new Module("Nostalgia", "Crystals, lighting and glint as they were", Category.RENDER,
                 () -> c.nostalgia, v -> c.nostalgia = v)
@@ -414,7 +411,10 @@ public final class Modules {
                 .setting("Progress Bar", () -> c.musicBar, v -> c.musicBar = v));
         add(new Module("Ping", "Shows your server latency", Category.HUD,
                 () -> c.pingHud, v -> c.pingHud = v)
-                .setting("Shadow", () -> c.pingShadow, v -> c.pingShadow = v));
+                .setting("Shadow", () -> c.pingShadow, v -> c.pingShadow = v)
+                .setting("Next to names", () -> c.nametagPing, v -> c.nametagPing = v)
+                .setting("Side", () -> c.pingSide, v -> c.pingSide = v, "Left", "Right")
+                .setting("Divider", () -> c.pingDivider, v -> c.pingDivider = v));
         add(new Module("Potion HUD", "Active effect list", Category.HUD,
                 () -> c.potionHud, v -> c.potionHud = v)
                 .setting("Icons", () -> c.potionIcons, v -> c.potionIcons = v)
