@@ -2,11 +2,15 @@ package dev.aero.client.mixin;
 
 import dev.aero.client.Visuals;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.entity.feature.PlayerHeldItemFeatureRenderer;
 import net.minecraft.client.render.entity.state.PlayerEntityRenderState;
+import net.minecraft.client.render.item.ItemRenderState;
+import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Arm;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,16 +25,16 @@ public class PlayerHeldItemFeatureRendererMixin {
     private boolean aero$pushedShieldHolder;
 
     @Inject(method = "renderItem", at = @At("HEAD"), require = 0)
-    private void aero$begin(Object state, Object itemState, ItemStack stack, Object arm,
-                            Object matrices, Object queue, int light, CallbackInfo ci) {
-        if (!Visuals.isShield(stack) || !(state instanceof PlayerEntityRenderState playerState)) {
+    private void aero$begin(PlayerEntityRenderState state, ItemRenderState itemState, ItemStack stack, Arm arm,
+                            MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CallbackInfo ci) {
+        if (!Visuals.isShield(stack)) {
             return;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.world == null) {
             return;
         }
-        Entity entity = mc.world.getEntityById(playerState.id);
+        Entity entity = mc.world.getEntityById(state.id);
         if (entity instanceof PlayerEntity player) {
             aero$prevShieldHolder = Visuals.currentShieldHolder();
             aero$pushedShieldHolder = true;
@@ -39,8 +43,8 @@ public class PlayerHeldItemFeatureRendererMixin {
     }
 
     @Inject(method = "renderItem", at = @At("RETURN"), require = 0)
-    private void aero$end(Object state, Object itemState, ItemStack stack, Object arm,
-                          Object matrices, Object queue, int light, CallbackInfo ci) {
+    private void aero$end(PlayerEntityRenderState state, ItemRenderState itemState, ItemStack stack, Arm arm,
+                          MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CallbackInfo ci) {
         if (aero$pushedShieldHolder) {
             aero$pushedShieldHolder = false;
             Visuals.popShieldHolder(aero$prevShieldHolder);

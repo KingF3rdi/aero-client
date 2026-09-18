@@ -1,6 +1,7 @@
 package dev.aero.client.mixin;
 
 import dev.aero.client.AeroClient;
+import net.minecraft.client.render.command.OrderedRenderCommandQueue;
 import net.minecraft.client.render.item.HeldItemRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.item.ItemStack;
@@ -140,7 +141,7 @@ public class HeldItemRendererMixin {
     )
     private void aero$shieldHolderBegin(net.minecraft.entity.LivingEntity entity, ItemStack stack,
                                         net.minecraft.item.ItemDisplayContext context,
-                                        MatrixStack matrices, Object queue, int light, CallbackInfo ci) {
+                                        MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CallbackInfo ci) {
         if (entity instanceof net.minecraft.entity.player.PlayerEntity player
                 && dev.aero.client.Visuals.isShield(stack)) {
             aero$prevShieldHolder = dev.aero.client.Visuals.currentShieldHolder();
@@ -156,7 +157,7 @@ public class HeldItemRendererMixin {
     )
     private void aero$shieldHolderEnd(net.minecraft.entity.LivingEntity entity, ItemStack stack,
                                       net.minecraft.item.ItemDisplayContext context,
-                                      MatrixStack matrices, Object queue, int light, CallbackInfo ci) {
+                                      MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CallbackInfo ci) {
         if (aero$pushedShieldHolder) {
             aero$pushedShieldHolder = false;
             dev.aero.client.Visuals.popShieldHolder(aero$prevShieldHolder);
