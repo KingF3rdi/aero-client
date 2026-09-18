@@ -45,7 +45,11 @@
     "ToastManagerMixin",
     "DamageTintBodyMixin",
     "DamageTintArmorMixin",
-    "DamageTintEquipmentMixin"
+    "DamageTintEquipmentMixin",
+    "MotionBlurMixin",
+    "VanillaUiHotbarMixin",
+    "VanillaUiScreenMixin",
+    "MotionBlurHudMixin"
   ],
   "injectors": {
     "defaultRequire": 0

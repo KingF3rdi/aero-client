@@ -14,22 +14,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(value = HandledScreen.class, priority = 2500)
 public class HandledScreenMixin {
     @Inject(method = "drawSlot(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/screen/slot/Slot;II)V",
-            at = @At("TAIL"), require = 0)
+            at = @At("HEAD"), require = 0)
     private void aero$highlight(DrawContext context, Slot slot, int x, int y, CallbackInfo ci) {
         var c = AeroClient.CONFIG;
         if (c == null || !c.itemHighlighter || !c.highlightInventories || slot == null) {
             return;
         }
         ItemStack stack = slot.getStack();
-        if (!OverlayHud.matchesHighlight(c, stack)) {
+        int col = OverlayHud.highlightBg(c, stack);
+        if (col == 0) {
             return;
         }
         int sx = slot.x;
         int sy = slot.y;
-        int col = 0x664F8EFF;
-        context.fill(sx, sy, sx + 16, sy + 1, col);
-        context.fill(sx, sy + 15, sx + 16, sy + 16, col);
-        context.fill(sx, sy, sx + 1, sy + 16, col);
-        context.fill(sx + 15, sy, sx + 16, sy + 16, col);
+        context.fill(sx, sy, sx + 16, sy + 16, col);
     }
 }

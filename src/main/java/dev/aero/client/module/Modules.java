@@ -97,7 +97,8 @@ public final class Modules {
 
         add(new Module("Interface Color", "Accent color of the Aero Client menus and HUD", Category.RENDER,
                 () -> true, v -> { })
-                .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v));
+                .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v)
+                .setting("Style vanilla UI (hotbar, inventories)", () -> c.vanillaUi, v -> c.vanillaUi = v));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
                 () -> c.fullbright, v -> c.fullbright = v)
                 .settingF("Brightness", () -> (double) c.brightness, v -> c.brightness = (float) v, 1, 15));
@@ -228,7 +229,7 @@ public final class Modules {
                 .setting("Teams", () -> c.hitboxTeams, v -> c.hitboxTeams = v));
         add(new Module("Motion Blur", "Smear the view as it moves", Category.RENDER,
                 () -> c.motionBlur, v -> c.motionBlur = v)
-                .setting("Style", () -> c.motionBlurStyle, v -> c.motionBlurStyle = v, "Trail", "Smooth", "Simple")
+                .setting("Style", () -> c.motionBlurStyle, v -> c.motionBlurStyle = v, "Blur", "Simple")
                 .setting("Strength", () -> c.motionBlurStrength, v -> c.motionBlurStrength = v, "Low", "Medium", "High"));
         add(new Module("Nostalgia", "Crystals, lighting and glint as they were", Category.RENDER,
                 () -> c.nostalgia, v -> c.nostalgia = v)
@@ -477,6 +478,10 @@ public final class Modules {
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.TOTEM_COUNTER);
         add(new Module("Item Highlighter", "Outline standard PvP items in hotbar and inv", Category.HUD,
                 () -> c.itemHighlighter, v -> c.itemHighlighter = v)
+                .settingColor("Background color", () -> c.highlightColor, v -> c.highlightColor = v)
+                .setting("Opacity %", () -> c.highlightAlpha, v -> c.highlightAlpha = v, 5, 100)
+                .setting("Every item", () -> c.highlightAllItems, v -> c.highlightAllItems = v)
+                .settingText("Per-item colors (name=RRGGBB,...)", () -> c.highlightCustom, v -> c.highlightCustom = v)
                 .setting("In inventories", () -> c.highlightInventories, v -> c.highlightInventories = v)
                 .setting("In hotbar", () -> c.highlightHotbar, v -> c.highlightHotbar = v)
                 .setting("Totem", () -> c.highlightTotem, v -> c.highlightTotem = v)

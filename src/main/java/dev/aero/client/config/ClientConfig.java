@@ -184,6 +184,10 @@ public class ClientConfig {
     public boolean highlightWeb = false;
     public boolean highlightPotion = false;
     public boolean highlightEnchanted = false;
+    public int highlightColor = 0xFF4F8EFF;
+    public int highlightAlpha = 45;
+    public boolean highlightAllItems = false;
+    public String highlightCustom = "";
     public String itemHighlighterFilter = "";
     public boolean ambience = false;
     public boolean overworldSky = false;
@@ -338,6 +342,7 @@ public class ClientConfig {
     public String equippedMace = "none";
     public boolean showOthersCosmetics = true;
     public int uiAccent = 0xFF4F8EFF;
+    public boolean vanillaUi = true;
     public String equippedShield = "none";
     public int totemColGood = 0xFF55FF55;
     public int totemColWarn = 0xFFFFA030;
@@ -452,7 +457,7 @@ public class ClientConfig {
     public int hitboxColor = -1;
 
     public boolean motionBlur = false;
-    public String motionBlurStyle = "Trail";
+    public String motionBlurStyle = "Blur";
     public String motionBlurStrength = "Medium";
 
     public boolean nostalgia = false;

@@ -539,16 +539,7 @@ public final class OverlayHud {
             renderSimpleBlur(context, cfg, sw, sh, dYaw, dPitch);
             return;
         }
-        float strengthMul = "High".equalsIgnoreCase(cfg.motionBlurStrength) ? 1.6f
-                : "Low".equalsIgnoreCase(cfg.motionBlurStrength) ? 0.6f : 1.0f;
-        int a = (int) Math.min(90, delta * 10f * strengthMul);
-        if (a < 4) {
-            return;
-        }
-        int band = Math.max(8, sw / 12);
-        int color = a << 24;
-        context.fill(0, 0, band, sh, color);
-        context.fill(sw - band, 0, sw, sh, color);
+        // Non-"Simple" styles are the real blur, done in MotionBlurHudMixin.
     }
 
     /** Cheap blur stand-in: a faint veil plus streaks along the direction the camera is turning. */
@@ -676,6 +667,38 @@ public final class OverlayHud {
         }
     }
 
+    /** ARGB background for a stack per the Item Highlighter (per-item override, else the default color), or 0 for none. */
+    public static int highlightBg(ClientConfig cfg, ItemStack stack) {
+        if (stack.isEmpty()) {
+            return 0;
+        }
+        String name = stack.getItem().toString().toLowerCase(java.util.Locale.ROOT);
+        try {
+            name = net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).getPath();
+        } catch (Throwable ignored) {
+        }
+        int rgb = cfg.highlightColor & 0xFFFFFF;
+        boolean hit = false;
+        if (cfg.highlightCustom != null) {
+            for (String part : cfg.highlightCustom.split(",")) {
+                String[] kv = part.trim().split("=");
+                if (kv.length == 2 && !kv[0].trim().isEmpty() && name.contains(kv[0].trim().toLowerCase(java.util.Locale.ROOT))) {
+                    try {
+                        rgb = Integer.parseInt(kv[1].trim().replace("#", ""), 16) & 0xFFFFFF;
+                        hit = true;
+                        break;
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
+            }
+        }
+        if (!hit && !cfg.highlightAllItems && !matchesHighlight(cfg, stack)) {
+            return 0;
+        }
+        int a = Math.max(5, Math.min(100, cfg.highlightAlpha)) * 255 / 100;
+        return (a << 24) | rgb;
+    }
+
     public static boolean matchesHighlight(ClientConfig cfg, ItemStack stack) {
         if (stack.isEmpty()) {
             return false;
@@ -755,20 +778,22 @@ public final class OverlayHud {
             int y = sh - 23;
             for (int i = 0; i < 9; i++) {
                 ItemStack stack = mc.player.getInventory().getStack(i);
-                if (!matchesHighlight(cfg, stack)) {
+                int bg = highlightBg(cfg, stack);
+                if (bg == 0) {
                     continue;
                 }
                 int x = x0 + i * 20;
-                outlineSlot(context, x, y, i == selected ? 0x884F8EFF : 0x554F8EFF);
+                context.fill(x + 1, y + 1, x + 19, y + 19, bg);
             }
             // The offhand slot (e.g. a shield) isn't part of getInventory()'s 0-8 hotbar range, so
             // without this a spare matching item sitting in the numbered hotbar got outlined
             // instead of the one actually equipped and in use.
             ItemStack off = mc.player.getOffHandStack();
-            if (matchesHighlight(cfg, off)) {
+            int offBg = highlightBg(cfg, off);
+            if (offBg != 0) {
                 boolean mainLeft = mc.player.getMainArm() == net.minecraft.util.Arm.LEFT;
                 int ox = mainLeft ? x0 + 9 * 20 + 8 : x0 - 28;
-                outlineSlot(context, ox, y, 0x884F8EFF);
+                context.fill(ox + 1, y + 1, ox + 19, y + 19, offBg);
             }
         } catch (Throwable ignored) {
         }

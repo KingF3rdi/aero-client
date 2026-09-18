@@ -8,6 +8,10 @@ import net.minecraft.client.gui.DrawContext;
 public final class UiDraw {
     public static final int BORDER = 0x38FFFFFF;
     public static final int BORDER_SOFT = 0x18FFFFFF;
+    public static int withAlpha(int rgb, int a) {
+        return (a << 24) | (rgb & 0xFFFFFF);
+    }
+
     public static int accent() {
         var c = dev.aero.client.AeroClient.CONFIG;
         return c == null ? 0xFF4F8EFF : (c.uiAccent | 0xFF000000);
@@ -193,7 +197,7 @@ public final class UiDraw {
     public static void glass(DrawContext c, int x, int y, int w, int h, int fill, int radius) {
         int r = Math.max(12, radius);
         // Soft accent glow just outside the panel, then a see-through body so the world shows through.
-        roundRect(c, x - 2, y - 2, w + 4, h + 4, r + 2, 0x0C4F8EFF);
+        roundRect(c, x - 2, y - 2, w + 4, h + 4, r + 2, withAlpha(accent(), 0x0C));
         int alpha = Math.min(0xA8, (fill >>> 24));
         roundRect(c, x, y, w, h, r, (alpha << 24) | (fill & 0xFFFFFF));
         int in = (int) Math.ceil(r * 0.4);
@@ -202,7 +206,7 @@ public final class UiDraw {
             // sides so the rectangle's corners stay inside the rounded outline instead of poking out.
             int mid = y + h / 2;
             c.fillGradient(x + in, y + in, x + w - in, mid, 0x2CFFFFFF, 0x06FFFFFF);
-            c.fillGradient(x + in, mid, x + w - in, y + h - in, 0x06FFFFFF, 0x184F8EFF);
+            c.fillGradient(x + in, mid, x + w - in, y + h - in, 0x06FFFFFF, withAlpha(accent(), 0x18));
         }
         roundBorder(c, x, y, w, h, r, 0x46FFFFFF);
         if (w > 20) {
@@ -221,7 +225,7 @@ public final class UiDraw {
     public static void field(DrawContext c, int x, int y, int w, int h, boolean focused) {
         int r = Math.min(h / 2, 10);
         roundRect(c, x, y, w, h, r, focused ? 0xE0181622 : 0x9912111A);
-        roundBorder(c, x, y, w, h, r, focused ? 0x664F8EFF : 0x22FFFFFF);
+        roundBorder(c, x, y, w, h, r, focused ? withAlpha(accent(), 0x66) : 0x22FFFFFF);
     }
 
     public static void scrollbar(DrawContext c, int x, int y, int h, int scroll, int content, int view) {
@@ -233,7 +237,7 @@ public final class UiDraw {
         int max = Math.max(1, content - view);
         int ty = y + 4 + (int) ((track - thumb) * (scroll / (float) max));
         roundRect(c, x, y + 4, 4, track, 2, 0x22FFFFFF);
-        roundRect(c, x, ty, 4, thumb, 2, 0x884F8EFF);
+        roundRect(c, x, ty, 4, thumb, 2, withAlpha(accent(), 0x88));
     }
 
     public static void card(DrawContext c, int x, int y, int w, int h, int fill, boolean accentBar) {
