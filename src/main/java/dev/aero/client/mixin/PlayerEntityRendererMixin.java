@@ -93,7 +93,7 @@ public class PlayerEntityRendererMixin {
         // only marks players already on your own friends list rather than claiming to detect them.
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.nametagBadge
                 && dev.aero.client.social.FriendStore.isFriend(player.getName().getString())) {
-            result = Text.literal("L ").append(result);
+            result = Text.literal("★ ").setStyle(net.minecraft.text.Style.EMPTY.withColor(0xFFC94D)).append(result);
             changed = true;
         }
 

@@ -24,6 +24,7 @@ public final class OverlayHud {
     private static final int MUTED = 0xFFB8B0C8;
 
     private static final List<Module> ENABLED = new ArrayList<>();
+    private static final java.util.HashMap<String, Integer> NAME_WIDTH = new java.util.HashMap<>();
     private static int cachedFps;
     private static long fpsAt;
     private static String cachedMusic = "";
@@ -150,11 +151,11 @@ public final class OverlayHud {
 
         if (cfg.arraylist && AeroClient.MODULES != null) {
             AeroClient.MODULES.enabledInto(ENABLED);
-            ENABLED.sort(Comparator.comparingInt((Module m) -> -mc.textRenderer.getWidth(m.name)));
+            ENABLED.sort(Comparator.comparingInt((Module m) -> -NAME_WIDTH.computeIfAbsent(m.name, n -> mc.textRenderer.getWidth(n))));
             int y = 8;
             boolean lite = cfg.fastHud;
             for (Module module : ENABLED) {
-                int w = mc.textRenderer.getWidth(module.name);
+                int w = NAME_WIDTH.computeIfAbsent(module.name, n -> mc.textRenderer.getWidth(n));
                 int x = sw - w - 14;
                 if (lite) {
                     context.fill(sw - 8, y + 2, sw - 6, y + 11, ACCENT);
@@ -730,11 +731,22 @@ public final class OverlayHud {
         hudLine(context, mc, cfg, x, y, line, cfg.panelShadow);
     }
 
+    /** HUD strings barely change frame to frame, so keep the Text object and measured width instead of rebuilding them every frame. */
+    private static final java.util.HashMap<String, Object[]> LINE_CACHE = new java.util.HashMap<>();
+
     private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line, boolean shadow) {
-        int w = 12 + mc.textRenderer.getWidth(line);
+        Object[] cached = LINE_CACHE.get(line);
+        if (cached == null) {
+            if (LINE_CACHE.size() > 96) {
+                LINE_CACHE.clear();
+            }
+            cached = new Object[]{Text.literal(line), 12 + mc.textRenderer.getWidth(line)};
+            LINE_CACHE.put(line, cached);
+        }
+        int w = (Integer) cached[1];
         UiDraw.roundRect(context, x, y, w, 14, 5, 0x9912101A);
         context.fill(x + 3, y + 3, x + 5, y + 11, cfg.panelAccent | 0xFF000000);
-        context.drawText(mc.textRenderer, Text.literal(line), x + 8, y + 3, TEXT, shadow);
+        context.drawText(mc.textRenderer, (Text) cached[0], x + 8, y + 3, TEXT, shadow);
     }
 
     private static String sprintText(MinecraftClient mc, ClientConfig cfg) {

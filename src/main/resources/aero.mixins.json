@@ -41,7 +41,8 @@
     "CreativeInventoryScaleMixin",
     "TitleScreenMixin",
     "PlayerListHudMixin",
-    "EntityStatusMixin"
+    "EntityStatusMixin",
+    "ToastManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 0

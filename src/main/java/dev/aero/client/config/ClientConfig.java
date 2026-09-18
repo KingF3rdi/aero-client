@@ -44,6 +44,9 @@ public class ClientConfig {
     public boolean noHurtcam = false;
     public boolean lowFire = false;
     public boolean noVignette = false;
+    public boolean uiBoost = true;
+    public boolean uiBoostOverlays = true;
+    public boolean uiBoostToasts = true;
     public boolean hideScoreboard = false;
     public boolean cleanWater = false;
 

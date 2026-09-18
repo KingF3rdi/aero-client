@@ -39,8 +39,9 @@ public class ClickGuiScreenLegacy extends Screen {
 
     private static final int TOP = 36;
     private static final int ROW_H = 32;
-    private static final int NAV_H = 20;
-    private static final int NAV_STEP = 22;
+    private boolean compactH;
+    private int navH = 20;
+    private int navStep = 22;
     private int SIDE_W = 168;
     private int RIGHT_W = 248;
 
@@ -76,6 +77,28 @@ public class ClickGuiScreenLegacy extends Screen {
     private int oy;
     private int pw;
     private int ph;
+
+    public void debugSelect(int i) {
+        rebuild();
+        selected = i < visible.size() ? visible.get(i) : null;
+    }
+
+    public void debugSelectByName(String name) {
+        topTab = 0;
+        filter = null;
+        boundKeysOnly = false;
+        rebuild();
+        for (Module m : visible) {
+            if (m.name.equals(name)) {
+                selected = m;
+            }
+        }
+    }
+
+    public void debugTab(int top, int cos) {
+        topTab = top;
+        wardrobe.debugTab(cos);
+    }
 
     private int settingsScroll;
     private int settingsContentH;
@@ -126,6 +149,16 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         ox = Math.max(0, (width - pw) / 2);
         oy = Math.max(0, (height - ph) / 2);
+        compactH = ph < 250;
+        int cats = (int) java.util.Arrays.stream(Category.values()).filter(Category::inSidebar).count();
+        int rows = (compactH ? 1 : 2) + (int) cats;
+        int avail = ph - 114;
+        navStep = Math.max(13, Math.min(22, avail / rows));
+        navH = navStep - 2;
+        if (pw < 470) {
+            SIDE_W = compactH ? 96 : Math.max(70, pw * 20 / 100);
+            RIGHT_W = Math.max(128, pw * (compactH ? 38 : 42) / 100);
+        }
     }
 
     private boolean inMenu(Module module) {
@@ -316,15 +349,16 @@ public class ClickGuiScreenLegacy extends Screen {
         UiDraw.roundRect(context, x0 + 6, y0 + 5, pw - 12, TOP - 8, 12, BAR);
         context.fill(x0 + 14, y0 + TOP - 1, x1 - 14, y0 + TOP, 0x22FFFFFF);
 
-        UiDraw.roundRect(context, x0 + 12, y0 + 8, 18, 18, 6, ACCENT);
-        context.drawText(textRenderer, Text.literal("L"), x0 + 17, y0 + 13, 0xFF1A1024, false);
-        context.drawText(textRenderer, Text.literal("Aero"), x0 + 34, y0 + 10, TEXT, false);
-        context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 34, y0 + 20, MUTED, false);
+        UiDraw.aeroMark(context, x0 + 12, y0 + 8, 18, ACCENT);
+        if (!compactTop()) {
+            context.drawText(textRenderer, Text.literal("Aero"), x0 + 34, y0 + 10, TEXT, false);
+            context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 34, y0 + 20, MUTED, false);
+        }
 
-        int tabX = x0 + 86;
-        tabPill(context, tabX, y0 + 8, 64, topTab == 0, inside(mx, my, tabX, y0 + 8, 64, 20), "Client");
-        tabPill(context, tabX + 68, y0 + 8, 76, topTab == 1, inside(mx, my, tabX + 68, y0 + 8, 76, 20), "Wardrobe");
-        tabPill(context, tabX + 148, y0 + 8, 64, topTab == 2, inside(mx, my, tabX + 148, y0 + 8, 64, 20), "Friends");
+        int tabX = topTabX();
+        tabPill(context, tabX, y0 + 8, tabW(0), topTab == 0, inside(mx, my, tabX, y0 + 8, tabW(0), 20), "Client");
+        tabPill(context, tabX + tabW(0) + 4, y0 + 8, tabW(1), topTab == 1, inside(mx, my, tabX + tabW(0) + 4, y0 + 8, tabW(1), 20), "Wardrobe");
+        tabPill(context, tabX + tabW(0) + tabW(1) + 8, y0 + 8, tabW(2), topTab == 2, inside(mx, my, tabX + tabW(0) + tabW(1) + 8, y0 + 8, tabW(2), 20), "Friends");
 
         int closeX = x1 - 28;
         boolean closeH = inside(mx, my, closeX, y0 + 9, 16, 16);
@@ -339,13 +373,32 @@ public class ClickGuiScreenLegacy extends Screen {
                 profilesX + (PROFILES_W - textRenderer.getWidth(profilesLabel)) / 2, y0 + 14,
                 profilesH ? TEXT : MUTED, false);
 
-        String name = fit(AccountManager.currentName(), 90);
-        int nw = textRenderer.getWidth(name);
-        int chipW = nw + 26;
-        int nameX = profilesX - 10 - chipW;
-        UiDraw.pill(context, nameX, y0 + 8, chipW, 20, false);
-        UiDraw.roundRect(context, nameX + 4, y0 + 12, 12, 12, 6, 0xFFC8A0E8);
-        context.drawText(textRenderer, Text.literal(name), nameX + 20, y0 + 14, TEXT, false);
+        int tabsEnd = tabX + tabW(0) + tabW(1) + tabW(2) + 8;
+        int room = profilesX - 10 - (tabsEnd + 8);
+        if (room >= 60) {
+            String name = fit(AccountManager.currentName(), Math.min(90, room - 26));
+            int nw = textRenderer.getWidth(name);
+            int chipW = nw + 26;
+            int nameX = profilesX - 10 - chipW;
+            UiDraw.pill(context, nameX, y0 + 8, chipW, 20, false);
+            UiDraw.roundRect(context, nameX + 4, y0 + 12, 12, 12, 6, 0xFFC8A0E8);
+            context.drawText(textRenderer, Text.literal(name), nameX + 20, y0 + 14, TEXT, false);
+        }
+    }
+
+    private boolean compactTop() {
+        return pw < 470;
+    }
+
+    private int topTabX() {
+        return ox + (compactTop() ? 38 : 86);
+    }
+
+    private int tabW(int i) {
+        if (compactTop()) {
+            return i == 1 ? 56 : 46;
+        }
+        return i == 1 ? 76 : 64;
     }
 
     private static final int PROFILES_W = 58;
@@ -374,23 +427,36 @@ public class ClickGuiScreenLegacy extends Screen {
 
         sy += 30;
         nav(context, mx, my, sy, null, "All", AeroClient.MODULES.menuCount(), !boundKeysOnly && filter == null);
-        sy += NAV_STEP;
+        sy += navStep;
         for (Category category : Category.values()) {
             if (!category.inSidebar()) {
                 continue;
             }
             nav(context, mx, my, sy, category, category.title, AeroClient.MODULES.count(category),
                     !boundKeysOnly && filter == category);
-            sy += NAV_STEP;
+            sy += navStep;
+        }
+        if (compactH) {
+            int by = y1 - 30;
+            int half = (SIDE_W - 24) / 2;
+            boolean kH = inside(mx, my, x0 + 8, by, half, 22);
+            UiDraw.pill(context, x0 + 8, by, half, 22, boundKeysOnly || kH);
+            context.drawText(textRenderer, Text.literal("Keys"), x0 + 8 + (half - textRenderer.getWidth("Keys")) / 2, by + 7,
+                    boundKeysOnly || kH ? TEXT : MUTED, false);
+            boolean hH = inside(mx, my, x0 + 12 + half, by, half, 22);
+            UiDraw.pill(context, x0 + 12 + half, by, half, 22, hH);
+            context.drawText(textRenderer, Text.literal("HUD"), x0 + 12 + half + (half - textRenderer.getWidth("HUD")) / 2, by + 7,
+                    hH ? TEXT : MUTED, false);
+            return;
         }
         sy += 4;
         UiDraw.divider(context, x0 + 14, sy - 3, SIDE_W - 28);
-        boolean boundH = inside(mx, my, x0 + 8, sy, SIDE_W - 16, NAV_H);
+        boolean boundH = inside(mx, my, x0 + 8, sy, SIDE_W - 16, navH);
         if (boundKeysOnly) {
-            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, NAV_H, 8, PILL_ON);
-            UiDraw.roundRect(context, x0 + 8, sy + 4, 3, NAV_H - 8, 1, ACCENT);
+            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, navH, 8, PILL_ON);
+            UiDraw.roundRect(context, x0 + 8, sy + 4, 3, navH - 8, 1, ACCENT);
         } else if (boundH) {
-            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, NAV_H, 8, 0x8014121C);
+            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, navH, 8, 0x8014121C);
         }
         context.drawText(textRenderer, Text.literal("Bound keys"), x0 + 18, sy + 6,
                 boundKeysOnly ? TEXT : MUTED, false);
@@ -404,16 +470,18 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private void nav(DrawContext context, int mx, int my, int y, Category category, String name, int count, boolean on) {
-        boolean h = inside(mx, my, ox + 8, y, SIDE_W - 16, NAV_H);
+        boolean h = inside(mx, my, ox + 8, y, SIDE_W - 16, navH);
         if (on) {
-            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, NAV_H, 8, PILL_ON);
-            UiDraw.roundRect(context, ox + 8, y + 4, 3, NAV_H - 8, 1, ACCENT);
+            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, navH, 8, PILL_ON);
+            UiDraw.roundRect(context, ox + 8, y + 4, 3, navH - 8, 1, ACCENT);
         } else if (h) {
-            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, NAV_H, 8, 0x8014121C);
+            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, navH, 8, 0x8014121C);
         }
-        context.drawText(textRenderer, Text.literal(name), ox + 18, y + 6, on ? TEXT : MUTED, false);
+        context.drawText(textRenderer, Text.literal(name), ox + 18, y + (navH - 8) / 2 + 1, on ? TEXT : MUTED, false);
         String n = String.valueOf(count);
-        context.drawText(textRenderer, Text.literal(n), ox + SIDE_W - 16 - textRenderer.getWidth(n), y + 6, MUTED, false);
+        if (18 + textRenderer.getWidth(name) + textRenderer.getWidth(n) + 10 < SIDE_W - 16) {
+            context.drawText(textRenderer, Text.literal(n), ox + SIDE_W - 16 - textRenderer.getWidth(n), y + (navH - 8) / 2 + 1, MUTED, false);
+        }
     }
 
     private void drawList(DrawContext context, int mx, int my) {
@@ -513,17 +581,22 @@ public class ClickGuiScreenLegacy extends Screen {
         String keyName = capturingKeybind == selected ? "Press a key..."
                 : style.toggleKey < 0 ? "None" : org.lwjgl.glfw.GLFW.glfwGetKeyName(style.toggleKey, 0) != null
                 ? org.lwjgl.glfw.GLFW.glfwGetKeyName(style.toggleKey, 0).toUpperCase(java.util.Locale.ROOT) : "Key " + style.toggleKey;
-        UiDraw.pill(context, x + RIGHT_W - 92, y - 3, 78, 20, capturingKeybind == selected);
+        int kpw = pillW(keyLabel);
+        int kpx = x + RIGHT_W - 14 - kpw;
+        UiDraw.pill(context, kpx, y - 3, kpw, 20, capturingKeybind == selected);
+        keyName = fit(keyName, kpw - 8);
         int kw = textRenderer.getWidth(keyName);
-        context.drawText(textRenderer, Text.literal(keyName), x + RIGHT_W - 92 + (78 - kw) / 2, y + 3, TEXT, false);
+        context.drawText(textRenderer, Text.literal(keyName), kpx + (kpw - kw) / 2, y + 3, TEXT, false);
         y += 28;
 
         if ("Emotes".equals(selected.name)) {
             context.drawText(textRenderer, Text.literal("Edit pose"), x + 14, y + 4, TEXT, false);
-            boolean poseH = inside(mx, my, x + RIGHT_W - 92, y - 3, 78, 20);
-            UiDraw.pill(context, x + RIGHT_W - 92, y - 3, 78, 20, poseH);
+            int ppw = pillW("Edit pose");
+            int ppx = x + RIGHT_W - 14 - ppw;
+            boolean poseH = inside(mx, my, ppx, y - 3, ppw, 20);
+            UiDraw.pill(context, ppx, y - 3, ppw, 20, poseH);
             int ow = textRenderer.getWidth("Open");
-            context.drawText(textRenderer, Text.literal("Open"), x + RIGHT_W - 92 + (78 - ow) / 2, y + 3, TEXT, false);
+            context.drawText(textRenderer, Text.literal("Open"), ppx + (ppw - ow) / 2, y + 3, TEXT, false);
             y += 28;
         }
 
@@ -593,8 +666,10 @@ public class ClickGuiScreenLegacy extends Screen {
                 context.drawText(textRenderer, Text.literal(setting.name), tx, y + 4, TEXT, false);
                 int rgb = setting.intGet.get() & 0xFFFFFF;
                 String hex = colorFocus == setting ? colorDraft : String.format("#%06X", rgb);
-                context.drawText(textRenderer, Text.literal(hex),
-                        x + RIGHT_W - 44 - textRenderer.getWidth(hex), y + 4, colorFocus == setting ? TEXT : MUTED, false);
+                if (tx - x + textRenderer.getWidth(setting.name) + textRenderer.getWidth(hex) + 52 < RIGHT_W) {
+                    context.drawText(textRenderer, Text.literal(hex),
+                            x + RIGHT_W - 44 - textRenderer.getWidth(hex), y + 4, colorFocus == setting ? TEXT : MUTED, false);
+                }
                 UiDraw.raised(context, x + RIGHT_W - 36, y, 18, 12, 0xFF000000 | rgb);
                 y += 22;
             } else if (setting.kind == Module.Setting.Kind.ACTION) {
@@ -623,6 +698,10 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         settingsContentH = y - contentStart + 12;
         UiDraw.scrollbar(context, ox + pw - 8, viewTop, viewBottom - viewTop, settingsScroll, settingsContentH, viewBottom - viewTop);
+    }
+
+    private int pillW(String label) {
+        return Math.max(40, Math.min(78, RIGHT_W - 28 - textRenderer.getWidth(label) - 6));
     }
 
     private int settingsStartY() {
@@ -1006,15 +1085,16 @@ public class ClickGuiScreenLegacy extends Screen {
             MinecraftClient.getInstance().setScreen(new ProfilesScreen(this));
             return true;
         }
-        if (inside(mx, my, ox + 86, oy + 8, 64, 20)) {
+        int tx = topTabX();
+        if (inside(mx, my, tx, oy + 8, tabW(0), 20)) {
             topTab = 0;
             return true;
         }
-        if (inside(mx, my, ox + 154, oy + 8, 76, 20)) {
+        if (inside(mx, my, tx + tabW(0) + 4, oy + 8, tabW(1), 20)) {
             topTab = 1;
             return true;
         }
-        if (inside(mx, my, ox + 234, oy + 8, 64, 20)) {
+        if (inside(mx, my, tx + tabW(0) + tabW(1) + 8, oy + 8, tabW(2), 20)) {
             topTab = 2;
             return true;
         }
@@ -1065,33 +1145,46 @@ public class ClickGuiScreenLegacy extends Screen {
     private boolean clickClient(int mx, int my) {
         searchFocus = inside(mx, my, ox + 10, oy + TOP + 10, SIDE_W - 20, 20);
 
-        if (inside(mx, my, ox + 10, oy + ph - 34, SIDE_W - 20, 22)) {
+        if (compactH) {
+            int half = (SIDE_W - 24) / 2;
+            int by = oy + ph - 30;
+            if (inside(mx, my, ox + 12 + half, by, half, 22)) {
+                MinecraftClient.getInstance().setScreen(new HudLayoutScreen(this));
+                return true;
+            }
+            if (inside(mx, my, ox + 8, by, half, 22)) {
+                boundKeysOnly = !boundKeysOnly;
+                filter = null;
+                rebuild();
+                return true;
+            }
+        } else if (inside(mx, my, ox + 10, oy + ph - 34, SIDE_W - 20, 22)) {
             MinecraftClient.getInstance().setScreen(new HudLayoutScreen(this));
             return true;
         }
 
         int sy = oy + TOP + 40;
-        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, NAV_H)) {
+        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, navH)) {
             filter = null;
             boundKeysOnly = false;
             rebuild();
             return true;
         }
-        sy += NAV_STEP;
+        sy += navStep;
         for (Category category : Category.values()) {
             if (!category.inSidebar()) {
                 continue;
             }
-            if (inside(mx, my, ox + 8, sy, SIDE_W - 16, NAV_H)) {
+            if (inside(mx, my, ox + 8, sy, SIDE_W - 16, navH)) {
                 filter = category;
                 boundKeysOnly = false;
                 rebuild();
                 return true;
             }
-            sy += NAV_STEP;
+            sy += navStep;
         }
         sy += 4;
-        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, NAV_H)) {
+        if (!compactH && inside(mx, my, ox + 8, sy, SIDE_W - 16, navH)) {
             boundKeysOnly = true;
             filter = null;
             rebuild();
@@ -1190,7 +1283,8 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         int y = settingsStartY() - settingsScroll;
         Module.ModuleStyle style = selected.style();
-        if (inside(mx, my, x + RIGHT_W - 92, y - 3, 78, 20)) {
+        String clickKeyLabel = "Emotes".equals(selected.name) ? "Hold Key" : "Toggle Key";
+        if (inside(mx, my, x + RIGHT_W - 14 - pillW(clickKeyLabel), y - 3, pillW(clickKeyLabel), 20)) {
             capturingKeybind = selected;
             focusedTextSetting = null;
             accentFocus = false;
@@ -1198,7 +1292,7 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         y += 28;
         if ("Emotes".equals(selected.name)) {
-            if (inside(mx, my, x + RIGHT_W - 92, y - 3, 78, 20)) {
+            if (inside(mx, my, x + RIGHT_W - 14 - pillW("Edit pose"), y - 3, pillW("Edit pose"), 20)) {
                 topTab = 1;
                 cosTab = 7;
                 return true;

@@ -45,9 +45,13 @@ public class InGameHudMixin {
         }
     }
 
+    private static boolean aero$boostOverlays() {
+        return AeroClient.CONFIG != null && AeroClient.CONFIG.uiBoost && AeroClient.CONFIG.uiBoostOverlays;
+    }
+
     @Inject(method = "renderVignetteOverlay", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$noVignette(CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.noVignette) {
+        if (AeroClient.CONFIG != null && (AeroClient.CONFIG.noVignette || aero$boostOverlays())) {
             ci.cancel();
         }
     }
@@ -67,7 +71,7 @@ public class InGameHudMixin {
         if (AeroClient.CONFIG.cleanWater && (path.contains("underwater") || path.contains("water"))) {
             ci.cancel();
         }
-        if (AeroClient.CONFIG.guiTweaks && (path.contains("pumpkin") || path.contains("spyglass")
+        if ((AeroClient.CONFIG.guiTweaks || aero$boostOverlays()) && (path.contains("pumpkin") || path.contains("spyglass")
                 || path.contains("powder_snow") || path.contains("portal"))) {
             ci.cancel();
         }
@@ -84,21 +88,21 @@ public class InGameHudMixin {
 
     @Inject(method = "renderPortalOverlay", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$guiPortal(CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.guiTweaks) {
+        if (AeroClient.CONFIG != null && (AeroClient.CONFIG.guiTweaks || aero$boostOverlays())) {
             ci.cancel();
         }
     }
 
     @Inject(method = "renderNauseaOverlay", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$guiNausea(CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.guiTweaks) {
+        if (AeroClient.CONFIG != null && (AeroClient.CONFIG.guiTweaks || aero$boostOverlays())) {
             ci.cancel();
         }
     }
 
     @Inject(method = "renderSpyglassOverlay", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$guiSpy(CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.guiTweaks) {
+        if (AeroClient.CONFIG != null && (AeroClient.CONFIG.guiTweaks || aero$boostOverlays())) {
             ci.cancel();
         }
     }

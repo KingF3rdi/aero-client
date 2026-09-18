@@ -14,6 +14,10 @@ public final class Modules {
 
         add(new Module("FPS Boost", "Master switch for extra FPS cuts", Category.PERFORMANCE,
                 () -> c.fpsBoost, v -> c.fpsBoost = v));
+        add(new Module("UI Boost", "Cheaper in-game UI: skips vignette/portal/nausea/pumpkin overlays and toasts", Category.PERFORMANCE,
+                () -> c.uiBoost, v -> c.uiBoost = v)
+                .setting("Skip screen overlays", () -> c.uiBoostOverlays, v -> c.uiBoostOverlays = v)
+                .setting("Skip toasts", () -> c.uiBoostToasts, v -> c.uiBoostToasts = v));
         add(new Module("Particle Limit", "Caps world particles for more FPS", Category.PERFORMANCE,
                 () -> c.particleLimiter, v -> c.particleLimiter = v)
                 .setting("Max", () -> c.maxParticles, v -> c.maxParticles = v, 10, 400));

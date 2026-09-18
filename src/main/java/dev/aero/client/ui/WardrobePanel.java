@@ -33,11 +33,16 @@ public final class WardrobePanel {
     private boolean dragging;
 
     // layout, recomputed by layout()
-    private int lx, lw, cx, cw, rx, rw, top, height;
+    private int lx, lw, cx, cw, rx, rw, top, height, step = 21;
+
+    private int headerH() {
+        return height < 200 ? 32 : 42;
+    }
 
     private void layout(int x, int y, int w, int h) {
         top = y + PAD;
         height = h - PAD * 2;
+        step = Math.max(12, Math.min(21, (height - headerH() - 6) / 10));
         lx = x + PAD;
         lw = Math.min(150, w * 21 / 100);
         rw = Math.min(310, w * 38 / 100);
@@ -48,6 +53,10 @@ public final class WardrobePanel {
 
     private static boolean in(int mx, int my, int x, int y, int w, int h) {
         return mx >= x && mx < x + w && my >= y && my < y + h;
+    }
+
+    public void debugTab(int t) {
+        tab = t;
     }
 
     private Cosmetics.Kind kind() {
@@ -102,31 +111,32 @@ public final class WardrobePanel {
         SkinPreview.requestOwn();
         String key = ownSkinKey();
         int hx = lx + 8;
-        int hy = top + 8;
+        int hy = top + 5;
+        int hs = height < 200 ? 20 : 24;
         if (SkinPreview.ready(key)) {
-            SkinPreview.drawHead(ctx, key, hx, hy, 24);
+            SkinPreview.drawHead(ctx, key, hx, hy, hs);
         } else {
-            UiDraw.roundRect(ctx, hx, hy, 24, 24, 6, 0xFFC8A0E8);
+            UiDraw.roundRect(ctx, hx, hy, hs, hs, 6, 0xFFC8A0E8);
         }
         String name = AccountManager.currentName();
-        ctx.drawText(tr, Text.literal(fit(tr, name, lw - 44)), hx + 30, hy + 3, TEXT, false);
-        ctx.drawText(tr, Text.literal("Profile"), hx + 30, hy + 14, MUTED, false);
+        ctx.drawText(tr, Text.literal(fit(tr, name, lw - 44)), hx + hs + 6, hy + 2, TEXT, false);
+        ctx.drawText(tr, Text.literal("Profile"), hx + hs + 6, hy + 12, MUTED, false);
 
-        int y = top + 42;
+        int y = top + headerH();
         for (int i = 0; i < TAB_ORDER.length; i++) {
             if (i == 8) {
                 ctx.fill(lx + 12, y + 1, lx + lw - 12, y + 2, 0x22FFFFFF);
                 y += 5;
             }
             boolean on = tab == TAB_ORDER[i];
-            boolean hover = in(mx, my, lx + 6, y, lw - 12, 19);
+            boolean hover = in(mx, my, lx + 6, y, lw - 12, step - 2);
             if (on) {
-                UiDraw.pill(ctx, lx + 6, y, lw - 12, 19, true);
+                UiDraw.pill(ctx, lx + 6, y, lw - 12, step - 2, true);
             } else if (hover) {
-                UiDraw.roundRect(ctx, lx + 6, y, lw - 12, 19, 9, 0x14FFFFFF);
+                UiDraw.roundRect(ctx, lx + 6, y, lw - 12, step - 2, (step - 2) / 2, 0x14FFFFFF);
             }
-            ctx.drawText(tr, Text.literal(TAB_NAMES[TAB_ORDER[i]]), lx + 14, y + 6, on || hover ? TEXT : MUTED, false);
-            y += 21;
+            ctx.drawText(tr, Text.literal(TAB_NAMES[TAB_ORDER[i]]), lx + 14, y + (step - 2 - 8) / 2 + 1, on || hover ? TEXT : MUTED, false);
+            y += step;
         }
     }
 
@@ -305,18 +315,18 @@ public final class WardrobePanel {
         Cosmetics.Kind kind = kind();
         searchFocus = false;
 
-        int ty = top + 42;
+        int ty = top + headerH();
         for (int i = 0; i < TAB_ORDER.length; i++) {
             if (i == 8) {
                 ty += 5;
             }
-            if (in(mx, my, lx + 6, ty, lw - 12, 19)) {
+            if (in(mx, my, lx + 6, ty, lw - 12, step - 2)) {
                 tab = TAB_ORDER[i];
                 scroll = 0;
                 search = "";
                 return true;
             }
-            ty += 21;
+            ty += step;
         }
 
         int py1 = previewTop();
