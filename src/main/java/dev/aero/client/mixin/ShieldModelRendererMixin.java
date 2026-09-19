@@ -25,6 +25,10 @@ public class ShieldModelRendererMixin {
             return;
         }
         System.out.println("[SPIKE] drawing " + style);
+        matrices.push();
+        queue.submitCustom(matrices, RenderLayers.entityCutoutNoCull(dev.aero.client.cosmetic.CubeDraw.WHITE),
+                (e, vc) -> dev.aero.client.cosmetic.CubeDraw.cube(e, vc, 0.08f, 0.08f, 0.08f, 0xFFFF2020, 0xF000F0));
+        matrices.pop();
         boolean spiked = style.equals("spiked");
         int metal = 0xFFB4BCC8;
         matrices.push();
