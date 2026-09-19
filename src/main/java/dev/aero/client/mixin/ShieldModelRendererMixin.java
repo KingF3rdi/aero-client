@@ -13,42 +13,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = ShieldModelRenderer.class, priority = 2000)
 public class ShieldModelRendererMixin {
-    /** Spiked/Studded shield cosmetics: a handful of metal cubes on the plate (a few dozen quads, no extra model). */
-    @Inject(method = "render(Lnet/minecraft/component/ComponentMap;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;IIZI)V",
-            at = @At("RETURN"), require = 0)
-    private void aero$spikes(net.minecraft.component.ComponentMap components, net.minecraft.item.ItemDisplayContext ctx,
-                             net.minecraft.client.util.math.MatrixStack matrices,
-                             net.minecraft.client.render.command.OrderedRenderCommandQueue queue,
-                             int light, int overlay, boolean glint, int color, CallbackInfo ci) {
-        String style = Visuals.shieldSpikeStyle();
-        if (style == null) {
-            return;
-        }
-        System.out.println("[SPIKE] drawing " + style);
-        matrices.push();
-        queue.submitCustom(matrices, RenderLayers.entityCutoutNoCull(dev.aero.client.cosmetic.CubeDraw.WHITE),
-                (e, vc) -> dev.aero.client.cosmetic.CubeDraw.cube(e, vc, 0.08f, 0.08f, 0.08f, 0xFFFF2020, 0xF000F0));
-        matrices.pop();
-        boolean spiked = style.equals("spiked");
-        int metal = 0xFFB4BCC8;
-        matrices.push();
-        matrices.scale(1f, -1f, -1f);
-        var layer = RenderLayers.entityCutoutNoCull(dev.aero.client.cosmetic.CubeDraw.WHITE);
-        float[][] pts = spiked
-                ? new float[][]{{0f, 0f, 0.09f}, {-0.2f, 0.42f, 0.06f}, {0.2f, 0.42f, 0.06f}, {-0.2f, -0.42f, 0.06f}, {0.2f, -0.42f, 0.06f}, {-0.2f, 0f, 0.05f}, {0.2f, 0f, 0.05f}}
-                : new float[][]{{-0.22f, 0.45f, 0.02f}, {0.22f, 0.45f, 0.02f}, {-0.22f, -0.45f, 0.02f}, {0.22f, -0.45f, 0.02f}, {0f, 0f, 0.03f}};
-        for (float[] p : pts) {
-            float len = spiked ? p[2] : 0.03f;
-            float half = spiked ? 0.035f : 0.05f;
-            matrices.push();
-            matrices.translate(p[0], p[1], 0.16f + len * 0.5f);
-            queue.submitCustom(matrices, layer, (e, vc) ->
-                    dev.aero.client.cosmetic.CubeDraw.cube(e, vc, half, half, len * 0.5f + 0.02f, metal, light));
-            matrices.pop();
-        }
-        matrices.pop();
-    }
-
     @ModifyArg(
             method = "render(Lnet/minecraft/component/ComponentMap;Lnet/minecraft/item/ItemDisplayContext;Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/command/OrderedRenderCommandQueue;IIZI)V",
             at = @At(
