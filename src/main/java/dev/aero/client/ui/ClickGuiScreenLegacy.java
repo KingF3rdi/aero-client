@@ -540,7 +540,7 @@ public class ClickGuiScreenLegacy extends Screen {
                 boolean sel = module == selected;
                 int rowBottom = y + ROW_H - 4;
                 if (sel) {
-                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x444F8EFF);
+                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, UiDraw.withAlpha(UiDraw.accent(), 0x44));
                     UiDraw.roundRect(context, x + 6, y + 6, 3, rowBottom - y - 12, 1, UiDraw.accent());
                 } else if (h) {
                     UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x28FFFFFF);
@@ -850,7 +850,7 @@ public class ClickGuiScreenLegacy extends Screen {
                 boolean sel = friendSel == i;
                 SkinPreview.requestLookup(n);
                 if (sel) {
-                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x444F8EFF);
+                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, UiDraw.withAlpha(UiDraw.accent(), 0x44));
                     UiDraw.roundRect(context, lx - 2, y + 6, 3, ROW_H - 16, 1, UiDraw.accent());
                 } else if (inside(mx, my, lx - 2, y, lw + 4, ROW_H - 4)) {
                     UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x28FFFFFF);

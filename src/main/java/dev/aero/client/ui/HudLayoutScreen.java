@@ -81,7 +81,7 @@ public class HudLayoutScreen extends Screen {
             int dotColor = e.on().getAsBoolean() ? UiDraw.accent() : MUTED;
             boolean hover = inside(mouseX, mouseY, x, y, w, 16) || dragging == e;
             UiDraw.roundRect(context, x, y, w, 16, 6, hover ? 0xE0282436 : 0xC014121C);
-            UiDraw.roundBorder(context, x, y, w, 16, 6, hover ? 0x664F8EFF : 0x22FFFFFF);
+            UiDraw.roundBorder(context, x, y, w, 16, 6, hover ? UiDraw.withAlpha(UiDraw.accent(), 0x66) : 0x22FFFFFF);
             context.fill(x + 4, y + 4, x + 7, y + 12, dotColor);
             context.drawText(textRenderer, Text.literal(e.label()), x + 12, y + 4, TEXT, false);
         }

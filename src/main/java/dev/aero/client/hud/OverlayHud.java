@@ -20,7 +20,6 @@ import java.util.Comparator;
 import java.util.List;
 
 public final class OverlayHud {
-    private static final int ACCENT = 0xFF4F8EFF;
     private static final int TEXT = 0xFFF4F1FA;
     private static final int MUTED = 0xFFB8B0C8;
 
@@ -164,12 +163,12 @@ public final class OverlayHud {
                 int w = NAME_WIDTH.computeIfAbsent(module.name, n -> mc.textRenderer.getWidth(n));
                 int x = sw - w - 14;
                 if (lite) {
-                    context.fill(sw - 8, y + 2, sw - 6, y + 11, ACCENT);
+                    context.fill(sw - 8, y + 2, sw - 6, y + 11, UiDraw.accent());
                     context.drawText(mc.textRenderer, Text.literal(module.name), x, y + 2, TEXT, false);
                     y += 11;
                 } else {
                     context.fill(x - 6, y, sw - 6, y + 13, 0xD214121C);
-                    context.fill(sw - 8, y + 1, sw - 6, y + 12, ACCENT);
+                    context.fill(sw - 8, y + 1, sw - 6, y + 12, UiDraw.accent());
                     context.drawText(mc.textRenderer, Text.literal(module.name), x, y + 3, TEXT, true);
                     y += 14;
                 }
@@ -200,7 +199,7 @@ public final class OverlayHud {
                                     net.minecraft.util.Identifier.of(id.getNamespace(), "mob_effect/" + id.getPath()),
                                     cfg.potionX, y - 1, 16, 16);
                         } catch (Throwable t) {
-                            int col = 0xFF4F8EFF;
+                            int col = UiDraw.accent();
                             try {
                                 col = 0xFF000000 | (effect.getEffectType().value().getColor() & 0xFFFFFF);
                             } catch (Throwable ignored) {
@@ -373,13 +372,13 @@ public final class OverlayHud {
         if (cfg.crosshairAddons) {
             int marker = Math.max(arm, 6) + gap;
             if (cfg.addonElytra && flying(mc)) {
-                context.fill(cx - 2, cy + marker + 2, cx + 3, cy + marker + 4, ACCENT);
+                context.fill(cx - 2, cy + marker + 2, cx + 3, cy + marker + 4, UiDraw.accent());
             }
             if (cfg.addonShield && shieldIndicatorReady(mc, cfg)) {
-                context.fill(cx - marker - 4, cy - 1, cx - marker - 2, cy + 2, ACCENT);
+                context.fill(cx - marker - 4, cy - 1, cx - marker - 2, cy + 2, UiDraw.accent());
             }
             if (cfg.addonEntity && matchesEntityAddon(mc, cfg)) {
-                context.fill(cx - 1, cy - marker - 5, cx + 2, cy - marker - 2, ACCENT);
+                context.fill(cx - 1, cy - marker - 5, cx + 2, cy - marker - 2, UiDraw.accent());
             }
             if (cfg.addonShieldBreak && HudStats.shieldBreakActive(
                     Math.max(1, cfg.addonShieldBreakDuration) * 50L, cfg.addonShieldBreakStopOnAnimEnd)) {
@@ -587,7 +586,7 @@ public final class OverlayHud {
         int x = sw / 2 - w / 2;
         int y = sh / 2 - h / 2;
         context.fill(x, y, x + w, y + h, 0xE014121C);
-        context.fill(x, y, x + w, y + 1, ACCENT);
+        context.fill(x, y, x + w, y + 1, UiDraw.accent());
         for (int i = 0; i < presets.length; i++) {
             String line = (i + 1) + "  " + presets[i];
             context.drawText(mc.textRenderer, Text.literal(line), x + 8, y + 6 + i * rowH, TEXT, false);
@@ -848,7 +847,7 @@ public final class OverlayHud {
     private static void key(DrawContext context, MinecraftClient mc, int x, int y, String label, boolean down, int size) {
         int w = Math.max(size, mc.textRenderer.getWidth(label) + 8);
         int h = Math.max(14, size);
-        UiDraw.roundRect(context, x, y, w, h, 5, down ? 0xA04F8EFF : 0x6614121C);
+        UiDraw.roundRect(context, x, y, w, h, 5, down ? UiDraw.withAlpha(UiDraw.accent(), 0xA0) : 0x6614121C);
         context.drawText(mc.textRenderer, Text.literal(label), x + 4, y + Math.max(2, h / 2 - 4), down ? 0xFF1A1024 : TEXT, false);
     }
 
@@ -1038,9 +1037,9 @@ public final class OverlayHud {
         }
         if (cfg.watermarkBg && !cfg.fastHud) {
             UiDraw.roundRect(context, wx, wy, w, h, 8, 0xCC14121C);
-            UiDraw.roundBorder(context, wx, wy, w, h, 8, 0x444F8EFF);
+            UiDraw.roundBorder(context, wx, wy, w, h, 8, UiDraw.withAlpha(UiDraw.accent(), 0x44));
         }
-        UiDraw.aeroMark(context, wx + 3, wy + 2, 12, ACCENT);
+        UiDraw.aeroMark(context, wx + 3, wy + 2, 12, UiDraw.accent());
         context.drawText(mc.textRenderer, Text.literal(brand), wx + 18, wy + 4, color, cfg.watermarkShadow);
     }
 

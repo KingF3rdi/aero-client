@@ -248,8 +248,8 @@ public final class UiDraw {
     }
 
     public static void pill(DrawContext c, int x, int y, int w, int h, boolean on) {
-        roundRect(c, x, y, w, h, h / 2, on ? 0x554F8EFF : 0x2814101C);
-        roundBorder(c, x, y, w, h, h / 2, on ? 0x444F8EFF : 0x14FFFFFF);
+        roundRect(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x55) : 0x2814101C);
+        roundBorder(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x44) : 0x14FFFFFF);
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {

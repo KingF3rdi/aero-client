@@ -98,7 +98,7 @@ public final class Modules {
         add(new Module("Interface Color", "Accent color of the Aero Client menus and HUD", Category.RENDER,
                 () -> true, v -> { })
                 .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v)
-                .setting("Style vanilla UI (hotbar, inventories)", () -> c.vanillaUi, v -> c.vanillaUi = v));
+                .setting("Style vanilla UI (hotbar, inventories, buttons)", () -> c.vanillaUi, v -> c.vanillaUi = v));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
                 () -> c.fullbright, v -> c.fullbright = v)
                 .settingF("Brightness", () -> (double) c.brightness, v -> c.brightness = (float) v, 1, 15));

@@ -299,9 +299,9 @@ public final class WardrobePanel {
                 }
                 boolean sel = eq.equals(item.id());
                 boolean hover = in(mx, my, x, y, cwd, ch) && my >= gy && my < gy + gh;
-                UiDraw.roundRect(ctx, x, y, cwd, ch, 12, sel ? 0x664F8EFF : hover ? 0x40FFFFFF : 0x30FFFFFF);
+                UiDraw.roundRect(ctx, x, y, cwd, ch, 12, sel ? UiDraw.withAlpha(UiDraw.accent(), 0x66) : hover ? 0x40FFFFFF : 0x30FFFFFF);
                 if (sel) {
-                    UiDraw.roundBorder(ctx, x, y, cwd, ch, 12, 0xAA4F8EFF);
+                    UiDraw.roundBorder(ctx, x, y, cwd, ch, 12, UiDraw.withAlpha(UiDraw.accent(), 0xAA));
                 }
                 int vi = Cosmetics.variantIndex(kind, item.id());
                 int color = Cosmetics.variantColor(item, vi);

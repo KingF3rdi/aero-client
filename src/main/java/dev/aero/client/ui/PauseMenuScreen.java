@@ -72,7 +72,7 @@ public class PauseMenuScreen extends Screen {
         int cx = vw() / 2;
         String title = "AERO CLIENT";
         int tw = textRenderer.getWidth(title) + 20;
-        UiDraw.aeroMark(context, cx - tw / 2, py + 14, 14, 0xFF4F8EFF);
+        UiDraw.aeroMark(context, cx - tw / 2, py + 14, 14, UiDraw.accent());
         context.drawText(textRenderer, Text.literal(title), cx - tw / 2 + 20, py + 18, TEXT, false);
         context.drawText(textRenderer, Text.literal("Right Shift opens the client menu"),
                 cx - textRenderer.getWidth("Right Shift opens the client menu") / 2, py + 36, MUTED, false);
@@ -96,7 +96,7 @@ public class PauseMenuScreen extends Screen {
             if (h) {
                 hover = i;
             }
-            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? 0x444F8EFF : 0x2214101C);
+            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? UiDraw.withAlpha(UiDraw.accent(), 0x44) : 0x2214101C);
             drawIcon(context, i, ix + 13, iconY + 9, h ? 0xFFFFFFFF : 0xFFD0D0D0);
             String cap = LABELS[i];
             context.drawText(textRenderer, Text.literal(cap),
@@ -105,9 +105,9 @@ public class PauseMenuScreen extends Screen {
     }
 
     private static void drawBolt(DrawContext context, int cx, int cy) {
-        context.fill(cx + 2, cy - 2, cx + 5, cy + 5, 0xFF4F8EFF);
-        context.fill(cx - 3, cy + 4, cx + 5, cy + 6, 0xFF4F8EFF);
-        context.fill(cx - 2, cy + 6, cx + 1, cy + 13, 0xFF4F8EFF);
+        context.fill(cx + 2, cy - 2, cx + 5, cy + 5, UiDraw.accent());
+        context.fill(cx - 3, cy + 4, cx + 5, cy + 6, UiDraw.accent());
+        context.fill(cx - 2, cy + 6, cx + 1, cy + 13, UiDraw.accent());
     }
 
     private static void drawIcon(DrawContext context, int id, int x, int y, int color) {
