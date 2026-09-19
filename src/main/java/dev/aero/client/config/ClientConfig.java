@@ -480,6 +480,10 @@ public class ClientConfig {
     public String rendersHandShader = "None";
     public boolean rendersPlayersGlow = false;
     public boolean rendersEndCrystalsGlow = false;
+    public float crystalGlowStrength = 60f;
+    public int crystalGlowColor = 0xFFFF6BFF;
+    public float popChamsSeconds = 1.4f;
+    public int popChamsColor = 0xFF4F8EFF;
 
     public boolean tierTagger = false;
     public String tierList = "Mctiers";

@@ -750,6 +750,7 @@ public final class Visuals {
         }
         TOTEM_POPS.merge(entity.getUuid(), 1, Integer::sum);
         dev.aero.client.cosmetic.CosmeticEffects.onTotemPop(entity);
+        WorldOverlayRenderer.onPop(entity);
     }
 
     public static void resetTotemPops() {
@@ -815,7 +816,7 @@ public final class Visuals {
         if (c == null || !c.tierTagger || uuid == null) {
             return "";
         }
-        String key = uuid + ":" + gamemode;
+        String key = uuid + ":" + gamemode + ":" + c.tierList;
         String cached = TIER_CACHE.get(key);
         if (cached != null) {
             return cached;
@@ -825,32 +826,46 @@ public final class Visuals {
             String gm = (gamemode == null || gamemode.isBlank() ? "vanilla" : gamemode).toLowerCase(java.util.Locale.ROOT);
             java.util.concurrent.CompletableFuture.runAsync(() -> {
                 String tier = "";
-                try {
-                    var client = java.net.http.HttpClient.newBuilder()
-                            .connectTimeout(java.time.Duration.ofSeconds(3)).build();
-                    var request = java.net.http.HttpRequest.newBuilder()
-                            .uri(java.net.URI.create("https://mctiers.com/api/rankings/" + id))
-                            .timeout(java.time.Duration.ofSeconds(3))
-                            .GET().build();
-                    var response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
-                    if (response.statusCode() == 200) {
-                        String body = response.body();
-                        java.util.regex.Matcher gmBlock = java.util.regex.Pattern
-                                .compile("\"" + java.util.regex.Pattern.quote(gm) + "\"\\s*:\\s*\\{([^}]*)}")
-                                .matcher(body);
-                        if (gmBlock.find()) {
-                            java.util.regex.Matcher tierNum = java.util.regex.Pattern
-                                    .compile("\"tier\"\\s*:\\s*(\\d+)").matcher(gmBlock.group(1));
-                            java.util.regex.Matcher posNum = java.util.regex.Pattern
-                                    .compile("\"pos\"\\s*:\\s*(\\d+)").matcher(gmBlock.group(1));
-                            if (tierNum.find()) {
-                                boolean low = posNum.find() && "1".equals(posNum.group(1));
-                                boolean retired = gmBlock.group(1).contains("\"retired\":true");
-                                tier = (retired ? "R" : "") + (low ? "LT" : "HT") + tierNum.group(1);
+                String list = c.tierList == null ? "Mctiers" : c.tierList;
+                java.util.List<String> urls = new java.util.ArrayList<>();
+                if (!list.equalsIgnoreCase("PvPTiers")) {
+                    urls.add("https://mctiers.com/api/rankings/" + id);
+                }
+                if (!list.equalsIgnoreCase("Mctiers")) {
+                    urls.add("https://pvptiers.com/api/profile/" + id);
+                }
+                var client = java.net.http.HttpClient.newBuilder()
+                        .connectTimeout(java.time.Duration.ofSeconds(3)).build();
+                for (String url : urls) {
+                    try {
+                        var request = java.net.http.HttpRequest.newBuilder()
+                                .uri(java.net.URI.create(url))
+                                .timeout(java.time.Duration.ofSeconds(3))
+                                .header("accept", "application/json")
+                                .GET().build();
+                        var response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+                        if (response.statusCode() == 200) {
+                            String body = response.body();
+                            java.util.regex.Matcher gmBlock = java.util.regex.Pattern
+                                    .compile("\"" + java.util.regex.Pattern.quote(gm) + "\"\\s*:\\s*\\{([^}]*)}")
+                                    .matcher(body);
+                            if (gmBlock.find()) {
+                                java.util.regex.Matcher tierNum = java.util.regex.Pattern
+                                        .compile("\"tier\"\\s*:\\s*(\\d+)").matcher(gmBlock.group(1));
+                                java.util.regex.Matcher posNum = java.util.regex.Pattern
+                                        .compile("\"pos\"\\s*:\\s*(\\d+)").matcher(gmBlock.group(1));
+                                if (tierNum.find()) {
+                                    boolean low = posNum.find() && "1".equals(posNum.group(1));
+                                    boolean retired = gmBlock.group(1).replace(" ", "").contains("\"retired\":true");
+                                    tier = (retired ? "R" : "") + (low ? "LT" : "HT") + tierNum.group(1);
+                                }
                             }
                         }
+                    } catch (Throwable ignored) {
                     }
-                } catch (Throwable ignored) {
+                    if (!tier.isEmpty()) {
+                        break;
+                    }
                 }
                 TIER_CACHE.put(key, tier);
                 TIER_INFLIGHT.remove(key);

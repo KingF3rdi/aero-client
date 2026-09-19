@@ -240,22 +240,25 @@ public final class Modules {
                 .setting("Potion Glint", () -> c.nostalgiaPotionGlint, v -> c.nostalgiaPotionGlint = v)
                 .setting("Old Potions", () -> c.nostalgiaOldPotions, v -> c.nostalgiaOldPotions = v)
                 .setting("Old Walk Animation", () -> c.nostalgiaOldWalk, v -> c.nostalgiaOldWalk = v));
-        add(new Module("Pop Chams", "A ghost where a player pops out of view", Category.RENDER,
+        add(new Module("Pop Chams", "Outline of the player where their totem popped", Category.RENDER,
                 () -> c.popChams, v -> c.popChams = v)
                 .setting("Show Own Pops", () -> c.popChamsShowOwn, v -> c.popChamsShowOwn = v)
+                .settingF("Duration (s)", () -> (double) c.popChamsSeconds, v -> c.popChamsSeconds = (float) v, 0.2, 10)
+                .settingColor("Color", () -> c.popChamsColor, v -> c.popChamsColor = v)
                 .setting("Fade Over Time", () -> c.popChamsFadeOverTime, v -> c.popChamsFadeOverTime = v)
                 .setting("Disperse Enabled", () -> c.popChamsDisperse, v -> c.popChamsDisperse = v)
                 .setting("Filled Model Enabled", () -> c.popChamsFilledModel, v -> c.popChamsFilledModel = v)
                 .setting("Wireframe Enabled", () -> c.popChamsWireframe, v -> c.popChamsWireframe = v));
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.POP_CHAMS);
-        add(new Module("Renders", "Hand shader and glowing players", Category.RENDER,
+        add(new Module("Renders", "Hand shader and glowing end crystals", Category.RENDER,
                 () -> c.renders, v -> c.renders = v)
                 .setting("Hand shader", () -> c.rendersHandShader, v -> c.rendersHandShader = v, "None", "Chrome", "Rainbow")
-                .setting("Players glow", () -> c.rendersPlayersGlow, v -> c.rendersPlayersGlow = v)
-                .setting("End crystals glow", () -> c.rendersEndCrystalsGlow, v -> c.rendersEndCrystalsGlow = v));
+                .setting("End crystal glow", () -> c.rendersEndCrystalsGlow, v -> c.rendersEndCrystalsGlow = v)
+                .settingF("Glow strength", () -> (double) c.crystalGlowStrength, v -> c.crystalGlowStrength = (float) v, 0, 100)
+                .settingColor("Glow color", () -> c.crystalGlowColor, v -> c.crystalGlowColor = v));
         add(new Module("TierTagger", "PvP tiers on nametags", Category.RENDER,
                 () -> c.tierTagger, v -> c.tierTagger = v)
-                .setting("Tier list", () -> c.tierList, v -> c.tierList = v, "Mctiers")
+                .setting("Tier list", () -> c.tierList, v -> c.tierList = v, "Mctiers", "PvPTiers", "Both")
                 .setting("Gamemode", () -> c.tierGamemode, v -> c.tierGamemode = v,
                         "vanilla", "uhc", "pot", "nethop", "smp", "sword", "axe", "mace")
                 .setting("Tier Side", () -> c.tierSide, v -> c.tierSide = v, "Left", "Right")
