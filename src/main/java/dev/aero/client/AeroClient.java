@@ -202,6 +202,9 @@ public class AeroClient implements ClientModInitializer {
         try {
             client.options.getMaxFps().setValue(260);
             client.options.getEnableVsync().setValue(false);
+            // Cheap-to-cut video options that cost frames without changing how the game plays.
+            client.options.getBiomeBlendRadius().setValue(Math.min(client.options.getBiomeBlendRadius().getValue(), 3));
+            client.options.getEntityShadows().setValue(false);
         } catch (Throwable ignored) {
         }
     }

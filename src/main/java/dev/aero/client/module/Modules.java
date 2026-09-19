@@ -18,7 +18,7 @@ public final class Modules {
                 () -> c.uiBoost, v -> c.uiBoost = v)
                 .setting("Skip screen overlays", () -> c.uiBoostOverlays, v -> c.uiBoostOverlays = v)
                 .setting("Skip toasts", () -> c.uiBoostToasts, v -> c.uiBoostToasts = v));
-        add(new Module("Max FPS", "Unlocks the frame cap and turns V-Sync off on every start", Category.PERFORMANCE,
+        add(new Module("Max FPS", "Unlocks the frame cap, turns V-Sync and entity shadows off and lowers biome blend on every start", Category.PERFORMANCE,
                 () -> c.autoMaxFps, v -> c.autoMaxFps = v));
         add(new Module("Particle Limit", "Caps world particles for more FPS", Category.PERFORMANCE,
                 () -> c.particleLimiter, v -> c.particleLimiter = v)
@@ -478,7 +478,13 @@ public final class Modules {
                 .setting("Style", () -> c.totemStyle, v -> c.totemStyle = v, "Boxed", "Plain")
                 .setting("Pops next to name", () -> c.totemPopsOnNametag, v -> c.totemPopsOnNametag = v)
                 .setting("Pop effect", () -> c.totemPopFx, v -> c.totemPopFx = v, "Off", "Burst", "Spiral", "Rings", "Hearts", "Soul")
-                .settingColor("Pop effect color", () -> c.totemPopFxColor, v -> c.totemPopFxColor = v));
+                .settingColor("Pop effect color", () -> c.totemPopFxColor, v -> c.totemPopFxColor = v)
+                .setting("Second color", () -> c.totemPopTwoColors, v -> c.totemPopTwoColors = v)
+                .settingColor("Pop second color", () -> c.totemPopColor2, v -> c.totemPopColor2 = v)
+                .settingF("Effect amount", () -> (double) c.totemPopCount, v -> c.totemPopCount = (float) v, 0.1, 3)
+                .settingF("Effect size", () -> (double) c.totemPopFxSize, v -> c.totemPopFxSize = (float) v, 0.3, 3)
+                .settingF("Effect speed", () -> (double) c.totemPopSpeed, v -> c.totemPopSpeed = (float) v, 0.2, 3)
+                .settingF("Effect lifetime", () -> (double) c.totemPopLife, v -> c.totemPopLife = (float) v, 0.3, 3));
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.TOTEM_COUNTER);
         add(new Module("Item Highlighter", "Outline standard PvP items in hotbar and inv", Category.HUD,
                 () -> c.itemHighlighter, v -> c.itemHighlighter = v)

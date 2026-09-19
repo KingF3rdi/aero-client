@@ -363,6 +363,12 @@ public class ClientConfig {
     public java.util.Map<String, Integer> cosmeticVariant = new java.util.HashMap<>();
     public String totemPopFx = "Burst";
     public int totemPopFxColor = 0xFF4F8EFF;
+    public boolean totemPopTwoColors = false;
+    public int totemPopColor2 = 0xFFFF7BAA;
+    public float totemPopCount = 1f;
+    public float totemPopFxSize = 1f;
+    public float totemPopSpeed = 1f;
+    public float totemPopLife = 1f;
 
     public boolean fpsBoost = false;
     public boolean noShadows = false;

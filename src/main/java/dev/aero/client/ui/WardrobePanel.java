@@ -140,18 +140,29 @@ public final class WardrobePanel {
         }
     }
 
+    private static final int BTN_W = 52;
+    private static final int BTN_H = 14;
+
+    private int btnX(int i) {
+        return cx + cw - 8 - (2 - i) * (BTN_W + 4) + 4;
+    }
+
+    private int btnY() {
+        return top + 6;
+    }
+
+    /** "Others on/off" and "Copy" pills in the top-right corner of the preview card (the left list needs its full height). */
     private void drawLeftButtons(DrawContext ctx, TextRenderer tr, int mx, int my) {
-        int by = top + height - 24;
-        int half = (lw - 20) / 2;
         boolean others = AeroClient.CONFIG == null || AeroClient.CONFIG.showOthersCosmetics;
-        boolean h1 = in(mx, my, lx + 8, by, half, 18);
-        UiDraw.pill(ctx, lx + 8, by, half, 18, others || h1);
-        String t1 = others ? "Others on" : "Others off";
-        ctx.drawText(tr, Text.literal(fit(tr, t1, half - 6)), lx + 8 + (half - tr.getWidth(fit(tr, t1, half - 6))) / 2, by + 5,
-                others ? 0xFF8CFF6B : MUTED, false);
-        boolean h2 = in(mx, my, lx + 12 + half, by, half, 18);
-        UiDraw.pill(ctx, lx + 12 + half, by, half, 18, h2);
-        ctx.drawText(tr, Text.literal("Copy"), lx + 12 + half + (half - tr.getWidth("Copy")) / 2, by + 5, h2 ? TEXT : MUTED, false);
+        String[] labels = {others ? "Others on" : "Others off", "Copy"};
+        for (int i = 0; i < 2; i++) {
+            int bx = btnX(i);
+            boolean h = in(mx, my, bx, btnY(), BTN_W, BTN_H);
+            UiDraw.pill(ctx, bx, btnY(), BTN_W, BTN_H, (i == 0 && others) || h);
+            String t = fit(tr, labels[i], BTN_W - 6);
+            ctx.drawText(tr, Text.literal(t), bx + (BTN_W - tr.getWidth(t)) / 2, btnY() + 3,
+                    i == 0 && others ? 0xFF8CFF6B : h ? TEXT : MUTED, false);
+        }
     }
 
     /** JSON line to paste into the public users list so other Aero Client users see this profile. */
@@ -354,16 +365,14 @@ public final class WardrobePanel {
         Cosmetics.Kind kind = kind();
         searchFocus = false;
 
-        int by = top + height - 24;
-        int halfB = (lw - 20) / 2;
-        if (in(mx, my, lx + 8, by, halfB, 18)) {
+        if (in(mx, my, btnX(0), btnY(), BTN_W, BTN_H)) {
             if (AeroClient.CONFIG != null) {
                 AeroClient.CONFIG.showOthersCosmetics = !AeroClient.CONFIG.showOthersCosmetics;
                 AeroClient.CONFIG.save();
             }
             return true;
         }
-        if (in(mx, my, lx + 12 + halfB, by, halfB, 18)) {
+        if (in(mx, my, btnX(1), btnY(), BTN_W, BTN_H)) {
             MinecraftClient.getInstance().keyboard.setClipboard(profileJson());
             return true;
         }

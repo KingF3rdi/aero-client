@@ -73,6 +73,18 @@ public final class CosmeticIcons {
         c.fill(cx - 1, cy - 12, cx + 1, cy + 8, dark);
         c.fill(cx - 10, cy - 2, cx + 10, cy, dark);
         c.fill(cx - 10, cy - 12, cx - 9, cy + 1, light);
+        if ("spiked".equals(id) || "studded".equals(id)) {
+            int metal = 0xFFB4BCC8;
+            int[][] pts = {{0, -4}, {-6, -9}, {6, -9}, {-6, 3}, {6, 3}, {0, 5}};
+            for (int[] p : pts) {
+                if ("spiked".equals(id)) {
+                    c.fill(cx + p[0] - 1, cy + p[1] - 1, cx + p[0] + 1, cy + p[1] + 1, metal);
+                    c.fill(cx + p[0], cy + p[1] - 3, cx + p[0] + 1, cy + p[1] - 1, 0xFFE8ECF4);
+                } else {
+                    c.fill(cx + p[0] - 1, cy + p[1] - 1, cx + p[0] + 2, cy + p[1] + 2, metal);
+                }
+            }
+        }
     }
 
     private static void badge(DrawContext c, String id, int color, int cx, int cy) {

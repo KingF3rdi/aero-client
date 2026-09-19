@@ -196,41 +196,54 @@ public final class FxWorld {
         }
     }
 
+    /** Totem pop particles; count/size/speed/life are multipliers from the Totem Counter module. */
     public static void totemPop(String style, int color, double x, double y, double z) {
+        var cfg = dev.aero.client.AeroClient.CONFIG;
+        float cnt = cfg == null ? 1f : Math.max(0.1f, cfg.totemPopCount);
+        float sz = cfg == null ? 1f : Math.max(0.2f, cfg.totemPopFxSize);
+        float sp = cfg == null ? 1f : Math.max(0.1f, cfg.totemPopSpeed);
+        float lf = cfg == null ? 1f : Math.max(0.2f, cfg.totemPopLife);
+        int c2 = cfg == null ? color : cfg.totemPopColor2;
+        boolean two = cfg != null && cfg.totemPopTwoColors;
         var r = rnd();
         int c = color | 0xFF000000;
         switch (style) {
             case "Spiral" -> {
-                for (int i = 0; i < 36; i++) {
-                    P p = add(1100, x, y + 0.1 + i * 0.03, z, 0, 1.7, 0, 0, 0.13f, 0.02f, tint(c, 0.7f + (i % 3) * 0.25f));
-                    swirl(p, 0.55, 0, 7, i * 0.5 + (i % 2) * Math.PI);
+                int n = Math.max(1, Math.round(36 * cnt));
+                for (int i = 0; i < n; i++) {
+                    P p = add(Math.round(1100 * lf), x, y + 0.1 + i * 0.03 * (36f / n), z, 0, 1.7 * sp, 0, 0, 0.13f * sz, 0.02f, tint(two && i % 2 == 1 ? c2 | 0xFF000000 : c, 0.7f + (i % 3) * 0.25f));
+                    swirl(p, 0.55, 0, 7 * sp, i * 0.5 + (i % 2) * Math.PI);
                 }
             }
             case "Rings" -> {
+                int n = Math.max(3, Math.round(18 * cnt));
                 for (int ring = 0; ring < 3; ring++) {
-                    for (int i = 0; i < 18; i++) {
-                        P p = add(800 + ring * 120, x, y + 0.2 + ring * 0.8, z, 0, 0.3, 0, 0, 0.13f, 0.02f, tint(c, 0.8f + ring * 0.2f));
-                        swirl(p, 0.2, 2.6, 0, i * 6.283 / 18);
+                    for (int i = 0; i < n; i++) {
+                        P p = add(Math.round((800 + ring * 120) * lf), x, y + 0.2 + ring * 0.8, z, 0, 0.3 * sp, 0, 0, 0.13f * sz, 0.02f, tint(two && ring == 1 ? c2 | 0xFF000000 : c, 0.8f + ring * 0.2f));
+                        swirl(p, 0.2, 2.6 * sp, 0, i * 6.283 / n);
                     }
                 }
             }
             case "Hearts" -> {
-                for (int i = 0; i < 16; i++) {
-                    P p = add(1300, x, y + 0.3, z, 0, 0.9 + r.nextDouble() * 0.6, 0, 0, 0.17f, 0.02f, i % 2 == 0 ? c : 0xFFFF7BAA);
+                int n = Math.max(1, Math.round(16 * cnt));
+                for (int i = 0; i < n; i++) {
+                    P p = add(Math.round(1300 * lf), x, y + 0.3, z, 0, (0.9 + r.nextDouble() * 0.6) * sp, 0, 0, 0.17f * sz, 0.02f, i % 2 == 0 ? c : (two ? c2 | 0xFF000000 : 0xFFFF7BAA));
                     swirl(p, 0.3 + r.nextDouble() * 0.5, 0.2, 2 + r.nextDouble() * 2, r.nextDouble() * 6.28);
                 }
             }
             case "Soul" -> {
-                for (int i = 0; i < 14; i++) {
-                    P p = add(1600, x, y + 0.2, z, 0, 0.6 + r.nextDouble() * 0.6, 0, 0, 0.2f, 0.02f, tint(c, 0.7f + r.nextFloat() * 0.5f));
+                int n = Math.max(1, Math.round(14 * cnt));
+                for (int i = 0; i < n; i++) {
+                    P p = add(Math.round(1600 * lf), x, y + 0.2, z, 0, (0.6 + r.nextDouble() * 0.6) * sp, 0, 0, 0.2f * sz, 0.02f, tint(two && i % 2 == 1 ? c2 | 0xFF000000 : c, 0.7f + r.nextFloat() * 0.5f));
                     swirl(p, 0.2, 0.15, 3, r.nextDouble() * 6.28);
                 }
             }
             case "Off" -> {
             }
             default -> {
-                for (int i = 0; i < 32; i++) {
-                    add(900, x, y + 1, z, jitter(3.2), 0.5 + r.nextDouble() * 3, jitter(3.2), 6, 0.14f, 0.02f, tint(c, 0.6f + r.nextFloat() * 0.8f));
+                int n = Math.max(1, Math.round(32 * cnt));
+                for (int i = 0; i < n; i++) {
+                    add(Math.round(900 * lf), x, y + 1, z, jitter(3.2 * sp), (0.5 + r.nextDouble() * 3) * sp, jitter(3.2 * sp), 6, 0.14f * sz, 0.02f, tint(two && i % 2 == 1 ? c2 | 0xFF000000 : c, 0.6f + r.nextFloat() * 0.8f));
                 }
             }
         }

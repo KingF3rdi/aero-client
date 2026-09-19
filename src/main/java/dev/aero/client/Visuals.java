@@ -587,6 +587,17 @@ public final class Visuals {
     }
 
     /** ARGB multiply-tint for the held shield model, including opacity. */
+    /** "spiked"/"studded" while the local player's shield is being drawn, else null. */
+    public static String shieldSpikeStyle() {
+        PlayerEntity holder = shieldHolder.get();
+        MinecraftClient mc = MinecraftClient.getInstance();
+        if (holder == null || holder != mc.player) {
+            return null;
+        }
+        String id = dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD);
+        return "spiked".equals(id) || "studded".equals(id) ? id : null;
+    }
+
     public static Integer shieldModelTint() {
         ClientConfig c = cfg();
         PlayerEntity holder = shieldHolder.get();
