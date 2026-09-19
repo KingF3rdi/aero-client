@@ -48,7 +48,6 @@ public class AeroClient implements ClientModInitializer {
     public void onInitializeClient() {
         CONFIG = ClientConfig.load();
         MODULES = new Modules();
-        ModConflicts.run(MODULES.all);
         AccountManager.load();
         FriendStore.load();
         guiKey = registerMenuKey();
