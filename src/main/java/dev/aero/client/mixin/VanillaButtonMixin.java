@@ -17,7 +17,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class VanillaButtonMixin {
     @Inject(method = "renderWidget(Lnet/minecraft/client/gui/DrawContext;IIF)V", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$button(DrawContext context, int mx, int my, float delta, CallbackInfo ci) {
-        if (AeroClient.CONFIG == null || !AeroClient.CONFIG.vanillaUi || !((Object) this instanceof ButtonWidget)) {
+        if (AeroClient.CONFIG == null || !AeroClient.CONFIG.vanillaUi || !((Object) this instanceof ButtonWidget)
+                || (Object) this instanceof net.minecraft.client.gui.widget.TextIconButtonWidget) {
+            // icon buttons (language, accessibility) keep vanilla drawing: their message is narration-only
             return;
         }
         ClickableWidget w = (ClickableWidget) (Object) this;
