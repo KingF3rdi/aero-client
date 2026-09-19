@@ -259,6 +259,7 @@ public final class Modules {
                 .setting("Gamemode", () -> c.tierGamemode, v -> c.tierGamemode = v,
                         "vanilla", "uhc", "pot", "nethop", "smp", "sword", "axe", "mace")
                 .setting("Tier Side", () -> c.tierSide, v -> c.tierSide = v, "Left", "Right")
+                .setting("Show in tab", () -> c.tierShowTab, v -> c.tierShowTab = v)
                 .setting("Gamemode icon", () -> c.tierGamemodeIcon, v -> c.tierGamemodeIcon = v)
                 .setting("Show own", () -> c.tierShowOwn, v -> c.tierShowOwn = v)
                 .setting("Show in chat", () -> c.tierShowChat, v -> c.tierShowChat = v));

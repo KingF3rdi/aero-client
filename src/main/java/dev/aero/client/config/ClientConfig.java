@@ -488,6 +488,7 @@ public class ClientConfig {
     public boolean tierGamemodeIcon = true;
     public boolean tierShowOwn = true;
     public boolean tierShowChat = true;
+    public boolean tierShowTab = true;
 
     public boolean transparentPlayers = false;
     public float transparentBodyOpacity = 55f;
