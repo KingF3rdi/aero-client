@@ -50,6 +50,7 @@
     "VanillaUiHotbarMixin",
     "VanillaUiScreenMixin",
     "VanillaButtonMixin",
+    "VanillaSliderMixin",
     "MotionBlurHudMixin"
   ],
   "injectors": {
