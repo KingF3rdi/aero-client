@@ -6,7 +6,8 @@ public enum Category {
     RENDER("Visuals"),
     PLAYER("Player"),
     MISC("Misc"),
-    PERFORMANCE("Performance");
+    PERFORMANCE("Performance"),
+    PREVIEW("Preview");
 
     public final String title;
 

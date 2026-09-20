@@ -930,6 +930,7 @@ public class ClickGuiScreenLegacy extends Screen {
             case PLAYER -> 0xFFE9D5FF;
             case MISC -> 0xFFB8B0C8;
             case PERFORMANCE -> 0xFF9AE6B4;
+            case PREVIEW -> 0xFFFFC94D;
         };
         switch (module.name) {
             case "FPS" -> iconBolt(context, x, y, col);
@@ -952,6 +953,7 @@ public class ClickGuiScreenLegacy extends Screen {
             case PLAYER -> iconPerson(context, x, y, col);
             case MISC -> iconDots(context, x, y, col);
             case PERFORMANCE -> iconBars(context, x, y, col);
+            case PREVIEW -> iconSparkle(context, x, y, col);
         }
     }
 

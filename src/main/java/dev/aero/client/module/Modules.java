@@ -230,7 +230,7 @@ public final class Modules {
                 .setting("Arrows", () -> c.hitboxArrows, v -> c.hitboxArrows = v)
                 .setting("Entities", () -> c.hitboxEntities, v -> c.hitboxEntities = v)
                 .setting("Teams", () -> c.hitboxTeams, v -> c.hitboxTeams = v));
-        add(new Module("Motion Blur", "Smear the view as it moves", Category.RENDER,
+        add(new Module("Motion Blur", "Smear the view as it moves", Category.PREVIEW,
                 () -> c.motionBlur, v -> c.motionBlur = v)
                 .setting("Style", () -> c.motionBlurStyle, v -> c.motionBlurStyle = v, "Blur", "Simple")
                 .setting("Strength", () -> c.motionBlurStrength, v -> c.motionBlurStrength = v, "Low", "Medium", "High"));
@@ -243,7 +243,7 @@ public final class Modules {
                 .setting("Potion Glint", () -> c.nostalgiaPotionGlint, v -> c.nostalgiaPotionGlint = v)
                 .setting("Old Potions", () -> c.nostalgiaOldPotions, v -> c.nostalgiaOldPotions = v)
                 .setting("Old Walk Animation", () -> c.nostalgiaOldWalk, v -> c.nostalgiaOldWalk = v));
-        add(new Module("Pop Chams", "Outline of the player where their totem popped", Category.RENDER,
+        add(new Module("Pop Chams", "Outline of the player where their totem popped", Category.PREVIEW,
                 () -> c.popChams, v -> c.popChams = v)
                 .setting("Show Own Pops", () -> c.popChamsShowOwn, v -> c.popChamsShowOwn = v)
                 .settingF("Duration (s)", () -> (double) c.popChamsSeconds, v -> c.popChamsSeconds = (float) v, 0.2, 10)
@@ -253,7 +253,7 @@ public final class Modules {
                 .setting("Filled Model Enabled", () -> c.popChamsFilledModel, v -> c.popChamsFilledModel = v)
                 .setting("Wireframe Enabled", () -> c.popChamsWireframe, v -> c.popChamsWireframe = v));
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.POP_CHAMS);
-        add(new Module("Renders", "Hand shader and glowing end crystals", Category.RENDER,
+        add(new Module("Renders", "Hand shader and glowing end crystals", Category.PREVIEW,
                 () -> c.renders, v -> c.renders = v)
                 .setting("Hand shader", () -> c.rendersHandShader, v -> c.rendersHandShader = v, "None", "Chrome", "Rainbow")
                 .setting("End crystal glow", () -> c.rendersEndCrystalsGlow, v -> c.rendersEndCrystalsGlow = v)
@@ -424,7 +424,7 @@ public final class Modules {
                 .settingF("Key Size", () -> (double) c.keySize, v -> c.keySize = (float) v, 10, 40)
                 .settingF("Gap", () -> (double) c.keyGap, v -> c.keyGap = (float) v, 0, 12)
                 .settingF("Scale", () -> (double) c.keyScale, v -> c.keyScale = (float) v, 0.5, 2));
-        add(new Module("Music Player", "Shows the current music track", Category.HUD,
+        add(new Module("Music Player", "Shows the current music track", Category.PREVIEW,
                 () -> c.musicPlayer, v -> c.musicPlayer = v)
                 .setting("Album Art", () -> c.musicAlbum, v -> c.musicAlbum = v)
                 .setting("Background", () -> c.musicBg, v -> c.musicBg = v)
@@ -527,7 +527,7 @@ public final class Modules {
                 .setting("Water", () -> c.ambienceWater, v -> c.ambienceWater = v)
                 .setting("Lava", () -> c.ambienceLava, v -> c.ambienceLava = v)
                 .setting("Fire", () -> c.ambienceFire, v -> c.ambienceFire = v));
-        add(new Module("Emotes", "Hold a key for the emote wheel", Category.PLAYER,
+        add(new Module("Emotes", "Hold a key for the emote wheel", Category.PREVIEW,
                 () -> c.emotes, v -> c.emotes = v));
         add(new Module("Discord RPC", "Show Aero Client on your Discord status", Category.MISC,
                 () -> c.discordRpc, v -> c.discordRpc = v)
