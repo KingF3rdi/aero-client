@@ -5,6 +5,7 @@
   "name": "Aero Client",
   "description": "Lightweight Fabric client focused on FPS and a clean PvP HUD.",
   "authors": ["Aero"],
+  "icon": "assets/aero/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": ["dev.aero.client.AeroClient"]
