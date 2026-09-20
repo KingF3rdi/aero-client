@@ -41,10 +41,10 @@ public final class AeroApi {
         return b;
     }
 
-    /** Call every client tick. */
+    /** Call every client tick. Runs from the title screen on, so a brand-new account registers on its very first start. */
     public static void tick(MinecraftClient mc) {
         var c = AeroClient.CONFIG;
-        if (c == null || !c.shareProfile || busy || mc.player == null || base().isEmpty()) {
+        if (c == null || !c.shareProfile || busy || base().isEmpty()) {
             return;
         }
         long now = System.currentTimeMillis();
