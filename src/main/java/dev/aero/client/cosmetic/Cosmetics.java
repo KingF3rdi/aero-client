@@ -95,7 +95,7 @@ public final class Cosmetics {
         shield("obsidian", "Obsidian", 0xFF5A4A8A);
         shield("ice", "Ice", 0xFF9FE8F8);
         shield("rainbow", "Rainbow", 0xFFFF6BD0);
-        shield("spiked", "Spiked", 0xFF26262C);
+        shield("spiked", "Spiked", 0xFF6A6A78);
         mace("none", "None", 0xFF2A2A32);
         mace("slam", "Slam", 0xFFFF9B4D);
         mace("quake", "Quake", 0xFFB8946A);

@@ -605,7 +605,14 @@ public final class Visuals {
             return null;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
-        int cosmetic = holder == mc.player ? dev.aero.client.cosmetic.Cosmetics.equippedColor(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD) : 0;
+        int cosmetic = 0;
+        if (holder == mc.player) {
+            cosmetic = dev.aero.client.cosmetic.Cosmetics.equippedColor(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD);
+        } else if (c.showOthersCosmetics) {
+            var it = dev.aero.client.cosmetic.Cosmetics.named(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD,
+                    dev.aero.client.social.ClientUsers.cosmeticOf(holder.getUuid(), "shield"));
+            cosmetic = it == null || "none".equals(it.id()) ? 0 : it.color();
+        }
         if (!c.shieldTweaks) {
             return cosmetic == 0 ? null : (Integer) cosmetic;
         }

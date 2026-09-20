@@ -56,7 +56,6 @@ public class PlayerEntityRendererMixin {
             return;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
-        aero$shieldCosmetic(player, state, mc);
         boolean changed = false;
 
         if (ClientUsers.showBadge(player.getUuid(), player.getName().getString(), "nametag")) {
@@ -123,29 +122,6 @@ public class PlayerEntityRendererMixin {
 
         if (changed) {
             state.displayName = result;
-        }
-    }
-
-    /** A held shield is drawn as the equipped shield cosmetic (own, or a listed user's): hide the vanilla item and remember the arm. */
-    private static void aero$shieldCosmetic(PlayerEntity player, PlayerEntityRenderState state, MinecraftClient mc) {
-        boolean self = mc.player != null && player == mc.player;
-        String id = self ? dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD)
-                : (AeroClient.CONFIG.showOthersCosmetics ? ClientUsers.cosmeticOf(player.getUuid(), "shield") : "none");
-        int arm = 0;
-        if (id != null && !"none".equals(id)) {
-            if (Visuals.isShield(state.leftHandItem)) {
-                state.leftHandItemState.clear();
-                arm = 1;
-            }
-            if (Visuals.isShield(state.rightHandItem)) {
-                state.rightHandItemState.clear();
-                arm = arm == 1 ? 3 : 2;
-            }
-        }
-        if (arm == 0) {
-            dev.aero.client.cosmetic.SpikedShield.ARMS.remove(state.id);
-        } else {
-            dev.aero.client.cosmetic.SpikedShield.ARMS.put(state.id, arm);
         }
     }
 

@@ -109,22 +109,6 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             m.pop();
         }
 
-        int shieldArms = SpikedShield.ARMS.getOrDefault(state.id, 0);
-        if (shieldArms != 0 && !"none".equals(idOf(Cosmetics.Kind.SHIELD))) {
-            for (int a = 1; a <= 2; a++) {
-                if ((shieldArms & a) == 0) {
-                    continue;
-                }
-                m.push();
-                (a == 1 ? model.leftArm : model.rightArm).applyTransform(m);
-                // In front of the forearm, plate facing forward (spikes point away from the body), like a held shield.
-                m.translate(0f, 0.48f, -0.22f);
-                m.scale(0.6f, -0.6f, 0.6f); // model space has y pointing down, so flip to keep the tip pointing down
-                SpikedShield.drawFor(m, q, layer, light, idOf(Cosmetics.Kind.SHIELD), colorOf(Cosmetics.Kind.SHIELD));
-                m.pop();
-            }
-        }
-
         int head = colorOf(Cosmetics.Kind.HEAD);
         if (head != 0) {
             m.push();
