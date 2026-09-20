@@ -75,6 +75,7 @@ public final class AeroApi {
                 }
             } catch (Exception e) {
                 log("heartbeat failed: " + e);
+                status("Server not reachable: " + e.getClass().getSimpleName());
             } finally {
                 busy = false;
             }
@@ -111,9 +112,26 @@ public final class AeroApi {
         }
     }
 
+    private static volatile String lastStatus = "";
+
+    /** One chat line per status change, so the player can see whether the server connection works. */
+    private static void status(String msg) {
+        if (msg.equals(lastStatus)) {
+            return;
+        }
+        lastStatus = msg;
+        MinecraftClient mc = MinecraftClient.getInstance();
+        mc.execute(() -> {
+            if (mc.player != null) {
+                mc.player.sendMessage(net.minecraft.text.Text.literal("[Aero] " + msg), false);
+            }
+        });
+    }
+
     private static void login(MinecraftClient mc, String b, String name, java.util.UUID uuid, String access) throws Exception {
         if (uuid == null || access == null || access.isBlank()) {
             log("no online session (offline account?), skipping");
+            status("Server: no online Microsoft session, profile not shared");
             return;
         }
         JsonObject start = JsonParser.parseString(post(b + "/api/auth/start", "{}", null).body()).getAsJsonObject();
@@ -127,8 +145,10 @@ public final class AeroApi {
             token = JsonParser.parseString(res.body()).getAsJsonObject().get("token").getAsString();
             tokenAt = System.currentTimeMillis();
             log("logged in as " + name);
+            status("Connected to the Aero server");
         } else {
             log("login rejected: " + res.statusCode() + " " + res.body());
+            status("Server login rejected (" + res.statusCode() + ")");
         }
     }
 
