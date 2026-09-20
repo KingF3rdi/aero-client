@@ -115,11 +115,10 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
                 if ((shieldArms & a) == 0) {
                     continue;
                 }
-                float outward = a == 1 ? 1f : -1f;
                 m.push();
                 (a == 1 ? model.leftArm : model.rightArm).applyTransform(m);
-                m.translate(0.2f * outward, 0.3f, 0f);
-                m.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(-70f * outward));
+                // In front of the forearm, plate facing forward (spikes point away from the body), like a held shield.
+                m.translate(0f, 0.32f, -0.2f);
                 m.scale(0.6f, 0.6f, 0.6f);
                 SpikedShield.drawFor(m, q, layer, light, idOf(Cosmetics.Kind.SHIELD), colorOf(Cosmetics.Kind.SHIELD));
                 m.pop();
