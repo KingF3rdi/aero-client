@@ -43,6 +43,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             case WINGS -> "wings";
             case HEAD -> "head";
             case PET -> "pet";
+            case SHIELD -> "shield";
             default -> "none";
         };
         return dev.aero.client.social.ClientUsers.cosmeticOf(who, key);
@@ -105,6 +106,16 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             if (wings != 0) {
                 wings(wings, idOf(Cosmetics.Kind.WINGS));
             }
+            m.pop();
+        }
+
+        if ("spiked".equals(idOf(Cosmetics.Kind.SHIELD))) {
+            m.push();
+            model.leftArm.applyTransform(m);
+            m.translate(0.2f, 0.3f, 0f);
+            m.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(-70f));
+            m.scale(0.6f, 0.6f, 0.6f);
+            SpikedShield.draw(m, q, layer, light);
             m.pop();
         }
 
