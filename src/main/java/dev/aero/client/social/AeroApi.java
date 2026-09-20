@@ -17,6 +17,7 @@ import java.time.Duration;
  * server, then sends a heartbeat with the equipped cosmetics every minute. Off while apiBase is empty.
  */
 public final class AeroApi {
+    private static final String DEFAULT_BASE = "https://aero.gamekni9ht.workers.dev";
     private static final long BEAT_MS = 60_000L;
     private static final long TOKEN_MS = 20L * 60 * 60 * 1000;
     private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6)).build();
@@ -31,6 +32,9 @@ public final class AeroApi {
     public static String base() {
         var c = AeroClient.CONFIG;
         String b = c == null || c.apiBase == null ? "" : c.apiBase.trim();
+        if (b.isEmpty()) {
+            b = DEFAULT_BASE; // older configs saved an empty value
+        }
         while (b.endsWith("/")) {
             b = b.substring(0, b.length() - 1);
         }
@@ -62,11 +66,15 @@ public final class AeroApi {
                 }
                 if (token != null) {
                     int code = post(b + "/api/heartbeat", body, token).statusCode();
+                    if (code != 200) {
+                        log("heartbeat status " + code);
+                    }
                     if (code == 401) {
                         token = null;
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                log("heartbeat failed: " + e);
             } finally {
                 busy = false;
             }
@@ -93,8 +101,19 @@ public final class AeroApi {
         t.start();
     }
 
+    /** Appends to aero-api.log in the game folder so connection problems can be diagnosed. */
+    private static void log(String line) {
+        try {
+            java.nio.file.Files.writeString(MinecraftClient.getInstance().runDirectory.toPath().resolve("aero-api.log"),
+                    java.time.LocalTime.now().withNano(0) + " " + line + System.lineSeparator(),
+                    java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        } catch (Exception ignored) {
+        }
+    }
+
     private static void login(MinecraftClient mc, String b, String name, java.util.UUID uuid, String access) throws Exception {
         if (uuid == null || access == null || access.isBlank()) {
+            log("no online session (offline account?), skipping");
             return;
         }
         JsonObject start = JsonParser.parseString(post(b + "/api/auth/start", "{}", null).body()).getAsJsonObject();
@@ -107,6 +126,9 @@ public final class AeroApi {
         if (res.statusCode() == 200) {
             token = JsonParser.parseString(res.body()).getAsJsonObject().get("token").getAsString();
             tokenAt = System.currentTimeMillis();
+            log("logged in as " + name);
+        } else {
+            log("login rejected: " + res.statusCode() + " " + res.body());
         }
     }
 

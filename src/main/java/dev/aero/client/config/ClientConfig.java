@@ -343,7 +343,7 @@ public class ClientConfig {
     public boolean showOthersCosmetics = true;
     public int uiAccent = 0xFF4F8EFF;
     /** Aero server (Cloudflare Worker) base URL; empty = use the public GitHub user list only. */
-    public String apiBase = "";
+    public String apiBase = "https://aero.gamekni9ht.workers.dev";
     /** Send equipped cosmetics to the Aero server so other players see them. */
     public boolean shareProfile = true;
     public boolean vanillaUi = true;
