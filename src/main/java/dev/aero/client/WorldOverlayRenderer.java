@@ -111,7 +111,7 @@ public final class WorldOverlayRenderer {
                         {0.0, 0.0, -0.125, 0.25, 0.7, 0.125}};
                 for (double[] q : parts) {
                     VertexRendering.drawOutline(matrices, buffer, VoxelShapes.cuboid(new Box(q[0], q[1], q[2], q[3], q[4], q[5])),
-                            0, 0, 0, rgb, alpha / 255f);
+                            0, 0, 0, (alpha << 24) | rgb, 3f);
                 }
                 matrices.pop();
             } catch (Throwable ignored) {
@@ -123,11 +123,13 @@ public final class WorldOverlayRenderer {
                                  int argb) {
         try {
             Box box = worldBox.offset(-camPos.x, -camPos.y, -camPos.z);
-            float a = ((argb >>> 24) & 0xFF) / 255f;
-            int rgb = argb & 0xFFFFFF;
+            // 1.21.11: the color is ARGB (alpha 0 = invisible) and the last argument is the line width.
+            int alpha = (argb >>> 24) & 0xFF;
+            int color = ((alpha == 0 ? 0xFF : alpha) << 24) | (argb & 0xFFFFFF);
             var buffer = consumers.getBuffer(RenderLayers.lines());
-            VertexRendering.drawOutline(matrices, buffer, VoxelShapes.cuboid(box), 0, 0, 0, rgb, a == 0 ? 1f : a);
-        } catch (Throwable ignored) {
+            VertexRendering.drawOutline(matrices, buffer, VoxelShapes.cuboid(box), 0, 0, 0, color, 2.5f);
+        } catch (Throwable t) {
+            
         }
     }
 }

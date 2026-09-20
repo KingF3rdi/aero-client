@@ -13,7 +13,7 @@ public final class Icons {
     private Icons() {}
 
     private static MutableText glyph(char c) {
-        return Text.literal(String.valueOf(c)).setStyle(Style.EMPTY.withFont(new StyleSpriteSource.Font(FONT)));
+        return Text.literal(String.valueOf(c)).setStyle(Style.EMPTY.withFont(new StyleSpriteSource.Font(FONT)).withColor(0xFFFFFF).withBold(false));
     }
 
     public static MutableText totem() {

@@ -35,14 +35,34 @@ public final class SpikedShield {
     }
 
     public static void draw(MatrixStack m, OrderedRenderCommandQueue q, RenderLayer layer, int light, int plate, boolean spikes) {
-        int rim = spikes ? RIM : CubeDraw.shade(plate, 0.65f);
-        int boss = spikes ? BOSS : CubeDraw.shade(plate, 1.35f);
+        int rim = spikes ? RIM : CubeDraw.shade(plate, 0.6f);
+        int boss = spikes ? BOSS : CubeDraw.shade(plate, 1.4f);
+        int trim = CubeDraw.shade(rim, 1.55f);
+        int panel = CubeDraw.shade(plate, spikes ? 1.7f : 1.2f);
+        int emblem = spikes ? CubeDraw.shade(BOSS, 0.85f) : CubeDraw.shade(plate, 1.7f);
+        // base plate, then an inset panel with a cross emblem, so the face has some relief instead of one flat color
         box(m, q, layer, light, 0, 0, 0, 0.30f, 0.42f, 0.04f, plate);
+        box(m, q, layer, light, 0, 0, -0.046f, 0.235f, 0.35f, 0.01f, panel);
+        box(m, q, layer, light, 0, 0, -0.06f, 0.028f, 0.24f, 0.012f, emblem);
+        box(m, q, layer, light, 0, 0.05f, -0.06f, 0.15f, 0.028f, 0.012f, emblem);
+        // two-tone rim: dark outer frame plus a bright inner line
         box(m, q, layer, light, 0, 0.43f, 0, 0.33f, 0.03f, 0.055f, rim);
         box(m, q, layer, light, 0, -0.43f, 0, 0.33f, 0.03f, 0.055f, rim);
         box(m, q, layer, light, 0.31f, 0, 0, 0.03f, 0.42f, 0.055f, rim);
         box(m, q, layer, light, -0.31f, 0, 0, 0.03f, 0.42f, 0.055f, rim);
-        box(m, q, layer, light, 0, 0, -0.07f, 0.09f, 0.09f, 0.03f, boss);
+        box(m, q, layer, light, 0, 0.395f, -0.02f, 0.285f, 0.012f, 0.045f, trim);
+        box(m, q, layer, light, 0, -0.395f, -0.02f, 0.285f, 0.012f, 0.045f, trim);
+        box(m, q, layer, light, 0.275f, 0, -0.02f, 0.012f, 0.4f, 0.045f, trim);
+        box(m, q, layer, light, -0.275f, 0, -0.02f, 0.012f, 0.4f, 0.045f, trim);
+        // rivets in the corners
+        for (int sx = -1; sx <= 1; sx += 2) {
+            for (int sy = -1; sy <= 1; sy += 2) {
+                box(m, q, layer, light, sx * 0.24f, sy * 0.36f, -0.062f, 0.022f, 0.022f, 0.014f, boss);
+            }
+        }
+        // boss with a darker ring under it
+        box(m, q, layer, light, 0, 0, -0.07f, 0.115f, 0.115f, 0.02f, CubeDraw.shade(boss, 0.7f));
+        box(m, q, layer, light, 0, 0, -0.09f, 0.085f, 0.085f, 0.03f, boss);
         if (!spikes) {
             return;
         }

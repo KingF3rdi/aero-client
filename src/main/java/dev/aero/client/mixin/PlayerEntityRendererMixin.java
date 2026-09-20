@@ -60,7 +60,7 @@ public class PlayerEntityRendererMixin {
         boolean changed = false;
 
         if (ClientUsers.showBadge(player.getUuid(), player.getName().getString(), "nametag")) {
-            result = ClientUsers.badge(player.getUuid()).append(result);
+            result = Text.empty().append(ClientUsers.badge(player.getUuid())).append(result);
             changed = true;
         }
 

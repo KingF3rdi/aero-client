@@ -16,7 +16,7 @@ public class PlayerListHudMixin {
     private void aero$badge(PlayerListEntry entry, CallbackInfoReturnable<Text> cir) {
         java.util.UUID id = entry.getProfile().id();
         if (ClientUsers.showBadge(id, entry.getProfile().name(), "tab")) {
-            cir.setReturnValue(ClientUsers.badge(id).append(cir.getReturnValue()));
+            cir.setReturnValue(Text.empty().append(ClientUsers.badge(id)).append(cir.getReturnValue()));
         }
         var cfg = dev.aero.client.AeroClient.CONFIG;
         if (cfg != null && cfg.tierTagger && cfg.tierShowTab) {
