@@ -43,6 +43,11 @@ public final class ClientUsers {
 
     private ClientUsers() {}
 
+    private static String listUrl() {
+        String b = AeroApi.base();
+        return b.isEmpty() ? URL : b + "/api/users";
+    }
+
     /** The user's chosen badge (own: equipped one; others: from the public list), else the plain blue A. */
     public static MutableText badge(UUID id) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -103,7 +108,7 @@ public final class ClientUsers {
         }
         lastFetch = now;
         HttpClient.newHttpClient().sendAsync(
-                        HttpRequest.newBuilder(URI.create(URL)).timeout(Duration.ofSeconds(8)).build(),
+                        HttpRequest.newBuilder(URI.create(listUrl())).timeout(Duration.ofSeconds(8)).build(),
                         HttpResponse.BodyHandlers.ofString())
                 .thenAccept(res -> {
                     if (res.statusCode() != 200) {

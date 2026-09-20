@@ -177,6 +177,7 @@ public class AeroClient implements ClientModInitializer {
             tickModuleToggleKeys(client);
             tickTotemReset(client);
             ModConflicts.tell(client, MODULES.all);
+            dev.aero.client.social.AeroApi.tick(client);
             applyMaxFps(client);
             tickRenderDistanceOverride(client);
             tickUnfocusedCpu(client);

@@ -152,7 +152,10 @@ public final class Modules {
                 .setting("Who", () -> c.badgeMode, v -> c.badgeMode = v, "All clients", "Friends only")
                 .setting("Nametags", () -> c.badgeNametag, v -> c.badgeNametag = v)
                 .setting("Tab list", () -> c.badgeTab, v -> c.badgeTab = v)
-                .setting("Chat", () -> c.badgeChat, v -> c.badgeChat = v));
+                .setting("Chat", () -> c.badgeChat, v -> c.badgeChat = v)
+                .setting("Share profile online", () -> c.shareProfile, v -> c.shareProfile = v)
+                .settingText("Server URL", () -> c.apiBase, v -> c.apiBase = v)
+                .settingAction("Delete my data", "Delete", dev.aero.client.social.AeroApi::deleteMe));
         add(new Module("Time Changer", "Client-only world time", Category.RENDER,
                 () -> c.timeChanger, v -> c.timeChanger = v)
                 .setting("Time", () -> c.timePreset, v -> c.timePreset = v, "Day", "Noon", "Sunset", "Night", "Midnight", "Custom")

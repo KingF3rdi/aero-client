@@ -342,6 +342,10 @@ public class ClientConfig {
     public String equippedMace = "none";
     public boolean showOthersCosmetics = true;
     public int uiAccent = 0xFF4F8EFF;
+    /** Aero server (Cloudflare Worker) base URL; empty = use the public GitHub user list only. */
+    public String apiBase = "";
+    /** Send equipped cosmetics to the Aero server so other players see them. */
+    public boolean shareProfile = true;
     public boolean vanillaUi = true;
     public String equippedShield = "none";
     public int totemColGood = 0xFF55FF55;

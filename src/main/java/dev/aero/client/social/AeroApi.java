@@ -1,0 +1,135 @@
+package dev.aero.client.social;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import dev.aero.client.AeroClient;
+import dev.aero.client.cosmetic.Cosmetics;
+import net.minecraft.client.MinecraftClient;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+
+/**
+ * Talks to the Aero server (Cloudflare Worker): proves the player's identity through Mojang's session
+ * server, then sends a heartbeat with the equipped cosmetics every minute. Off while apiBase is empty.
+ */
+public final class AeroApi {
+    private static final long BEAT_MS = 60_000L;
+    private static final long TOKEN_MS = 20L * 60 * 60 * 1000;
+    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(6)).build();
+    private static volatile String token;
+    private static volatile long tokenAt;
+    private static volatile long lastBeat;
+    private static volatile boolean busy;
+
+    private AeroApi() {}
+
+    /** Server base URL without a trailing slash, or "" when no server is configured. */
+    public static String base() {
+        var c = AeroClient.CONFIG;
+        String b = c == null || c.apiBase == null ? "" : c.apiBase.trim();
+        while (b.endsWith("/")) {
+            b = b.substring(0, b.length() - 1);
+        }
+        return b;
+    }
+
+    /** Call every client tick. */
+    public static void tick(MinecraftClient mc) {
+        var c = AeroClient.CONFIG;
+        if (c == null || !c.shareProfile || busy || mc.player == null || base().isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (now - lastBeat < BEAT_MS) {
+            return;
+        }
+        lastBeat = now;
+        busy = true;
+        String b = base();
+        var session = mc.getSession();
+        String name = session.getUsername();
+        java.util.UUID uuid = session.getUuidOrNull();
+        String access = session.getAccessToken();
+        String body = profileBody();
+        Thread t = new Thread(() -> {
+            try {
+                if (token == null || System.currentTimeMillis() - tokenAt > TOKEN_MS) {
+                    login(mc, b, name, uuid, access);
+                }
+                if (token != null) {
+                    int code = post(b + "/api/heartbeat", body, token).statusCode();
+                    if (code == 401) {
+                        token = null;
+                    }
+                }
+            } catch (Exception ignored) {
+            } finally {
+                busy = false;
+            }
+        }, "aero-api");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /** Removes this player from the server (the "Delete my data" button). */
+    public static void deleteMe() {
+        String b = base();
+        String tk = token;
+        if (b.isEmpty() || tk == null) {
+            return;
+        }
+        Thread t = new Thread(() -> {
+            try {
+                HTTP.send(HttpRequest.newBuilder(URI.create(b + "/api/me")).timeout(Duration.ofSeconds(8))
+                        .header("authorization", "Bearer " + tk).DELETE().build(), HttpResponse.BodyHandlers.discarding());
+            } catch (Exception ignored) {
+            }
+        }, "aero-api-delete");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static void login(MinecraftClient mc, String b, String name, java.util.UUID uuid, String access) throws Exception {
+        if (uuid == null || access == null || access.isBlank()) {
+            return;
+        }
+        JsonObject start = JsonParser.parseString(post(b + "/api/auth/start", "{}", null).body()).getAsJsonObject();
+        String serverId = start.get("serverId").getAsString();
+        mc.getApiServices().sessionService().joinServer(uuid, access, serverId);
+        JsonObject req = new JsonObject();
+        req.addProperty("name", name);
+        req.addProperty("serverId", serverId);
+        HttpResponse<String> res = post(b + "/api/auth/finish", req.toString(), null);
+        if (res.statusCode() == 200) {
+            token = JsonParser.parseString(res.body()).getAsJsonObject().get("token").getAsString();
+            tokenAt = System.currentTimeMillis();
+        }
+    }
+
+    private static HttpResponse<String> post(String url, String body, String bearer) throws Exception {
+        HttpRequest.Builder r = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(8))
+                .header("content-type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body));
+        if (bearer != null) {
+            r.header("authorization", "Bearer " + bearer);
+        }
+        return HTTP.send(r.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static String profileBody() {
+        JsonObject o = new JsonObject();
+        o.addProperty("badge", Cosmetics.equipped(Cosmetics.Kind.BADGE));
+        JsonObject cos = new JsonObject();
+        cos.addProperty("cape", Cosmetics.equipped(Cosmetics.Kind.CAPE));
+        cos.addProperty("wings", Cosmetics.equipped(Cosmetics.Kind.WINGS));
+        cos.addProperty("head", Cosmetics.equipped(Cosmetics.Kind.HEAD));
+        cos.addProperty("pet", Cosmetics.equipped(Cosmetics.Kind.PET));
+        cos.addProperty("shield", Cosmetics.equipped(Cosmetics.Kind.SHIELD));
+        o.add("cosmetics", cos);
+        return o.toString();
+    }
+}
