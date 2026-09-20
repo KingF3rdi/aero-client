@@ -111,7 +111,6 @@ public final class DevShot {
         STEPS.add(new Step("fp_shield", () -> {
             var mc = MinecraftClient.getInstance();
             mc.player.equipStack(net.minecraft.entity.EquipmentSlot.OFFHAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.SHIELD));
-            Cosmetics.equip(Cosmetics.Kind.SHIELD, "spiked");
             mc.options.setPerspective(Perspective.FIRST_PERSON);
         }, 40));
         STEPS.add(new Step("tp_back_cosmetics", () -> {

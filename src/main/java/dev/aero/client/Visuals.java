@@ -587,17 +587,6 @@ public final class Visuals {
     }
 
     /** ARGB multiply-tint for the held shield model, including opacity. */
-    /** "spiked"/"studded" while the local player's shield is being drawn, else null. */
-    public static String shieldSpikeStyle() {
-        PlayerEntity holder = shieldHolder.get();
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (holder == null || holder != mc.player) {
-            return null;
-        }
-        String id = dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD);
-        return "spiked".equals(id) || "studded".equals(id) ? id : null;
-    }
-
     public static Integer shieldModelTint() {
         ClientConfig c = cfg();
         PlayerEntity holder = shieldHolder.get();
@@ -605,16 +594,8 @@ public final class Visuals {
             return null;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
-        int cosmetic = 0;
-        if (holder == mc.player) {
-            cosmetic = dev.aero.client.cosmetic.Cosmetics.equippedColor(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD);
-        } else if (c.showOthersCosmetics) {
-            var it = dev.aero.client.cosmetic.Cosmetics.named(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD,
-                    dev.aero.client.social.ClientUsers.cosmeticOf(holder.getUuid(), "shield"));
-            cosmetic = it == null || "none".equals(it.id()) ? 0 : it.color();
-        }
         if (!c.shieldTweaks) {
-            return cosmetic == 0 ? null : (Integer) cosmetic;
+            return null;
         }
         if (c.shieldOwnOnly && mc.player != null && holder != mc.player) {
             return null;
@@ -624,8 +605,6 @@ public final class Visuals {
             rgb = c.shieldDisabledColor;
         } else if (holder.isBlocking() && c.shieldBlocking) {
             rgb = c.shieldBlockingColor;
-        } else if (cosmetic != 0) {
-            rgb = cosmetic;
         } else if (c.shieldReady) {
             rgb = c.shieldReadyColor;
         } else {

@@ -43,7 +43,6 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             case WINGS -> "wings";
             case HEAD -> "head";
             case PET -> "pet";
-            case SHIELD -> "shield";
             default -> "none";
         };
         return dev.aero.client.social.ClientUsers.cosmeticOf(who, key);

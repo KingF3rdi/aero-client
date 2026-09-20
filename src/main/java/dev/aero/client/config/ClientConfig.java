@@ -349,7 +349,6 @@ public class ClientConfig {
     /** Send equipped cosmetics to the Aero server so other players see them. */
     public boolean shareProfile = true;
     public boolean vanillaUi = true;
-    public String equippedShield = "none";
     public int totemColGood = 0xFF55FF55;
     public int totemColWarn = 0xFFFFA030;
     public int totemColBad = 0xFFFF5555;

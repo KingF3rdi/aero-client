@@ -20,7 +20,7 @@ public final class WardrobePanel {
     private static final int MUTED = 0xFF8E889C;
     private static final int PAD = 8;
 
-    private static final String[] TAB_NAMES = {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges", "Shields"};
+    private static final String[] TAB_NAMES = {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges"};
     private static final int[] TAB_ORDER = {0, 1, 2, 3, 4, 5, 6, 10, 7, 8, 9};
 
     public String search = "";

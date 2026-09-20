@@ -43,7 +43,6 @@ public final class CosmeticIcons {
             case EMOTE -> label(c, item.name(), color, cx, cy, 1.5f);
             case TAG -> label(c, Cosmetics.glyph(kind, item.id()), color, cx, cy, 2f);
             case BADGE -> badge(c, item.id(), color, cx, cy);
-            case SHIELD -> shield(c, item.id(), color, cx, cy, t);
             default -> {
             }
         }
@@ -59,32 +58,6 @@ public final class CosmeticIcons {
         c.getMatrices().scale(scale, scale);
         c.drawText(tr, Text.literal(s), -tr.getWidth(s) / 2, -4, color | 0xFF000000, true);
         c.getMatrices().popMatrix();
-    }
-
-    private static void shield(DrawContext c, String id, int col, int cx, int cy, float t) {
-        int base = "rainbow".equals(id) ? (0xFF000000 | (java.awt.Color.HSBtoRGB((t * 0.4f) % 1f, 0.7f, 1f) & 0xFFFFFF)) : col;
-        int dark = CubeDraw.shade(base, 0.6f);
-        int light = CubeDraw.shade(base, 1.25f);
-        // shield silhouette: wide top, tapering to a point
-        for (int row = 0; row < 22; row++) {
-            int half = row < 13 ? 10 : Math.max(1, 10 - (row - 12));
-            c.fill(cx - half, cy - 12 + row, cx + half, cy - 11 + row, row < 2 ? light : base);
-        }
-        c.fill(cx - 1, cy - 12, cx + 1, cy + 8, dark);
-        c.fill(cx - 10, cy - 2, cx + 10, cy, dark);
-        c.fill(cx - 10, cy - 12, cx - 9, cy + 1, light);
-        if ("spiked".equals(id) || "studded".equals(id)) {
-            int metal = 0xFFB4BCC8;
-            int[][] pts = {{0, -4}, {-6, -9}, {6, -9}, {-6, 3}, {6, 3}, {0, 5}};
-            for (int[] p : pts) {
-                if ("spiked".equals(id)) {
-                    c.fill(cx + p[0] - 1, cy + p[1] - 1, cx + p[0] + 1, cy + p[1] + 1, metal);
-                    c.fill(cx + p[0], cy + p[1] - 3, cx + p[0] + 1, cy + p[1] - 1, 0xFFE8ECF4);
-                } else {
-                    c.fill(cx + p[0] - 1, cy + p[1] - 1, cx + p[0] + 2, cy + p[1] + 2, metal);
-                }
-            }
-        }
     }
 
     private static void badge(DrawContext c, String id, int color, int cx, int cy) {

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Locale;
 
 public final class Cosmetics {
-    public enum Kind { CAPE, WINGS, HEAD, TRAIL, PET, EMOTE, TAG, BADGE, KILL_EFFECT, MACE, SHIELD, NONE }
+    public enum Kind { CAPE, WINGS, HEAD, TRAIL, PET, EMOTE, TAG, BADGE, KILL_EFFECT, MACE, NONE }
 
     public record Item(String id, String name, Kind kind, int color) {}
 
@@ -87,15 +87,6 @@ public final class Cosmetics {
         killEffect("void", "Void", 0xFF9B5BFF);
         killEffect("totem", "Totem", 0xFF8CE060);
         killEffect("nova", "Nova", 0xFFFF9B4D);
-        shield("none", "None", 0xFF2A2A32);
-        shield("crimson", "Crimson", 0xFFE04A4A);
-        shield("azure", "Azure", 0xFF4F8EFF);
-        shield("emerald", "Emerald", 0xFF3CD07A);
-        shield("gold", "Gold", 0xFFFFC94D);
-        shield("obsidian", "Obsidian", 0xFF5A4A8A);
-        shield("ice", "Ice", 0xFF9FE8F8);
-        shield("rainbow", "Rainbow", 0xFFFF6BD0);
-        shield("spiked", "Spiked", 0xFF6A6A78);
         mace("none", "None", 0xFF2A2A32);
         mace("slam", "Slam", 0xFFFF9B4D);
         mace("quake", "Quake", 0xFFB8946A);
@@ -132,14 +123,13 @@ public final class Cosmetics {
             case 7 -> Kind.EMOTE;
             case 8 -> Kind.TAG;
             case 9 -> Kind.BADGE;
-            case 10 -> Kind.SHIELD;
             default -> Kind.CAPE;
         };
     }
 
     public static boolean hasVariants(Kind kind) {
         return switch (kind) {
-            case WINGS, HEAD, TRAIL, KILL_EFFECT, MACE, PET, SHIELD -> true;
+            case WINGS, HEAD, TRAIL, KILL_EFFECT, MACE, PET -> true;
             default -> false;
         };
     }
@@ -160,7 +150,6 @@ public final class Cosmetics {
             case BADGE -> nz(c.equippedBadge);
             case KILL_EFFECT -> nz(c.equippedKillEffect);
             case MACE -> nz(c.equippedMace);
-            case SHIELD -> nz(c.equippedShield);
             case NONE -> "none";
         };
     }
@@ -182,7 +171,6 @@ public final class Cosmetics {
             case BADGE -> c.equippedBadge = value;
             case KILL_EFFECT -> c.equippedKillEffect = value;
             case MACE -> c.equippedMace = value;
-            case SHIELD -> c.equippedShield = value;
             case NONE -> {
                 return;
             }
@@ -235,9 +223,6 @@ public final class Cosmetics {
             return 0;
         }
         Item item = named(kind, id);
-        if (kind == Kind.SHIELD && "rainbow".equals(id)) {
-            return 0xFF000000 | (java.awt.Color.HSBtoRGB((System.currentTimeMillis() % 3000L) / 3000f, 0.7f, 1f) & 0xFFFFFF);
-        }
         return item == null ? 0 : variantColor(item, variantIndex(kind, id));
     }
 
@@ -275,6 +260,5 @@ public final class Cosmetics {
     private static void tag(String id, String name, int color) { ALL.add(new Item(id, name, Kind.TAG, color)); }
     private static void badge(String id, String name, int color) { ALL.add(new Item(id, name, Kind.BADGE, color)); }
     private static void killEffect(String id, String name, int color) { ALL.add(new Item(id, name, Kind.KILL_EFFECT, color)); }
-    private static void shield(String id, String name, int color) { ALL.add(new Item(id, name, Kind.SHIELD, color)); }
     private static void mace(String id, String name, int color) { ALL.add(new Item(id, name, Kind.MACE, color)); }
 }

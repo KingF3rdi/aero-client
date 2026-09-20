@@ -189,7 +189,6 @@ public final class AeroApi {
         cos.addProperty("wings", Cosmetics.equipped(Cosmetics.Kind.WINGS));
         cos.addProperty("head", Cosmetics.equipped(Cosmetics.Kind.HEAD));
         cos.addProperty("pet", Cosmetics.equipped(Cosmetics.Kind.PET));
-        cos.addProperty("shield", Cosmetics.equipped(Cosmetics.Kind.SHIELD));
         o.add("cosmetics", cos);
         return o.toString();
     }
