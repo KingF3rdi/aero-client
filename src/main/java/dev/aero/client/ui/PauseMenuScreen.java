@@ -89,6 +89,16 @@ public class PauseMenuScreen extends Screen {
         context.drawText(textRenderer, Text.literal(label),
                 cx - textRenderer.getWidth(label) / 2, by + 8, TEXT, false);
 
+        if (dev.aero.client.ModUpdater.state() == dev.aero.client.ModUpdater.State.IDLE) {
+            dev.aero.client.ModUpdater.check();
+        }
+        String ul = dev.aero.client.ModUpdater.label();
+        int uw = textRenderer.getWidth(ul) + 16;
+        int ux = px + 360 - uw - 12;
+        UiDraw.pill(context, ux, py + 10, uw, 16, inside(mouseX, mouseY, ux, py + 10, uw, 16));
+        context.drawText(textRenderer, Text.literal(ul), ux + 8, py + 14,
+                dev.aero.client.ModUpdater.state() == dev.aero.client.ModUpdater.State.AVAILABLE ? UiDraw.accent() : MUTED, false);
+
         hover = -1;
         int iconY = py + 96;
         int start = cx - (5 * 52) / 2;
@@ -162,6 +172,11 @@ public class PauseMenuScreen extends Screen {
         int my = Math.round((float) (click.y() / scale));
         int cx = vw() / 2;
         int py = panelY();
+        int uw = textRenderer.getWidth(dev.aero.client.ModUpdater.label()) + 16;
+        if (inside(mx, my, panelX() + 360 - uw - 12, py + 10, uw, 16)) {
+            dev.aero.client.ModUpdater.click();
+            return true;
+        }
         int bx = cx - 110;
         int by = py + 56;
         if (inside(mx, my, bx, by, 220, 24)) {
