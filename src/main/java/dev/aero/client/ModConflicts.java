@@ -18,13 +18,20 @@ public final class ModConflicts {
     private static final Map<String, List<String>> TABLE = Map.ofEntries(
             Map.entry("TierTagger", List.of("tiertagger", "mctiers", "pvptiers", "tiers")),
             Map.entry("Motion Blur", List.of("motionblur", "motion_blur")),
-            Map.entry("Zoom", List.of("zoomify", "ok_zoomer", "logical_zoom")),
+            Map.entry("Zoom", List.of("zoomify", "ok_zoomer", "logical_zoom", "wi_zoom")),
             Map.entry("Toggle Sprint", List.of("togglesprint", "toggle-sprint", "toggle_sprint")),
             Map.entry("Fullbright", List.of("fullbright", "gammautils")),
             Map.entry("Keystrokes", List.of("keystrokes")),
             Map.entry("CPS", List.of("cps", "cpsmod")),
             Map.entry("Armor HUD", List.of("armorhud", "armor-hud")),
-            Map.entry("Potion HUD", List.of("potionhud", "potion-hud"))
+            Map.entry("Potion HUD", List.of("potionhud", "potion-hud", "effecttimerplus")),
+            Map.entry("Nametags", List.of("nametagtweaks")),
+            Map.entry("Totem Counter", List.of("totemcounter")),
+            Map.entry("Shield Tweaks", List.of("shieldstatus", "shieldfixes")),
+            Map.entry("Time Changer", List.of("timechanger")),
+            Map.entry("Saturation Overlay", List.of("appleskin")),
+            Map.entry("Damage Tint", List.of("contts-hitcolorx")),
+            Map.entry("Death Animation", List.of("nodeathanimation"))
     );
 
     private static boolean told;
