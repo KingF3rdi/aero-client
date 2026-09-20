@@ -124,15 +124,6 @@ public final class DevShot {
             MinecraftClient.getInstance().options.setPerspective(Perspective.THIRD_PERSON_BACK);
         }, 60));
         STEPS.add(new Step("tp_front", () -> MinecraftClient.getInstance().options.setPerspective(Perspective.THIRD_PERSON_FRONT), 40));
-        STEPS.add(new Step("zz_inv_1", () -> {
-            var c = AeroClient.CONFIG; var mc = MinecraftClient.getInstance();
-            c.guiTweaks = true; c.guiInventoryTweaks = true; c.guiInventoryScale = 1.0f;
-            mc.player.equipStack(net.minecraft.entity.EquipmentSlot.HEAD, new net.minecraft.item.ItemStack(net.minecraft.item.Items.DIAMOND_HELMET));
-            mc.setScreen(new net.minecraft.client.gui.screen.ingame.InventoryScreen(mc.player));
-        }, 40));
-        STEPS.add(new Step("zz_inv_2", () -> AeroClient.CONFIG.guiInventoryScale = 1.5f, 40));
-        STEPS.add(new Step("zz_inv_3", () -> { AeroClient.CONFIG.guiInventoryScale = 0.7f; }, 40));
-        STEPS.add(new Step("zz_inv_end", () -> MinecraftClient.getInstance().setScreen(null), 10));
         STEPS.add(new Step("tp_back_wings_angel_cape", () -> {
             Cosmetics.equip(Cosmetics.Kind.WINGS, "angel");
             Cosmetics.equip(Cosmetics.Kind.CAPE, "none");
