@@ -129,25 +129,44 @@ public final class AeroApi {
     }
 
     private static void login(MinecraftClient mc, String b, String name, java.util.UUID uuid, String access) throws Exception {
-        if (uuid == null || access == null || access.isBlank()) {
-            log("no online session (offline account?), skipping");
-            status("Server: no online Microsoft session, profile not shared");
+        if (uuid != null && access != null && !access.isBlank()) {
+            try {
+                JsonObject start = JsonParser.parseString(post(b + "/api/auth/start", "{}", null).body()).getAsJsonObject();
+                String serverId = start.get("serverId").getAsString();
+                mc.getApiServices().sessionService().joinServer(uuid, access, serverId);
+                JsonObject req = new JsonObject();
+                req.addProperty("name", name);
+                req.addProperty("serverId", serverId);
+                HttpResponse<String> res = post(b + "/api/auth/finish", req.toString(), null);
+                if (res.statusCode() == 200) {
+                    token = JsonParser.parseString(res.body()).getAsJsonObject().get("token").getAsString();
+                    tokenAt = System.currentTimeMillis();
+                    log("logged in as " + name);
+                    status("Connected to the Aero server");
+                    return;
+                }
+                log("login rejected: " + res.statusCode() + " " + res.body());
+            } catch (Exception e) {
+                log("verified login failed: " + e);
+            }
+        } else {
+            log("no online session (offline account?)");
+        }
+        // No valid Mojang session: register as a guest, so the player still counts (no cosmetics for guests).
+        if (uuid == null) {
             return;
         }
-        JsonObject start = JsonParser.parseString(post(b + "/api/auth/start", "{}", null).body()).getAsJsonObject();
-        String serverId = start.get("serverId").getAsString();
-        mc.getApiServices().sessionService().joinServer(uuid, access, serverId);
         JsonObject req = new JsonObject();
         req.addProperty("name", name);
-        req.addProperty("serverId", serverId);
-        HttpResponse<String> res = post(b + "/api/auth/finish", req.toString(), null);
+        req.addProperty("uuid", uuid.toString());
+        HttpResponse<String> res = post(b + "/api/auth/guest", req.toString(), null);
         if (res.statusCode() == 200) {
             token = JsonParser.parseString(res.body()).getAsJsonObject().get("token").getAsString();
             tokenAt = System.currentTimeMillis();
-            log("logged in as " + name);
-            status("Connected to the Aero server");
+            log("registered as guest " + name);
+            status("Connected to the Aero server as guest (no verified Microsoft session)");
         } else {
-            log("login rejected: " + res.statusCode() + " " + res.body());
+            log("guest registration rejected: " + res.statusCode() + " " + res.body());
             status("Server login rejected (" + res.statusCode() + ")");
         }
     }
