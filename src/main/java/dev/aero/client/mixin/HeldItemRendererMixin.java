@@ -146,14 +146,16 @@ public class HeldItemRendererMixin {
                                         net.minecraft.item.ItemDisplayContext context,
                                         MatrixStack matrices, OrderedRenderCommandQueue queue, int light, CallbackInfo ci) {
         if (entity == net.minecraft.client.MinecraftClient.getInstance().player && dev.aero.client.Visuals.isShield(stack)
-                && "spiked".equals(dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD))) {
+                && !"none".equals(dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD))) {
             matrices.push();
             matrices.translate(0.0, 0.3, -0.6);
             matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(-125f));
             matrices.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_X.rotationDegrees(-15f));
             matrices.scale(0.8f, 0.8f, 0.8f);
-            dev.aero.client.cosmetic.SpikedShield.draw(matrices, queue,
-                    net.minecraft.client.render.RenderLayers.entityCutoutNoCull(dev.aero.client.cosmetic.CubeDraw.WHITE), light);
+            dev.aero.client.cosmetic.SpikedShield.drawFor(matrices, queue,
+                    net.minecraft.client.render.RenderLayers.entityCutoutNoCull(dev.aero.client.cosmetic.CubeDraw.WHITE), light,
+                    dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD),
+                    dev.aero.client.cosmetic.Cosmetics.equippedColor(dev.aero.client.cosmetic.Cosmetics.Kind.SHIELD));
             matrices.pop();
             ci.cancel();
             return;

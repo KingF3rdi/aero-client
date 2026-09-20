@@ -109,14 +109,21 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             m.pop();
         }
 
-        if ("spiked".equals(idOf(Cosmetics.Kind.SHIELD))) {
-            m.push();
-            model.leftArm.applyTransform(m);
-            m.translate(0.2f, 0.3f, 0f);
-            m.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(-70f));
-            m.scale(0.6f, 0.6f, 0.6f);
-            SpikedShield.draw(m, q, layer, light);
-            m.pop();
+        int shieldArms = SpikedShield.ARMS.getOrDefault(state.id, 0);
+        if (shieldArms != 0 && !"none".equals(idOf(Cosmetics.Kind.SHIELD))) {
+            for (int a = 1; a <= 2; a++) {
+                if ((shieldArms & a) == 0) {
+                    continue;
+                }
+                float outward = a == 1 ? 1f : -1f;
+                m.push();
+                (a == 1 ? model.leftArm : model.rightArm).applyTransform(m);
+                m.translate(0.2f * outward, 0.3f, 0f);
+                m.multiply(net.minecraft.util.math.RotationAxis.POSITIVE_Y.rotationDegrees(-70f * outward));
+                m.scale(0.6f, 0.6f, 0.6f);
+                SpikedShield.drawFor(m, q, layer, light, idOf(Cosmetics.Kind.SHIELD), colorOf(Cosmetics.Kind.SHIELD));
+                m.pop();
+            }
         }
 
         int head = colorOf(Cosmetics.Kind.HEAD);
