@@ -252,7 +252,7 @@ public final class Visuals {
             PlayerEntity best = null;
             double bestDist = blockDist;
             for (PlayerEntity p : mc.world.getPlayers()) {
-                if (p == mc.player) {
+                if (p == mc.player || p.isSpectator() || !p.isAlive() || !p.isAttackable()) {
                     continue;
                 }
                 Box box = p.getBoundingBox().expand(0.1);

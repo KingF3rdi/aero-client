@@ -345,7 +345,7 @@ public final class OverlayHud {
             float hue = (System.currentTimeMillis() % 4000L) / 4000f * Math.max(0.2f, cfg.crosshairRainbowSpeed);
             c = 0xFF000000 | (java.awt.Color.HSBtoRGB(hue % 1f, 0.85f, 1f) & 0xFFFFFF);
         }
-        if (cfg.customCrosshair && cfg.crosshairHover && dev.aero.client.Visuals.hoveredPlayer(mc, Math.max(1.0, cfg.crosshairHoverRange)) != null) {
+        if (cfg.customCrosshair && cfg.crosshairHover && dev.aero.client.Visuals.hoveredPlayer(mc, Math.min(Math.max(1.0, cfg.crosshairHoverRange), mc.player.getEntityInteractionRange())) != null) {
             c = cfg.crosshairHoverColor | 0xFF000000;
         } else if (cfg.customCrosshair && mc.targetedEntity instanceof net.minecraft.entity.LivingEntity living) {
             if (cfg.crosshairHighlightHostiles && living instanceof net.minecraft.entity.mob.HostileEntity) {

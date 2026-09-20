@@ -400,6 +400,7 @@ public final class Modules {
                 () -> c.guiTweaks, v -> c.guiTweaks = v)
                 .setting("HUD Tweaks", () -> c.guiHudTweaks, v -> c.guiHudTweaks = v)
                 .settingF("Esc Menu Scale", () -> (double) c.escHudScale, v -> c.escHudScale = (float) v, 0.5, 2.0)
+                .setting("Esc Menu Height", () -> c.escMenuOffsetY, v -> c.escMenuOffsetY = v, -120, 200)
                 .setting("No Item Name", () -> c.guiNoItemName, v -> c.guiNoItemName = v)
                 .setting("Hide Selector", () -> c.guiHideSelector, v -> c.guiHideSelector = v)
                 .setting("Hide Action Bar", () -> c.guiHideActionBar, v -> c.guiHideActionBar = v)

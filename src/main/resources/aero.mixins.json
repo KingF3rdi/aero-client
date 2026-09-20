@@ -48,7 +48,6 @@
     "DamageTintEquipmentMixin",
     "MotionBlurMixin",
     "VanillaUiHotbarMixin",
-    "VanillaUiScreenMixin",
     "VanillaButtonMixin",
     "VanillaSliderMixin",
     "MotionBlurHudMixin"

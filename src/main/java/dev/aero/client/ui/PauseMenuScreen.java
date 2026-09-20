@@ -45,7 +45,9 @@ public class PauseMenuScreen extends Screen {
     }
 
     private int panelY() {
-        return vh() / 2 - 78;
+        var cfg = dev.aero.client.AeroClient.CONFIG;
+        int off = cfg == null ? 0 : cfg.escMenuOffsetY;
+        return Math.max(4, Math.min(vh() - 172, vh() / 2 - 78 + off));
     }
 
     @Override

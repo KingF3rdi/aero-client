@@ -276,6 +276,8 @@ public class ClientConfig {
     public boolean guiInventoryTweaks = true;
     public float guiInventoryScale = 1.0f;
     public float escHudScale = 1.0f;
+    /** Esc menu offset from the screen center, in scaled pixels (positive = lower). */
+    public int escMenuOffsetY = 40;
     public boolean guiHotbar = true;
     public boolean guiHealth = true;
     public boolean guiArmor = true;
