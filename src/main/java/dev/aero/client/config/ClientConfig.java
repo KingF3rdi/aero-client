@@ -470,6 +470,10 @@ public class ClientConfig {
     public boolean motionBlur = false;
     public int motionBlurAmount = 50;
     public boolean colorSaturation = false;
+    public boolean shulkerTooltips = false;
+    public boolean shulkerTooltipsShift = false;
+    public boolean shulkerTooltipsEmptySlots = true;
+    public boolean shulkerTooltipsHideList = true;
     public boolean conflictsIgnored = false;
     public boolean customLoadingScreen = true;
     public boolean skyChanger = false;

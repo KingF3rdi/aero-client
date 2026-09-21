@@ -48,6 +48,8 @@
     "DamageTintEquipmentMixin",
     "MotionBlurMixin",
     "GameRendererAccess",
+    "ShulkerTooltipMixin",
+    "ContainerComponentMixin",
     "SkyRenderingMixin",
     "FogRendererMixin",
     "SplashOverlayMixin",

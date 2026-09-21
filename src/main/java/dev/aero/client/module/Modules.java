@@ -246,6 +246,11 @@ public final class Modules {
                 .setting("Fog matches sky", () -> c.skyFogMatch, v -> c.skyFogMatch = v));
         add(new Module("Loading Screen", "Aero-styled startup loading screen (applies on next launch)", Category.RENDER,
                 () -> c.customLoadingScreen, v -> c.customLoadingScreen = v));
+        add(new Module("Shulker Tooltips", "Hover a shulker box to see its contents as a grid", Category.PLAYER,
+                () -> c.shulkerTooltips, v -> c.shulkerTooltips = v)
+                .setting("Only while holding Shift", () -> c.shulkerTooltipsShift, v -> c.shulkerTooltipsShift = v)
+                .setting("Show empty slots", () -> c.shulkerTooltipsEmptySlots, v -> c.shulkerTooltipsEmptySlots = v)
+                .setting("Hide vanilla item list", () -> c.shulkerTooltipsHideList, v -> c.shulkerTooltipsHideList = v));
         add(new Module("Color Saturation", "Make the world more vivid or wash it out", Category.RENDER,
                 () -> c.colorSaturation, v -> c.colorSaturation = v)
                 .setting("Saturation %", () -> c.colorSaturationAmount, v -> c.colorSaturationAmount = v, 0, 200));
