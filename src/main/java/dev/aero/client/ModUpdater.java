@@ -39,7 +39,7 @@ public final class ModUpdater {
         return switch (state) {
             case AVAILABLE -> "Update available";
             case DOWNLOADING -> "Downloading...";
-            case READY -> "Restart to finish";
+            case READY -> "Close game to update";
             case UPTODATE -> "Up to date";
             case ERROR -> "Retry update";
             case DEV -> "Dev build";
@@ -121,7 +121,9 @@ public final class ModUpdater {
                 }
                 Files.write(tmp, data);
                 Files.writeString(jar.resolveSibling(".aero-client.version"), stamp);
-                scheduleSwap(tmp, jar);
+                if (!swapNow(tmp, jar)) {
+                    scheduleSwap(tmp, jar); // jar is locked: helper swaps it after the game exits
+                }
                 state = State.READY;
             } catch (Throwable t) {
                 state = State.ERROR;
@@ -136,6 +138,46 @@ public final class ModUpdater {
             return r.statusCode() == 200 ? r.body() : null;
         } catch (Throwable t) {
             return null;
+        }
+    }
+
+    /**
+     * Java opens files with delete sharing on most systems, so the loaded jar can usually be renamed away
+     * while the game runs (its open handle stays valid). Then the new jar takes its place right now and
+     * the next launch simply uses it. Returns false when the rename is refused.
+     */
+    private static boolean swapNow(Path from, Path jar) {
+        Path old = jar.resolveSibling(jar.getFileName() + ".old");
+        try {
+            Files.deleteIfExists(old);
+            Files.move(jar, old);
+        } catch (Throwable t) {
+            return false;
+        }
+        try {
+            Files.move(from, jar);
+            return true;
+        } catch (Throwable t) {
+            try {
+                Files.move(old, jar); // put the original back, then fall back to the exit helper
+            } catch (Throwable ignored) {
+            }
+            return false;
+        }
+    }
+
+    /** Startup housekeeping: drops a leftover "<jar>.old", and re-arms the exit swap if a downloaded "<jar>.new" is still waiting. */
+    public static void cleanup() {
+        Path jar = jar();
+        if (jar != null) {
+            try {
+                Files.deleteIfExists(jar.resolveSibling(jar.getFileName() + ".old"));
+                Path pending = jar.resolveSibling(jar.getFileName() + ".new");
+                if (Files.isRegularFile(pending) && Files.size(pending) > 10_000) {
+                    scheduleSwap(pending, jar);
+                }
+            } catch (Throwable ignored) {
+            }
         }
     }
 

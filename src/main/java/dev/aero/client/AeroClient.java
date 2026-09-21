@@ -58,6 +58,7 @@ public class AeroClient implements ClientModInitializer {
         registerCosmeticRenderer();
         DevShot.register();
         AutoTextCommand.register();
+        ModUpdater.cleanup();
         dev.aero.client.cosmetic.CosmeticEffects.register();
         ClientTickEvents.END_CLIENT_TICK.register(AeroClient::tick);
     }

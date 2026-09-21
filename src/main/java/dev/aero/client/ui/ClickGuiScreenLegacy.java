@@ -1,6 +1,7 @@
 package dev.aero.client.ui;
 
 import dev.aero.client.AeroClient;
+import dev.aero.client.ModUpdater;
 import dev.aero.client.auth.AccountManager;
 import dev.aero.client.auth.SavedAccount;
 import dev.aero.client.auth.SkinPreview;
@@ -376,6 +377,19 @@ public class ClickGuiScreenLegacy extends Screen {
         if (!compactTop()) {
             context.drawText(textRenderer, Text.literal("Aero"), x0 + 34, y0 + 10, TEXT, false);
             context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 34, y0 + 20, MUTED, false);
+        }
+
+        if (ModUpdater.state() == ModUpdater.State.IDLE) {
+            ModUpdater.check();
+        }
+        if (y0 >= 24) {
+            String ul = ModUpdater.label();
+            int uw = textRenderer.getWidth(ul) + 16;
+            int ux = x1 - uw - 6;
+            boolean uh = inside(mx, my, ux, y0 - 22, uw, 18);
+            UiDraw.pill(context, ux, y0 - 22, uw, 18, uh);
+            context.drawText(textRenderer, Text.literal(ul), ux + 8, y0 - 17,
+                    ModUpdater.state() == ModUpdater.State.AVAILABLE ? UiDraw.accent() : MUTED, false);
         }
 
         int tabX = topTabX();
@@ -1133,6 +1147,11 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         if (inside(mx, my, profilesButtonX(), oy + 8, PROFILES_W, 20)) {
             MinecraftClient.getInstance().setScreen(new ProfilesScreen(this));
+            return true;
+        }
+        int updW = textRenderer.getWidth(ModUpdater.label()) + 16;
+        if (oy >= 24 && inside(mx, my, ox + pw - updW - 6, oy - 22, updW, 18)) {
+            ModUpdater.click();
             return true;
         }
         int tx = topTabX();
