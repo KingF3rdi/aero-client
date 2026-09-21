@@ -233,7 +233,11 @@ public final class Modules {
         add(new Module("Motion Blur", "Smear the view as it moves", Category.PREVIEW,
                 () -> c.motionBlur, v -> c.motionBlur = v)
                 .setting("Style", () -> c.motionBlurStyle, v -> c.motionBlurStyle = v, "Blur", "Simple")
-                .setting("Strength", () -> c.motionBlurStrength, v -> c.motionBlurStrength = v, "Low", "Medium", "High"));
+                .setting("Strength", () -> c.motionBlurStrength, v -> c.motionBlurStrength = v, "Low", "Medium", "High")
+                .setting("Amount %", () -> c.motionBlurAmount, v -> c.motionBlurAmount = v, 10, 100));
+        add(new Module("Color Saturation", "Make the world more vivid or wash it out", Category.RENDER,
+                () -> c.colorSaturation, v -> c.colorSaturation = v)
+                .setting("Saturation %", () -> c.colorSaturationAmount, v -> c.colorSaturationAmount = v, 0, 200));
         add(new Module("Nostalgia", "Crystals, lighting and glint as they were", Category.RENDER,
                 () -> c.nostalgia, v -> c.nostalgia = v)
                 .setting("Old Crystals", () -> c.nostalgiaOldCrystals, v -> c.nostalgiaOldCrystals = v)
@@ -344,6 +348,7 @@ public final class Modules {
         add(new Module("Auto Text", "Chat message on kill", Category.PLAYER,
                 () -> c.autoText, v -> c.autoText = v)
                 .settingText("Text", () -> c.autoTextMessage, v -> c.autoTextMessage = v)
+                .settingText("Presets (/at name)", () -> c.autoTextPresets, v -> c.autoTextPresets = v)
                 .settingF("Delay (ticks)", () -> (double) c.autoTextDelayTicks, v -> c.autoTextDelayTicks = (float) v, 0, 40)
                 .settingF("Cooldown (s)", () -> (double) c.autoTextCooldown, v -> c.autoTextCooldown = (float) v, 0, 30)
                 .settingF("Kill Range", () -> (double) c.autoTextKillRange, v -> c.autoTextKillRange = (float) v, 4, 64)

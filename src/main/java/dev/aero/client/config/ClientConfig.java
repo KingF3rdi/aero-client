@@ -468,6 +468,9 @@ public class ClientConfig {
     public int hitboxColor = -1;
 
     public boolean motionBlur = false;
+    public int motionBlurAmount = 50;
+    public boolean colorSaturation = false;
+    public int colorSaturationAmount = 150;
     public String motionBlurStyle = "Blur";
     public String motionBlurStrength = "Medium";
 
@@ -513,7 +516,8 @@ public class ClientConfig {
 
     public boolean autoText = false;
     public String autoTextMessage = "gg";
-    public float autoTextDelayTicks = 5f;
+    public float autoTextDelayTicks = 2f;
+    public String autoTextPresets = "gg=gg; ez=ez; gf=good fight; wp=well played";
     public float autoTextCooldown = 3f;
     public float autoTextKillRange = 24f;
     public String autoTextChatTrigger = "";
