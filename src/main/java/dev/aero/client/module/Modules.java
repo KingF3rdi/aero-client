@@ -235,6 +235,17 @@ public final class Modules {
                 .setting("Style", () -> c.motionBlurStyle, v -> c.motionBlurStyle = v, "Blur", "Simple")
                 .setting("Strength", () -> c.motionBlurStrength, v -> c.motionBlurStrength = v, "Low", "Medium", "High")
                 .setting("Amount %", () -> c.motionBlurAmount, v -> c.motionBlurAmount = v, 10, 100));
+        add(new Module("Sky Changer", "Recolor the overworld sky, horizon glow and fog", Category.RENDER,
+                () -> c.skyChanger, v -> c.skyChanger = v)
+                .setting("Preset", () -> c.skyPreset, v -> c.skyPreset = v, "Custom", "Sunset", "Dusk", "Midnight", "Cotton Candy", "Toxic", "Blood", "Ocean", "Rainbow")
+                .settingColor("Sky color (Custom)", () -> c.skyChangerColor, v -> c.skyChangerColor = v)
+                .settingColor("Horizon color (Custom)", () -> c.skyChangerHorizon, v -> c.skyChangerHorizon = v)
+                .setting("Brightness %", () -> c.skyBrightness, v -> c.skyBrightness = v, 20, 150)
+                .setting("Always show horizon glow", () -> c.skyGlowAlways, v -> c.skyGlowAlways = v)
+                .setting("Always show stars", () -> c.skyStars, v -> c.skyStars = v)
+                .setting("Fog matches sky", () -> c.skyFogMatch, v -> c.skyFogMatch = v));
+        add(new Module("Loading Screen", "Aero-styled startup loading screen (applies on next launch)", Category.RENDER,
+                () -> c.customLoadingScreen, v -> c.customLoadingScreen = v));
         add(new Module("Color Saturation", "Make the world more vivid or wash it out", Category.RENDER,
                 () -> c.colorSaturation, v -> c.colorSaturation = v)
                 .setting("Saturation %", () -> c.colorSaturationAmount, v -> c.colorSaturationAmount = v, 0, 200));

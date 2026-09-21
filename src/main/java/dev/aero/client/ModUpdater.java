@@ -139,7 +139,7 @@ public final class ModUpdater {
         }
     }
 
-    private static void scheduleSwap(Path from, Path to) {
+    static void scheduleSwap(Path from, Path to) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 String f = from.toAbsolutePath().toString();

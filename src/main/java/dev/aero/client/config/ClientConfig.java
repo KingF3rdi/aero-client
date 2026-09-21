@@ -470,6 +470,16 @@ public class ClientConfig {
     public boolean motionBlur = false;
     public int motionBlurAmount = 50;
     public boolean colorSaturation = false;
+    public boolean conflictsIgnored = false;
+    public boolean customLoadingScreen = true;
+    public boolean skyChanger = false;
+    public String skyPreset = "Sunset";
+    public int skyChangerColor = 0xFF7FB2FF;
+    public int skyChangerHorizon = 0xFFFF8A4D;
+    public int skyBrightness = 100;
+    public boolean skyStars = false;
+    public boolean skyGlowAlways = false;
+    public boolean skyFogMatch = true;
     public int colorSaturationAmount = 150;
     public String motionBlurStyle = "Blur";
     public String motionBlurStrength = "Medium";
