@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Other mods that do the same job as an Aero module. They are listed on the title screen (see ConflictScreen);
- * removing one moves its jar into mods/aero-removed once the game has exited, so it can always be put back.
+ * disabling one moves its jar into mods/aero-removed once the game has exited, so it can always be put back.
  */
 public final class ModConflicts {
     /** Aero module name -> Fabric mod ids that duplicate it. Unknown ids are simply not loaded, so wrong guesses are harmless. */
@@ -50,11 +50,15 @@ public final class ModConflicts {
 
     private ModConflicts() {}
 
-    /** Loaded mods that overlap an Aero module and whose jar can be moved (a plain .jar file). */
-    public static List<Conflict> find() {
+    /** Loaded mods that overlap an ENABLED Aero module and whose jar can be moved (a plain .jar file). */
+    public static List<Conflict> find(List<dev.aero.client.module.Module> modules) {
         List<Conflict> out = new ArrayList<>();
         FabricLoader loader = FabricLoader.getInstance();
         for (var e : TABLE.entrySet()) {
+            final String moduleName = e.getKey();
+            if (modules.stream().noneMatch(m -> m.name.equals(moduleName) && m.enabled())) {
+                continue; // only warn while the matching Aero module is switched on
+            }
             for (String id : e.getValue()) {
                 ModContainer mc = loader.getModContainer(id).orElse(null);
                 if (mc == null) {

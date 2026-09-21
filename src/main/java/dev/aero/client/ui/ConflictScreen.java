@@ -38,7 +38,10 @@ public class ConflictScreen extends Screen {
         if (AeroClient.CONFIG.conflictsIgnored) {
             return;
         }
-        List<ModConflicts.Conflict> found = ModConflicts.find();
+        if (AeroClient.MODULES == null) {
+            return;
+        }
+        List<ModConflicts.Conflict> found = ModConflicts.find(AeroClient.MODULES.all);
         if (!found.isEmpty()) {
             mc.setScreen(new ConflictScreen(mc.currentScreen, found));
         }
@@ -67,16 +70,16 @@ public class ConflictScreen extends Screen {
         int py = py();
         UiDraw.glass(context, px, py, panelW(), panelH(), 0xE014121E, 20);
         UiDraw.aeroMark(context, px + 16, py + 14, 14, UiDraw.accent());
-        context.drawText(textRenderer, Text.literal("Overlapping mods found"), px + 36, py + 18, TEXT, false);
-        context.drawText(textRenderer, Text.literal("These do the same job as an Aero module and can draw twice."), px + 16, py + 40, MUTED, false);
-        context.drawText(textRenderer, Text.literal("Removed mods move to mods/aero-removed when you close the game."), px + 16, py + 52, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Overlapping mods are active"), px + 36, py + 18, TEXT, false);
+        context.drawText(textRenderer, Text.literal("These do the same job as an Aero module you have switched on."), px + 16, py + 40, MUTED, false);
+        context.drawText(textRenderer, Text.literal("Disabled mods move to mods/aero-removed when you close the game."), px + 16, py + 52, MUTED, false);
 
         int y = py + 72;
         for (var c : conflicts) {
             UiDraw.roundRect(context, px + 12, y, panelW() - 24, ROW - 4, 8, 0x2214101C);
             context.drawText(textRenderer, Text.literal(c.name), px + 22, y + 4, TEXT, false);
             context.drawText(textRenderer, Text.literal("replaced by " + c.module), px + 22, y + 13, MUTED, false);
-            String label = c.removed ? "Removed on exit" : "Remove";
+            String label = c.removed ? "Disabled on exit" : "Disable";
             int bw = textRenderer.getWidth(label) + 16;
             int bx = px + panelW() - 20 - bw;
             UiDraw.pill(context, bx, y + 3, bw, 16, !c.removed && inside(mouseX, mouseY, bx, y + 3, bw, 16));
@@ -85,7 +88,7 @@ public class ConflictScreen extends Screen {
         }
 
         int by = py + panelH() - 28;
-        button(context, mouseX, mouseY, px + 12, by, 110, "Remove all", true);
+        button(context, mouseX, mouseY, px + 12, by, 110, "Disable all", true);
         button(context, mouseX, mouseY, px + 128, by, 100, "Keep", false);
         button(context, mouseX, mouseY, px + 234, by, 134, "Don't ask again", false);
     }
@@ -108,7 +111,7 @@ public class ConflictScreen extends Screen {
         int py = py();
         int y = py + 72;
         for (var c : conflicts) {
-            String label = c.removed ? "Removed on exit" : "Remove";
+            String label = c.removed ? "Disabled on exit" : "Disable";
             int bw = textRenderer.getWidth(label) + 16;
             if (!c.removed && inside(mx, my, px + panelW() - 20 - bw, y + 3, bw, 16)) {
                 ModConflicts.remove(c);
