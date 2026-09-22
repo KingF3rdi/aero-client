@@ -53,6 +53,7 @@
     "SkyRenderingMixin",
     "FogRendererMixin",
     "SplashOverlayMixin",
+    "SplashTextMixin",
     "VanillaUiHotbarMixin",
     "VanillaButtonMixin",
     "VanillaSliderMixin",
