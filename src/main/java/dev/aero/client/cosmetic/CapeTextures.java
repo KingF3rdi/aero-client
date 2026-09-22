@@ -23,6 +23,9 @@ public final class CapeTextures {
     public record Tex(Identifier id, int w, int h) {}
 
     private static final Map<String, Tex> CACHE = new HashMap<>();
+    // "no texture" is only remembered for built-in ids: a "custom_<n>" id may still be downloading, so it
+    // is retried (via CustomCapes) instead of being cached as a permanent miss.
+    private static final java.util.Set<String> NO_TEXTURE = new java.util.HashSet<>();
 
     private CapeTextures() {}
 
@@ -30,14 +33,26 @@ public final class CapeTextures {
         return FabricLoader.getInstance().getGameDir().resolve("aero-capes");
     }
 
-    /** The texture for a cape id, or null when no file for it exists. */
+    /** The texture for a cape id, or null when no file for it exists (yet, for a custom cape still downloading). */
     public static Tex get(String capeId) {
-        if (CACHE.containsKey(capeId)) {
-            return CACHE.get(capeId);
+        Tex cached = CACHE.get(capeId);
+        if (cached != null) {
+            return cached;
+        }
+        if (NO_TEXTURE.contains(capeId)) {
+            return null;
         }
         Tex found = load(capeId);
-        CACHE.put(capeId, found);
-        return found;
+        if (found != null) {
+            CACHE.put(capeId, found);
+            return found;
+        }
+        if (capeId.startsWith("custom_")) {
+            CustomCapes.ensureDownloaded(capeId);
+        } else {
+            NO_TEXTURE.add(capeId);
+        }
+        return null;
     }
 
     private static Tex load(String capeId) {

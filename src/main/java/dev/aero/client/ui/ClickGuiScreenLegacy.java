@@ -100,6 +100,11 @@ public class ClickGuiScreenLegacy extends Screen {
         wardrobe.debugTab(cos);
     }
 
+    public void debugPublishCape(String fileName) {
+        wardrobe.publishName = fileName;
+        wardrobe.submitPublish();
+    }
+
     private Module.Setting colorOpen;
     private Module.Setting hueDrag;
     private int hueBarX;
@@ -1622,6 +1627,20 @@ public class ClickGuiScreenLegacy extends Screen {
                 return true;
             }
         }
+        if (wardrobe.publishFocus) {
+            if (key == GLFW.GLFW_KEY_BACKSPACE && !wardrobe.publishName.isEmpty()) {
+                wardrobe.publishName = wardrobe.publishName.substring(0, wardrobe.publishName.length() - 1);
+                return true;
+            }
+            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+                wardrobe.submitPublish();
+                return true;
+            }
+            if (key == GLFW.GLFW_KEY_ESCAPE) {
+                wardrobe.publishFocus = false;
+                return true;
+            }
+        }
         if (friendFocus) {
             if (key == GLFW.GLFW_KEY_BACKSPACE && !friendDraft.isEmpty()) {
                 friendDraft = friendDraft.substring(0, friendDraft.length() - 1);
@@ -1687,6 +1706,10 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         if (wardrobe.searchFocus && cp >= 32 && cp != 127) {
             wardrobe.search += Character.toString(cp);
+            return true;
+        }
+        if (wardrobe.publishFocus && cp >= 32 && cp != 127) {
+            wardrobe.publishName += Character.toString(cp);
             return true;
         }
         if (friendFocus && cp >= 32 && cp != 127) {

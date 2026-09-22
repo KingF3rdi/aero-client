@@ -28,6 +28,11 @@ public final class AeroApi {
 
     private AeroApi() {}
 
+    /** Bearer token for authenticated calls (custom capes, delete-my-data), or null before the server login finishes. */
+    public static String authToken() {
+        return token;
+    }
+
     /** Server base URL without a trailing slash, or "" when no server is configured. */
     public static String base() {
         var c = AeroClient.CONFIG;

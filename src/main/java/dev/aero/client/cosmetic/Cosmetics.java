@@ -109,7 +109,23 @@ public final class Cosmetics {
             }
             out.add(item);
         }
+        if (kind == Kind.CAPE) {
+            for (CustomCapes.Entry e : CustomCapes.list()) {
+                Item item = customCapeItem(e);
+                if (!q.isEmpty() && !item.name.toLowerCase(Locale.ROOT).contains(q)
+                        && !e.ownerName().toLowerCase(Locale.ROOT).contains(q)) {
+                    continue;
+                }
+                out.add(item);
+            }
+        }
         return out;
+    }
+
+    /** A published community cape shown as a normal wardrobe item; label includes the owner unless it's the player's own. */
+    private static Item customCapeItem(CustomCapes.Entry e) {
+        String label = CustomCapes.isMine(e) ? e.name() : e.name() + " (" + e.ownerName() + ")";
+        return new Item(e.capeId(), label, Kind.CAPE, 0xFF3A3A46); // neutral placeholder while the real texture downloads
     }
 
     public static Kind kindForTab(int tab) {
@@ -183,6 +199,13 @@ public final class Cosmetics {
             if (item.kind == kind && item.id.equals(id)) {
                 return item;
             }
+        }
+        if (kind == Kind.CAPE && id != null && id.startsWith("custom_")) {
+            CustomCapes.Entry e = CustomCapes.find(id);
+            if (e != null) {
+                return customCapeItem(e);
+            }
+            return new Item(id, "Community cape", Kind.CAPE, 0xFF3A3A46);
         }
         return null;
     }

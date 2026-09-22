@@ -7,6 +7,7 @@ import dev.aero.client.auth.SkinPreview;
 import dev.aero.client.cosmetic.CosmeticPreview;
 import dev.aero.client.cosmetic.Cosmetics;
 import dev.aero.client.cosmetic.CubeDraw;
+import dev.aero.client.cosmetic.CustomCapes;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -21,10 +22,13 @@ public final class WardrobePanel {
     private static final int PAD = 8;
 
     private static final String[] TAB_NAMES = {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges"};
-    private static final int[] TAB_ORDER = {0, 1, 2, 3, 4, 5, 6, 10, 7, 8, 9};
+    private static final int[] TAB_ORDER = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     public String search = "";
     public boolean searchFocus;
+    /** File name (in aero-capes/) the player is about to publish as a community cape - Capes tab only. */
+    public String publishName = "";
+    public boolean publishFocus;
     private int tab;
     private int scroll;
     private float yaw = 20f;
@@ -272,24 +276,77 @@ public final class WardrobePanel {
         ctx.drawText(tr, Text.literal(TAB_NAMES[tab]), x + 10, y + 7, MUTED, false);
         ctx.drawText(tr, Text.literal(item == null ? "None" : item.name()), x + 10, y + 19, TEXT, false);
         if (item != null && kind != Cosmetics.Kind.EMOTE) {
-            boolean h = in(mx, my, x + w - 80, y + 7, 70, 20);
-            UiDraw.pill(ctx, x + w - 80, y + 7, 70, 20, h);
-            ctx.drawText(tr, Text.literal("Unequip"), x + w - 80 + (70 - tr.getWidth("Unequip")) / 2, y + 13, TEXT, false);
+            int uw = 70;
+            boolean h = in(mx, my, x + w - uw, y + 7, uw, 20);
+            UiDraw.pill(ctx, x + w - uw, y + 7, uw, 20, h);
+            ctx.drawText(tr, Text.literal("Unequip"), x + w - uw + (uw - tr.getWidth("Unequip")) / 2, y + 13, TEXT, false);
+            if (kind == Cosmetics.Kind.CAPE && CustomCapes.isMine(CustomCapes.find(eq))) {
+                int dw = 60;
+                int dx = x + w - uw - dw - 6;
+                boolean dh = in(mx, my, dx, y + 7, dw, 20);
+                UiDraw.pill(ctx, dx, y + 7, dw, 20, dh);
+                ctx.drawText(tr, Text.literal("Delete"), dx + (dw - tr.getWidth("Delete")) / 2, y + 13, dh ? 0xFFFF6B6B : 0xFFCC8888, false);
+            }
         }
     }
 
     private int gridTop() {
-        return top + 36;
+        return top + (kind() == Cosmetics.Kind.CAPE ? 68 : 36);
     }
 
     private int cardW() {
         return (rw - 16 - 8) / 2;
     }
 
+    private static final int PUB_BTN_W = 60;
+
+    private int publishFieldW() {
+        return rw - 16 - PUB_BTN_W - 6;
+    }
+
+    /** Text field + button to upload a 64x32 PNG already sitting in aero-capes/ as a new community cape. */
+    private void drawPublishRow(DrawContext ctx, TextRenderer tr, int mx, int my) {
+        int fx = rx + 8;
+        int fy = top + 34;
+        int fw = publishFieldW();
+        UiDraw.field(ctx, fx, fy, fw, 20, publishFocus);
+        String hint = publishName.isEmpty() && !publishFocus ? "aero-capes/ file name" : publishName + (publishFocus ? "|" : "");
+        ctx.drawText(tr, Text.literal(fit(tr, hint, fw - 12)), fx + 6, fy + 6, publishName.isEmpty() && !publishFocus ? MUTED : TEXT, false);
+
+        int bx = fx + fw + 6;
+        boolean busy = CustomCapes.isPublishing();
+        boolean hover = !busy && in(mx, my, bx, fy, PUB_BTN_W, 20);
+        UiDraw.pill(ctx, bx, fy, PUB_BTN_W, 20, hover);
+        String label = busy ? "…" : "Publish";
+        ctx.drawText(tr, Text.literal(label), bx + (PUB_BTN_W - tr.getWidth(label)) / 2, fy + 6, hover ? TEXT : MUTED, false);
+
+        if (!CustomCapes.status.isEmpty()) {
+            ctx.drawText(tr, Text.literal(fit(tr, CustomCapes.status, rw - 16)), rx + 8, fy + 24, MUTED, false);
+        }
+    }
+
+    private void doPublish() {
+        CustomCapes.publish(publishName, ok -> {
+            if (ok) {
+                publishName = "";
+            }
+        });
+    }
+
+    /** Enter pressed while the publish field is focused. */
+    public void submitPublish() {
+        if (!CustomCapes.isPublishing()) {
+            doPublish();
+        }
+    }
+
     private void drawGrid(DrawContext ctx, TextRenderer tr, int mx, int my, Cosmetics.Kind kind, float t) {
         UiDraw.field(ctx, rx + 8, top + 8, rw - 16, 22, searchFocus);
         String hint = search.isEmpty() && !searchFocus ? "Search " + TAB_NAMES[tab].toLowerCase() : search + (searchFocus ? "|" : "");
         ctx.drawText(tr, Text.literal(fit(tr, hint, rw - 36)), rx + 16, top + 15, search.isEmpty() && !searchFocus ? MUTED : TEXT, false);
+        if (kind == Cosmetics.Kind.CAPE) {
+            drawPublishRow(ctx, tr, mx, my);
+        }
 
         List<Cosmetics.Item> items = Cosmetics.of(kind, search);
         int gy = gridTop();
@@ -364,6 +421,21 @@ public final class WardrobePanel {
         layout(x, y, w, h);
         Cosmetics.Kind kind = kind();
         searchFocus = false;
+        publishFocus = false;
+
+        if (kind == Cosmetics.Kind.CAPE) {
+            int fx = rx + 8;
+            int fy = top + 34;
+            int fw = publishFieldW();
+            if (in(mx, my, fx, fy, fw, 20)) {
+                publishFocus = true;
+                return true;
+            }
+            if (!CustomCapes.isPublishing() && in(mx, my, fx + fw + 6, fy, PUB_BTN_W, 20)) {
+                doPublish();
+                return true;
+            }
+        }
 
         if (in(mx, my, btnX(0), btnY(), BTN_W, BTN_H)) {
             if (AeroClient.CONFIG != null) {
@@ -412,9 +484,22 @@ public final class WardrobePanel {
         String eq = Cosmetics.equipped(kind);
         int ix = cx + 8;
         int iy = top + height - 40;
-        if (!"none".equals(eq) && kind != Cosmetics.Kind.EMOTE && in(mx, my, ix + (cw - 16) - 80, iy + 7, 70, 20)) {
-            Cosmetics.equip(kind, "none");
-            return true;
+        int uw = 70;
+        if (!"none".equals(eq) && kind != Cosmetics.Kind.EMOTE) {
+            if (in(mx, my, ix + (cw - 16) - uw, iy + 7, uw, 20)) {
+                Cosmetics.equip(kind, "none");
+                return true;
+            }
+            CustomCapes.Entry mine = kind == Cosmetics.Kind.CAPE ? CustomCapes.find(eq) : null;
+            if (CustomCapes.isMine(mine)) {
+                int dw = 60;
+                int dx = ix + (cw - 16) - uw - dw - 6;
+                if (in(mx, my, dx, iy + 7, dw, 20)) {
+                    CustomCapes.delete(mine.id(), () -> {});
+                    Cosmetics.equip(kind, "none");
+                    return true;
+                }
+            }
         }
 
         if (in(mx, my, rx + 8, top + 8, rw - 16, 22)) {
