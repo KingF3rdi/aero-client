@@ -109,15 +109,20 @@ public final class Cosmetics {
             }
             out.add(item);
         }
-        if (kind == Kind.CAPE) {
-            for (CustomCapes.Entry e : CustomCapes.list()) {
-                Item item = customCapeItem(e);
-                if (!q.isEmpty() && !item.name.toLowerCase(Locale.ROOT).contains(q)
-                        && !e.ownerName().toLowerCase(Locale.ROOT).contains(q)) {
-                    continue;
-                }
-                out.add(item);
+        return out;
+    }
+
+    /** Published community capes as wardrobe items, for the separate Custom Capes tab. */
+    public static List<Item> customCapeItems(String query) {
+        String q = query == null ? "" : query.toLowerCase(Locale.ROOT).trim();
+        List<Item> out = new ArrayList<>();
+        for (CustomCapes.Entry e : CustomCapes.list()) {
+            Item item = customCapeItem(e);
+            if (!q.isEmpty() && !item.name.toLowerCase(Locale.ROOT).contains(q)
+                    && !e.ownerName().toLowerCase(Locale.ROOT).contains(q)) {
+                continue;
             }
+            out.add(item);
         }
         return out;
     }

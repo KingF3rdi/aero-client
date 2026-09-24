@@ -192,7 +192,7 @@ public final class DevShot {
 
     private static int stage = -1;
     private static ClickGuiModern gui;
-    private static final String[] NAMES = {"client_none", "client_sel0", "client_sel_totem", "wardrobe_capes", "wardrobe_wings", "wardrobe_trails", "wardrobe_badges", "friends"};
+    private static final String[] NAMES = {"client_none", "client_sel0", "client_sel_totem", "wardrobe_capes", "zz_wardrobe_custom_capes", "wardrobe_wings", "wardrobe_trails", "wardrobe_badges", "friends"};
 
     private static void guiTick(MinecraftClient mc) {
         if (++ticks < 300) {
@@ -223,10 +223,11 @@ public final class DevShot {
                 Cosmetics.equip(Cosmetics.Kind.CAPE, "migrator");
                 gui.debugTab(1, 0);
             }
-            case 4 -> gui.debugTab(1, 1);
-            case 5 -> gui.debugTab(1, 3);
-            case 6 -> gui.debugTab(1, 9);
-            case 7 -> gui.debugTab(2, 0);
+            case 4 -> gui.debugTab(1, 10);
+            case 5 -> gui.debugTab(1, 1);
+            case 6 -> gui.debugTab(1, 3);
+            case 7 -> gui.debugTab(1, 9);
+            case 8 -> gui.debugTab(2, 0);
             default -> {
             }
         }

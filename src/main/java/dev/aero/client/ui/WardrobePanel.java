@@ -21,8 +21,10 @@ public final class WardrobePanel {
     private static final int MUTED = 0xFF8E889C;
     private static final int PAD = 8;
 
-    private static final String[] TAB_NAMES = {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges"};
-    private static final int[] TAB_ORDER = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    private static final String[] TAB_NAMES =
+            {"Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets", "Emotes", "Chat tags", "Badges", "Custom Capes"};
+    private static final int TAB_CUSTOM_CAPES = 10;
+    private static final int[] TAB_ORDER = {0, TAB_CUSTOM_CAPES, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     public String search = "";
     public boolean searchFocus;
@@ -64,6 +66,16 @@ public final class WardrobePanel {
 
     private Cosmetics.Kind kind() {
         return Cosmetics.kindForTab(tab);
+    }
+
+    /** The Custom Capes tab shares Kind.CAPE with the built-in Capes tab (same equip slot) but shows
+     * a different item source - community uploads instead of the built-in list - and the Publish UI. */
+    private boolean customCapesTab() {
+        return tab == TAB_CUSTOM_CAPES;
+    }
+
+    private List<Cosmetics.Item> gridItems(Cosmetics.Kind kind) {
+        return customCapesTab() ? Cosmetics.customCapeItems(search) : Cosmetics.of(kind, search);
     }
 
     private int previewTop() {
@@ -291,7 +303,7 @@ public final class WardrobePanel {
     }
 
     private int gridTop() {
-        return top + (kind() == Cosmetics.Kind.CAPE ? 68 : 36);
+        return top + (customCapesTab() ? 68 : 36);
     }
 
     private int cardW() {
@@ -344,11 +356,11 @@ public final class WardrobePanel {
         UiDraw.field(ctx, rx + 8, top + 8, rw - 16, 22, searchFocus);
         String hint = search.isEmpty() && !searchFocus ? "Search " + TAB_NAMES[tab].toLowerCase() : search + (searchFocus ? "|" : "");
         ctx.drawText(tr, Text.literal(fit(tr, hint, rw - 36)), rx + 16, top + 15, search.isEmpty() && !searchFocus ? MUTED : TEXT, false);
-        if (kind == Cosmetics.Kind.CAPE) {
+        if (customCapesTab()) {
             drawPublishRow(ctx, tr, mx, my);
         }
 
-        List<Cosmetics.Item> items = Cosmetics.of(kind, search);
+        List<Cosmetics.Item> items = gridItems(kind);
         int gy = gridTop();
         int ch = cardH(kind);
         int cwd = cardW();
@@ -423,7 +435,7 @@ public final class WardrobePanel {
         searchFocus = false;
         publishFocus = false;
 
-        if (kind == Cosmetics.Kind.CAPE) {
+        if (customCapesTab()) {
             int fx = rx + 8;
             int fy = top + 34;
             int fw = publishFieldW();
@@ -455,9 +467,10 @@ public final class WardrobePanel {
             }
             if (in(mx, my, lx + 6, ty, lw - 12, step - 2)) {
                 tab = TAB_ORDER[i];
-                yaw = tab == 0 ? 20f : 200f;
+                yaw = tab == 0 || tab == TAB_CUSTOM_CAPES ? 20f : 200f;
                 scroll = 0;
                 search = "";
+                publishName = "";
                 return true;
             }
             ty += step;
@@ -507,7 +520,7 @@ public final class WardrobePanel {
             return true;
         }
 
-        List<Cosmetics.Item> items = Cosmetics.of(kind, search);
+        List<Cosmetics.Item> items = gridItems(kind);
         int gy = gridTop();
         int ch = cardH(kind);
         int cwd = cardW();
