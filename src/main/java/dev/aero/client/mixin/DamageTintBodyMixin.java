@@ -14,7 +14,7 @@ public class DamageTintBodyMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/entity/LivingEntityRenderer;getOverlay(Lnet/minecraft/client/render/entity/state/LivingEntityRenderState;F)I"),
             require = 0)
     private int aero$noSkinFlash(LivingEntityRenderState state, float whiteProgress) {
-        if (dev.aero.client.DamageTintState.on(state)) {
+        if (dev.aero.client.DamageTintState.on(state) && dev.aero.client.AeroClient.CONFIG.damageTintArmorOnly) {
             return OverlayTexture.packUv(OverlayTexture.getU(whiteProgress), OverlayTexture.getV(state.deathTime > 0f));
         }
         return LivingEntityRenderer.getOverlay(state, whiteProgress);

@@ -203,6 +203,11 @@ public class ClientConfig {
     public int fireColor = -33024;
     public float brightness = 10.0f;
     public boolean damageTintChroma = false;
+    /** Damage Tint: only the armor flashes (skin keeps no flash); off = skin and armor both flash. */
+    public boolean damageTintArmorOnly = true;
+    /** GUI Tweaks: darkening behind container screens and tooltip background, 0-100 %. */
+    public float guiContainerOpacity = 100f;
+    public float guiTooltipOpacity = 100f;
     public float damageTintSpeed = 0.25f;
     public int damageTintColor = 1308557312;
     public boolean crosshairHover = true;

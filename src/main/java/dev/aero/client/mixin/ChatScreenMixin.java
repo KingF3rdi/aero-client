@@ -17,6 +17,17 @@ public class ChatScreenMixin {
     @Shadow
     protected TextFieldWidget chatField;
 
+    /** Commands typed with Caps Lock on still run: the command name is sent lowercase, arguments untouched. */
+    @org.spongepowered.asm.mixin.injection.ModifyVariable(method = "sendMessage(Ljava/lang/String;Z)V", at = @At("HEAD"), argsOnly = true, require = 0)
+    private String aero$capsCommand(String text) {
+        if (text == null || !text.startsWith("/")) {
+            return text;
+        }
+        int end = text.indexOf(' ');
+        String name = end < 0 ? text : text.substring(0, end);
+        return name.toLowerCase(java.util.Locale.ROOT) + (end < 0 ? "" : text.substring(end));
+    }
+
     @Inject(method = "keyPressed(Lnet/minecraft/client/input/KeyInput;)Z", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$translateOwn(KeyInput input, CallbackInfoReturnable<Boolean> cir) {
         var c = AeroClient.CONFIG;

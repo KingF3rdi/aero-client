@@ -255,6 +255,14 @@ public class ClickGuiScreenLegacy extends Screen {
         if (parent == null) {
             return false;
         }
+        if (parent.kind == Module.Setting.Kind.BOOL && parent.boolGet != null) {
+            boolean on = parent.boolGet.getAsBoolean();
+            if (setting.showWhenOff) {
+                return !on;
+            }
+            // Options under a switch only show while it's on; the expand arrow can still fold them away.
+            return on && (!parent.group || groupExpanded(parent));
+        }
         return groupExpanded(parent);
     }
 

@@ -197,7 +197,7 @@ public final class Modules {
                 .setting("Disable particles", () -> c.totemPopNoParticles, v -> c.totemPopNoParticles = v)
                 .tabLast("Particles")
                 .settingF("Particle amount", () -> (double) c.totemPopParticleCount, v -> c.totemPopParticleCount = (float) v, 0, 1)
-                .tabLast("Particles"));
+                .tabLast("Particles").nestLastWhenOff("Disable particles"));
 
         add(new Module("Block Overlay", "Color and fill the block outline", Category.RENDER,
                 () -> c.blockOverlay, v -> c.blockOverlay = v)
@@ -371,6 +371,7 @@ public final class Modules {
                 .settingText("Chat Trigger", () -> c.autoTextChatTrigger, v -> c.autoTextChatTrigger = v));
         add(new Module("Damage Tint", "Tint a hurt player's model (third-person self, or any other player) toward a color - skin, armor and held item all included", Category.PVP,
                 () -> c.damageTint, v -> c.damageTint = v)
+                .setting("Armor only", () -> c.damageTintArmorOnly, v -> c.damageTintArmorOnly = v)
                 .setting("Chroma", () -> c.damageTintChroma, v -> c.damageTintChroma = v)
                 .settingF("Speed", () -> (double) c.damageTintSpeed, v -> c.damageTintSpeed = (float) v, 0.05, 2));
         add(new Module("Optimizer", "All PvP lag cuts in one place", Category.PVP,
@@ -425,6 +426,8 @@ public final class Modules {
                 .setting("No Item Name", () -> c.guiNoItemName, v -> c.guiNoItemName = v)
                 .setting("Hide Selector", () -> c.guiHideSelector, v -> c.guiHideSelector = v)
                 .setting("Hide Action Bar", () -> c.guiHideActionBar, v -> c.guiHideActionBar = v)
+                .settingF("Container background %", () -> (double) c.guiContainerOpacity, v -> c.guiContainerOpacity = (float) v, 0, 100)
+                .settingF("Tooltip opacity %", () -> (double) c.guiTooltipOpacity, v -> c.guiTooltipOpacity = (float) v, 0, 100)
                 .setting("Inventory Tweaks", () -> c.guiInventoryTweaks, v -> c.guiInventoryTweaks = v)
                 .settingF("Inventory Scale", () -> (double) c.guiInventoryScale, v -> c.guiInventoryScale = (float) v, 0.5, 2.0)
                 .setting("Hotbar", () -> c.guiHotbar, v -> c.guiHotbar = v)

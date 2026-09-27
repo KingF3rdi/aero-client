@@ -100,7 +100,10 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             m.push();
             model.body.applyTransform(m);
             if (cape != 0) {
-                cape(cape, idOf(Cosmetics.Kind.CAPE));
+                // Like vanilla: no cape while an elytra is worn (it clipped through the wings as dark bars).
+                if (!state.equippedChestStack.isOf(net.minecraft.item.Items.ELYTRA)) {
+                    cape(cape, idOf(Cosmetics.Kind.CAPE));
+                }
             }
             if (wings != 0) {
                 wings(wings, idOf(Cosmetics.Kind.WINGS));

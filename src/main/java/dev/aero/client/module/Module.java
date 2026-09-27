@@ -108,6 +108,16 @@ public class Module {
         return this;
     }
 
+    /** The last setting only shows while the named switch is OFF (e.g. "Particle amount" under "Disable particles"). */
+    public Module nestLastWhenOff(String parent) {
+        if (!settings.isEmpty()) {
+            Setting s = settings.get(settings.size() - 1);
+            s.nestUnder = parent;
+            s.showWhenOff = true;
+        }
+        return this;
+    }
+
     public Module expandLast() {
         if (!settings.isEmpty()) {
             settings.get(settings.size() - 1).group = true;
@@ -139,6 +149,8 @@ public class Module {
         }
 
         public String nestUnder;
+        /** Nested setting shown while its parent switch is off instead of on. */
+        public boolean showWhenOff;
         public boolean group;
         public Runnable action;
         public String actionLabel;
