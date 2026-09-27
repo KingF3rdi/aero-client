@@ -44,6 +44,16 @@ public class ChatHudMixin {
         }
     }
 
+    @Inject(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
+            at = @At("TAIL"), require = 0)
+    private void aero$translate(Text message, net.minecraft.network.message.MessageSignatureData signature,
+                                net.minecraft.client.gui.hud.MessageIndicator indicator, CallbackInfo ci) {
+        try {
+            dev.aero.client.ChatTranslate.onIncoming(message);
+        } catch (Throwable ignored) {
+        }
+    }
+
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;)V", at = @At("HEAD"), require = 0)
     private void aero$autoText(Text message, CallbackInfo ci) {
         if (message == null) {

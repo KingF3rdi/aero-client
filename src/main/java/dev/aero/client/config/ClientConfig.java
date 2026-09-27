@@ -555,6 +555,20 @@ public class ClientConfig {
     public boolean soundController = false;
     public String soundControllerFilter = "";
 
+    /** HUD editor: elements locked in place (L). Hiding (H) switches the element itself off. */
+    public java.util.Set<String> hudLocked = new java.util.HashSet<>();
+    /** Title screen background: Panorama (vanilla), Polar, Glacier, Dusk or Mono. */
+    public String titleSky = "Polar";
+
+    /** Chat translation: a translated line under other players' messages. */
+    public boolean chatTranslate = false;
+    public String chatTranslateLang = "English";
+    /** Key that switches translating incoming messages on/off (-1 = none). */
+    public int chatTranslateToggleKey = -1;
+    /** Key in the chat box that translates your own message before sending. */
+    public int chatTranslateOwnKey = 297; // F8
+    public String chatTranslateOwnLang = "English";
+
     public static Path path() {
         return FabricLoader.getInstance().getConfigDir().resolve("aero-client.json");
     }
@@ -595,6 +609,59 @@ public class ClientConfig {
             Files.writeString(profilesDir().resolve(safe + ".json"), GSON.toJson(this));
         } catch (IOException ignored) {
         }
+    }
+
+    public String toJson() {
+        return GSON.toJson(this);
+    }
+
+    /** This config for sharing as a public preset, without anything personal in it. */
+    public String publicJson() {
+        ClientConfig copy = GSON.fromJson(GSON.toJson(this), ClientConfig.class);
+        copy.apiBase = "";
+        copy.discordClientId = "";
+        copy.autoTextMessage = "gg";
+        copy.autoTextChatTrigger = "";
+        copy.soundControllerFilter = "";
+        copy.equippedCape = "none";
+        copy.equippedBadge = "none";
+        return new Gson().toJson(copy);
+    }
+
+    /**
+     * A shared (public) preset applied on top of this config. Things that belong to this player and
+     * this install are kept: server URL, profile sharing, Discord ID, owned/equipped cosmetics, HUD locks.
+     */
+    public ClientConfig withPublicPreset(String json) {
+        ClientConfig cfg = GSON.fromJson(json, ClientConfig.class);
+        if (cfg == null) {
+            return null;
+        }
+        cfg.apiBase = apiBase;
+        cfg.shareProfile = shareProfile;
+        cfg.discordClientId = discordClientId;
+        cfg.discordRpc = discordRpc;
+        cfg.equippedCape = equippedCape;
+        cfg.equippedWings = equippedWings;
+        cfg.equippedHead = equippedHead;
+        cfg.equippedTrail = equippedTrail;
+        cfg.equippedPet = equippedPet;
+        cfg.equippedEmote = equippedEmote;
+        cfg.equippedBadge = equippedBadge;
+        cfg.equippedKillEffect = equippedKillEffect;
+        cfg.equippedMace = equippedMace;
+        cfg.cosmeticVariant = cosmeticVariant;
+        if (cfg.moduleStyles == null) {
+            cfg.moduleStyles = new HashMap<>();
+        }
+        if (cfg.optimizerEnabled == null) {
+            cfg.optimizerEnabled = new HashMap<>();
+        }
+        if (cfg.hudLocked == null) {
+            cfg.hudLocked = new java.util.HashSet<>();
+        }
+        cfg.configVersion = CURRENT_VERSION;
+        return cfg;
     }
 
     public static ClientConfig loadProfile(String name) {

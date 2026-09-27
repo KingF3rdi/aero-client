@@ -19,8 +19,8 @@ import java.util.Set;
 public class DrawCrosshairScreen extends Screen {
     private static final int BG = 0xCC09080F;
     private static final int PANEL = 0xF00E0C16;
-    private static final int TEXT = 0xFFF3F0F8;
-    private static final int MUTED = 0xFF8E889C;
+    private static final int TEXT = UiDraw.TEXT;
+    private static final int MUTED = UiDraw.MUTED;
 
     private static final int RADIUS = 8;
     private static final int GRID = RADIUS * 2 + 1;
@@ -82,7 +82,7 @@ public class DrawCrosshairScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        context.fill(0, 0, width, height, 0x66000000);
+        context.fill(0, 0, width, height, 0x33000000);
         int gx = gridX();
         int gy = gridY();
         int panelW = GRID * CELL + 28;

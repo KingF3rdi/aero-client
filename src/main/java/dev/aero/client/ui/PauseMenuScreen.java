@@ -14,8 +14,8 @@ import org.lwjgl.glfw.GLFW;
  * Pause overlay: frosted panel, primary action, labelled shortcuts.
  */
 public class PauseMenuScreen extends Screen {
-    private static final int TEXT = 0xFFF6F3FB;
-    private static final int MUTED = 0xFFB8B0C8;
+    private static final int TEXT = UiDraw.TEXT;
+    private static final int MUTED = UiDraw.MUTED;
     private static final String[] LABELS = {"Resume", "Options", "FPS", "Menu", "Quit"};
     private int hover = -1;
 
@@ -23,13 +23,15 @@ public class PauseMenuScreen extends Screen {
         super(Text.literal("Aero Client"));
     }
 
-    /** Esc Menu Scale (GUI Tweaks) - independent of Minecraft's own GUI Scale option. */
+    /**
+     * Scales with the window (the panel keeps roughly the same share of the screen from a laptop to 4K),
+     * times the Esc Menu Scale GUI Tweak.
+     */
     private float scale() {
         var cfg = dev.aero.client.AeroClient.CONFIG;
-        if (cfg == null) {
-            return 1f;
-        }
-        return Math.max(0.5f, Math.min(2f, cfg.escHudScale));
+        float auto = Math.max(0.6f, Math.min(2.5f, Math.min(width * 0.4f / 360f, height * 0.42f / 168f)));
+        float user = cfg == null ? 1f : Math.max(0.5f, Math.min(2f, cfg.escHudScale));
+        return auto * user;
     }
 
     private int vw() {
@@ -108,8 +110,8 @@ public class PauseMenuScreen extends Screen {
             if (h) {
                 hover = i;
             }
-            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? UiDraw.withAlpha(UiDraw.accent(), 0x44) : 0x2214101C);
-            drawIcon(context, i, ix + 13, iconY + 9, h ? 0xFFFFFFFF : 0xFFD0D0D0);
+            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? UiDraw.withAlpha(UiDraw.accent(), 0x26) : 0x0C000000);
+            drawIcon(context, i, ix + 13, iconY + 9, h ? UiDraw.accent() : 0xFF4B5563);
             String cap = LABELS[i];
             context.drawText(textRenderer, Text.literal(cap),
                     ix + (44 - textRenderer.getWidth(cap)) / 2, iconY + 38, h ? TEXT : MUTED, false);

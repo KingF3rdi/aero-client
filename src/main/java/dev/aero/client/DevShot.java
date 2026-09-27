@@ -116,7 +116,7 @@ public final class DevShot {
         STEPS.add(new Step("tp_back_cosmetics", () -> {
             var c = AeroClient.CONFIG;
             c.handTweaks = false;
-            Cosmetics.equip(Cosmetics.Kind.CAPE, "migrator");
+            Cosmetics.equip(Cosmetics.Kind.CAPE, "frost");
             Cosmetics.equip(Cosmetics.Kind.WINGS, "dragon");
             Cosmetics.equip(Cosmetics.Kind.HEAD, "crown");
             Cosmetics.equip(Cosmetics.Kind.PET, "fox");
@@ -192,13 +192,19 @@ public final class DevShot {
 
     private static int stage = -1;
     private static ClickGuiModern gui;
-    private static final String[] NAMES = {"client_none", "client_sel0", "client_sel_totem", "wardrobe_capes", "zz_wardrobe_custom_capes", "wardrobe_wings", "wardrobe_trails", "wardrobe_badges", "friends"};
+    private static final String[] NAMES = {"a_home", "b_card_pvp", "c_search", "d_wardrobe", "e_store", "f_rewards",
+            "g_badges", "h_friends", "i_profiles", "j_title"};
 
     private static void guiTick(MinecraftClient mc) {
         if (++ticks < 300) {
             return;
         }
         if (stage == -1) {
+            String tk = System.getProperty("aero.token");
+            if (tk != null) {
+                dev.aero.client.social.AeroApi.devToken(tk);
+            }
+            dev.aero.client.social.Shards.refresh(true);
             gui = new ClickGuiModern(null, false);
             mc.setScreen(gui);
             stage = 0;
@@ -217,17 +223,15 @@ public final class DevShot {
             return;
         }
         switch (stage) {
-            case 1 -> gui.debugSelect(0);
-            case 2 -> gui.debugSelectByName("Totem Counter");
-            case 3 -> {
-                Cosmetics.equip(Cosmetics.Kind.CAPE, "migrator");
-                gui.debugTab(1, 0);
-            }
-            case 4 -> gui.debugTab(1, 10);
-            case 5 -> gui.debugTab(1, 1);
-            case 6 -> gui.debugTab(1, 3);
-            case 7 -> gui.debugTab(1, 9);
-            case 8 -> gui.debugTab(2, 0);
+            case 1 -> gui.debugSelectByName("Totem Counter");
+            case 2 -> gui.debugSearch("totem");
+            case 3 -> gui.debugTab(1, 0);
+            case 4 -> gui.debugTab(1, 101);
+            case 5 -> gui.debugTab(1, 102);
+            case 6 -> gui.debugTab(1, 103);
+            case 7 -> gui.debugTab(2, 0);
+            case 8 -> mc.setScreen(new dev.aero.client.ui.ProfilesScreen(gui));
+            case 9 -> mc.setScreen(new net.minecraft.client.gui.screen.TitleScreen());
             default -> {
             }
         }

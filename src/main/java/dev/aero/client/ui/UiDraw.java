@@ -3,11 +3,29 @@ package dev.aero.client.ui;
 import net.minecraft.client.gui.DrawContext;
 
 /**
- * Frosted-glass UI with coverage-antialiased rounded corners (no stair-step pixels).
+ * Clean frosted-white glass UI with coverage-antialiased rounded corners (no stair-step pixels).
  */
 public final class UiDraw {
-    public static final int BORDER = 0x38FFFFFF;
-    public static final int BORDER_SOFT = 0x18FFFFFF;
+    public static final int BORDER = 0x1C000000;
+    public static final int BORDER_SOFT = 0x12000000;
+    /** Dark ink on the white glass. */
+    public static final int TEXT = 0xFF161922;
+    public static final int MUTED = 0xFF6A7182;
+    /** Row / button hover wash on white surfaces. */
+    public static final int HOVER = 0x0E1A2340;
+    public static final int SURFACE = 0xB8FFFFFF;
+
+    /** Multiplies the alpha of every UiDraw fill (fading cards in/out); 1 = normal. */
+    public static float fade = 1f;
+
+    /** color with the current fade applied, for text drawn next to faded UiDraw shapes. */
+    public static int fa(int color) {
+        if (fade >= 1f) {
+            return color;
+        }
+        int a = Math.round(((color >>> 24) & 0xFF) * Math.max(0f, fade));
+        return (Math.max(a, fade > 0.02f ? 5 : 0) << 24) | (color & 0xFFFFFF);
+    }
     public static int withAlpha(int rgb, int a) {
         return (a << 24) | (rgb & 0xFFFFFF);
     }
@@ -16,9 +34,9 @@ public final class UiDraw {
         var c = dev.aero.client.AeroClient.CONFIG;
         return c == null ? 0xFF4F8EFF : (c.uiAccent | 0xFF000000);
     }
-    public static final int FILL = 0xA812101A;
-    public static final int FILL_DEEP = 0xA00A0910;
-    public static final int FILL_LIFT = 0xB01A1826;
+    public static final int FILL = 0xC8FFFFFF;
+    public static final int FILL_DEEP = 0xD8F1F3F8;
+    public static final int FILL_LIFT = 0xE8FFFFFF;
 
     private static final int MAX_R = 28;
     /** Per-radius top-left coverage, 0–255, row-major r*r. */
@@ -116,7 +134,8 @@ public final class UiDraw {
     }
 
     public static void roundRect(DrawContext c, int x, int y, int w, int h, int radius, int color) {
-        if (w <= 0 || h <= 0) {
+        color = fa(color);
+        if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
             return;
         }
         int r = Math.max(0, Math.min(radius, Math.min(MAX_R, Math.min(w, h) / 2)));
@@ -135,7 +154,8 @@ public final class UiDraw {
     }
 
     public static void roundBorder(DrawContext c, int x, int y, int w, int h, int radius, int color) {
-        if (w <= 0 || h <= 0) {
+        color = fa(color);
+        if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
             return;
         }
         int r = Math.max(0, Math.min(radius, Math.min(MAX_R, Math.min(w, h) / 2)));
@@ -158,6 +178,15 @@ public final class UiDraw {
     }
 
     public static void shadow(DrawContext c, int x, int y, int w, int h) {
+        shadow(c, x, y, w, h, 14);
+    }
+
+    /** Soft drop shadow under a light panel: a few widening low-alpha layers, offset down. */
+    public static void shadow(DrawContext c, int x, int y, int w, int h, int radius) {
+        for (int i = 4; i >= 1; i--) {
+            int g = i * 2;
+            roundRect(c, x - g, y - g + 3, w + g * 2, h + g * 2, radius + g, (6 + (4 - i) * 3) << 24);
+        }
     }
 
     public static void sheen(DrawContext c, int x, int y, int w, int h, int radius) {
@@ -196,36 +225,28 @@ public final class UiDraw {
 
     public static void glass(DrawContext c, int x, int y, int w, int h, int fill, int radius) {
         int r = Math.max(12, radius);
-        // Soft accent glow just outside the panel, then a see-through body so the world shows through.
-        roundRect(c, x - 2, y - 2, w + 4, h + 4, r + 2, withAlpha(accent(), 0x0C));
-        int alpha = Math.min(0xA8, (fill >>> 24));
-        roundRect(c, x, y, w, h, r, (alpha << 24) | (fill & 0xFFFFFF));
+        shadow(c, x, y, w, h, r);
+        // Frosted white body (the screen blurs the world behind it), cool tint pooling at the bottom.
+        roundRect(c, x, y, w, h, r, 0xDCF6F8FC);
         int in = (int) Math.ceil(r * 0.4);
         if (w > in * 2 + 4 && h > in * 2 + 4) {
-            // Frost: bright at the top fading out, faint blue pooling at the bottom. Inset on all four
-            // sides so the rectangle's corners stay inside the rounded outline instead of poking out.
             int mid = y + h / 2;
-            c.fillGradient(x + in, y + in, x + w - in, mid, 0x2CFFFFFF, 0x06FFFFFF);
-            c.fillGradient(x + in, mid, x + w - in, y + h - in, 0x06FFFFFF, withAlpha(accent(), 0x18));
+            c.fillGradient(x + in, y + in, x + w - in, mid, fa(0x40FFFFFF), fa(0x00FFFFFF));
+            c.fillGradient(x + in, mid, x + w - in, y + h - in, fa(0x00FFFFFF), fa(withAlpha(accent(), 0x10)));
         }
-        roundBorder(c, x, y, w, h, r, 0x46FFFFFF);
-        if (w > 20) {
-            roundRect(c, x + r, y + 1, w - r * 2, 2, 1, 0x55FFFFFF);
-        }
+        roundBorder(c, x, y, w, h, r, 0xE6FFFFFF);
+        roundBorder(c, x - 1, y - 1, w + 2, h + 2, r + 1, 0x14000000);
     }
 
     public static void innerCard(DrawContext c, int x, int y, int w, int h) {
-        roundRect(c, x, y, w, h, 14, 0x5E0E0E18);
-        if (w > 20 && h > 20) {
-            c.fillGradient(x + 6, y + 4, x + w - 6, y + Math.min(h / 2, 30), 0x16FFFFFF, 0x00FFFFFF);
-        }
-        roundBorder(c, x, y, w, h, 14, 0x26FFFFFF);
+        roundRect(c, x, y, w, h, 14, 0x8CFFFFFF);
+        roundBorder(c, x, y, w, h, 14, 0x12000000);
     }
 
     public static void field(DrawContext c, int x, int y, int w, int h, boolean focused) {
         int r = Math.min(h / 2, 10);
-        roundRect(c, x, y, w, h, r, focused ? 0xE0181622 : 0x9912111A);
-        roundBorder(c, x, y, w, h, r, focused ? withAlpha(accent(), 0x66) : 0x22FFFFFF);
+        roundRect(c, x, y, w, h, r, focused ? 0xFFFFFFFF : 0xA6FFFFFF);
+        roundBorder(c, x, y, w, h, r, focused ? withAlpha(accent(), 0xAA) : 0x16000000);
     }
 
     public static void scrollbar(DrawContext c, int x, int y, int h, int scroll, int content, int view) {
@@ -236,7 +257,7 @@ public final class UiDraw {
         int thumb = Math.max(18, (int) (track * (view / (float) content)));
         int max = Math.max(1, content - view);
         int ty = y + 4 + (int) ((track - thumb) * (scroll / (float) max));
-        roundRect(c, x, y + 4, 4, track, 2, 0x22FFFFFF);
+        roundRect(c, x, y + 4, 4, track, 2, 0x10000000);
         roundRect(c, x, ty, 4, thumb, 2, withAlpha(accent(), 0x88));
     }
 
@@ -248,23 +269,23 @@ public final class UiDraw {
     }
 
     public static void pill(DrawContext c, int x, int y, int w, int h, boolean on) {
-        roundRect(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x55) : 0x2814101C);
-        roundBorder(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x44) : 0x14FFFFFF);
+        roundRect(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x2E) : 0x9CFFFFFF);
+        roundBorder(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x80) : 0x14000000);
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {
-        roundRect(c, x, y + 3, 28, 10, 0, on ? accent() : 0x66302C3C);
-        int knobX = on ? x + 15 : x + 1;
-        roundRect(c, knobX, y, 13, 16, 0, on ? 0xFFF8F5FF : 0xD0AAA5B8);
-        roundBorder(c, knobX, y, 13, 16, 0, on ? 0x66FFFFFF : 0x22000000);
+        roundRect(c, x, y + 1, 28, 14, 7, on ? accent() : 0xFFD5DAE4);
+        int knobX = on ? x + 15 : x + 2;
+        roundRect(c, knobX, y + 3, 10, 10, 5, 0xFFFFFFFF);
+        roundBorder(c, knobX, y + 3, 10, 10, 5, 0x1A000000);
     }
 
     public static void slider(DrawContext c, int x, int y, int w, float t) {
-        roundRect(c, x, y, w, 6, 3, 0x66221F2E);
+        roundRect(c, x, y, w, 6, 3, 0xFFDCE0E9);
         int filled = Math.max(4, (int) (w * Math.max(0f, Math.min(1f, t))));
         roundRect(c, x, y, filled, 6, 3, accent());
-        roundRect(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0xFFF6F1FF);
-        roundBorder(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0x66FFFFFF);
+        roundRect(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0xFFFFFFFF);
+        roundBorder(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0x26000000);
     }
 
     public static void scan(DrawContext c, int x, int y, int w, int h) {
@@ -277,7 +298,7 @@ public final class UiDraw {
     }
 
     public static void divider(DrawContext c, int x, int y, int w) {
-        c.fill(x, y, x + w, y + 1, 0x14FFFFFF);
+        c.fill(x, y, x + w, y + 1, fa(0x12000000));
     }
 
     /** The brand mark: a plain bold blue "A". */

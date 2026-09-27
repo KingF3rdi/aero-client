@@ -14,6 +14,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = InGameHud.class, priority = 2000)
 public class InGameHudMixin {
+    /** Hotbar, hearts, hunger and XP bar hide while the Aero menu is open. */
+    @Inject(method = "renderMainHud", at = @At("HEAD"), cancellable = true, require = 0)
+    private void aero$hideInMenu(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        if (dev.aero.client.ui.Menus.isClickGui(net.minecraft.client.MinecraftClient.getInstance().currentScreen)) {
+            ci.cancel();
+        }
+    }
+
     @Inject(method = "render", at = @At("TAIL"), require = 0)
     private void aero$overlay(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         dev.aero.client.hud.OverlayHud.render(context, tickCounter);

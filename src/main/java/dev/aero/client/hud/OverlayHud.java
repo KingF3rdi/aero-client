@@ -77,6 +77,10 @@ public final class OverlayHud {
             renderInner(context, tickCounter);
         } catch (Throwable ignored) {
         }
+        try {
+            dev.aero.client.ui.Notifications.render(context, context.getScaledWindowWidth());
+        } catch (Throwable ignored) {
+        }
     }
 
     private static void renderInner(DrawContext context, RenderTickCounter tickCounter) {

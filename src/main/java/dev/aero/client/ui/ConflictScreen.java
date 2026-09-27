@@ -15,8 +15,8 @@ import java.util.List;
 
 /** Title-screen notice: mods that duplicate an Aero module, each with a Remove button (applied when the game closes). */
 public class ConflictScreen extends Screen {
-    private static final int TEXT = 0xFFF6F3FB;
-    private static final int MUTED = 0xFFB8B0C8;
+    private static final int TEXT = UiDraw.TEXT;
+    private static final int MUTED = UiDraw.MUTED;
     private static final int ROW = 26;
     private static boolean shown;
 
@@ -76,7 +76,7 @@ public class ConflictScreen extends Screen {
 
         int y = py + 72;
         for (var c : conflicts) {
-            UiDraw.roundRect(context, px + 12, y, panelW() - 24, ROW - 4, 8, 0x2214101C);
+            UiDraw.roundRect(context, px + 12, y, panelW() - 24, ROW - 4, 8, 0x0C000000);
             context.drawText(textRenderer, Text.literal(c.name), px + 22, y + 4, TEXT, false);
             context.drawText(textRenderer, Text.literal("replaced by " + c.module), px + 22, y + 13, MUTED, false);
             String label = c.removed ? "Disabled on exit" : "Disable";

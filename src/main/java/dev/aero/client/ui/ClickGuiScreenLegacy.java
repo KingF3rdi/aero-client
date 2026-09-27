@@ -6,10 +6,10 @@ import dev.aero.client.auth.AccountManager;
 import dev.aero.client.auth.SavedAccount;
 import dev.aero.client.auth.SkinPreview;
 import dev.aero.client.cosmetic.CosmeticPreview;
-import dev.aero.client.cosmetic.Cosmetics;
 import dev.aero.client.module.Category;
 import dev.aero.client.module.Module;
 import dev.aero.client.social.FriendStore;
+import dev.aero.client.social.Shards;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.DrawContext;
@@ -24,46 +24,64 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Aurora-style in-game menu: Client modules, You cosmetics, Friends.
+ * Card-style client menu on frosted white glass. Every category is a card; clicking one grows it
+ * into its module list with toggles and settings right there while the other cards move out of the
+ * way. Typing anywhere searches modules and settings. You (Wardrobe/Store/Rewards/Badges) and
+ * Friends are tabs; Esc steps back one level. The whole panel scales with the window.
  */
 public class ClickGuiScreenLegacy extends Screen {
-    private static final int BG = 0x4406050C;
-    private static final int BAR = 0xCC12101C;
-    private static final int SIDE = 0x140A0912;
-    private static final int CARD = 0xB012111A;
-    private static final int PILL = 0x88262232;
-    private static final int PILL_ON = 0xAA3A3158;
-    private static final int MUTED = 0xFF8E889C;
-    private static final int TEXT = 0xFFF3F0F8;
-    private static final int LINE = 0x14FFFFFF;
+    private static final int TEXT = UiDraw.TEXT;
+    private static final int MUTED = UiDraw.MUTED;
+    private static final int CARD = 0xB0FFFFFF;
 
-    private static final int TOP = 36;
-    private static final int ROW_H = 32;
-    private boolean compactH;
-    private int navH = 20;
-    private int navStep = 22;
-    private int SIDE_W = 168;
-    private int RIGHT_W = 248;
+    /** Logical panel size; the matrix scale maps it onto any window size. */
+    private static final int PW = 620;
+    private static final int PH = 350;
+    private static final int TOP = 40;
+    private static final int ROW_H = 30;
+    private static final int ANIM_MS = 200;
 
-    private static final String[] COS_TABS = {
-            "Capes", "Wings", "Headwear", "Trails", "Kill", "Mace", "Pets"
-    };
-    private static final String[] COS_EXTRA = {
-            "Emotes", "Chat tags", "Badges"
-    };
+    private int SIDE_W = 150;
+    private int RIGHT_W = 210;
+    /** Settings pane / module list geometry of the open card, set before drawing or hit-testing it. */
+    private int paneX;
+    private int paneY;
+    private int paneBottom;
+    private int listX0;
+    private int listY0;
+    private int listW0;
+    private int listH0;
+
+    private record CardDef(String title, Category category, int kind) {}
+
+    private static final List<CardDef> CARDS = new ArrayList<>();
+
+    static {
+        for (Category c : Category.values()) {
+            if (c.inSidebar()) {
+                CARDS.add(new CardDef(c.title, c, 0));
+            }
+        }
+        CARDS.add(new CardDef("Profiles", null, 1));
+        CARDS.add(new CardDef("HUD Editor", null, 2));
+    }
+
+    private static final String[] YOU_TABS = {"Wardrobe", "Store", "Rewards", "Badges"};
 
     private final WardrobePanel wardrobe = new WardrobePanel();
+    private final ShopPanel shop = new ShopPanel();
     private final Screen parent;
     private final boolean pauseGame;
-    private Category filter;
     private String search = "";
     private boolean searchFocus;
     private int scroll;
     private Module selected;
-    private int rightTab;
     private int topTab;
+    private int youTab;
+    private int openCard = -1;
+    private long cardAnimAt;
+    private boolean closing;
     private int cosTab;
-    private int cosSel;
     private int friendSel = -1;
     private String friendDraft = "";
     private boolean friendFocus;
@@ -72,7 +90,7 @@ public class ClickGuiScreenLegacy extends Screen {
     private int friendScroll;
     private final List<Module> visible = new ArrayList<>();
 
-    private boolean boundKeysOnly;
+    private float s = 1f;
     private int ox;
     private int oy;
     private int pw;
@@ -85,19 +103,39 @@ public class ClickGuiScreenLegacy extends Screen {
 
     public void debugSelectByName(String name) {
         topTab = 0;
-        filter = null;
-        boundKeysOnly = false;
-        rebuild();
-        for (Module m : visible) {
+        search = "";
+        for (Module m : AeroClient.MODULES.all) {
             if (m.name.equals(name)) {
+                for (int i = 0; i < CARDS.size(); i++) {
+                    if (CARDS.get(i).category() == m.category) {
+                        openCard = i;
+                        cardAnimAt = 0;
+                    }
+                }
+                rebuild();
                 selected = m;
             }
         }
     }
 
+    public void debugBuy(String capeId) {
+        topTab = 1;
+        youTab = 0;
+        wardrobe.openBuy(dev.aero.client.cosmetic.Cosmetics.named(dev.aero.client.cosmetic.Cosmetics.Kind.CAPE, capeId));
+    }
+
+    public void debugSearch(String q) {
+        topTab = 0;
+        search = q;
+        rebuild();
+    }
+
     public void debugTab(int top, int cos) {
         topTab = top;
-        wardrobe.debugTab(cos);
+        if (top == 1) {
+            youTab = cos >= 100 ? cos - 100 : 0;
+            wardrobe.debugTab(cos >= 100 ? 0 : cos);
+        }
     }
 
     public void debugPublishCape(String fileName) {
@@ -122,7 +160,6 @@ public class ClickGuiScreenLegacy extends Screen {
         String n = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, 0);
         return n != null ? n.toUpperCase(java.util.Locale.ROOT) : "Key " + key;
     }
-
     private void applyHue(Module.Setting setting, int barX, int barW, int mx) {
         float t = Math.max(0f, Math.min(1f, (mx - barX) / (float) Math.max(1, barW)));
         int rgb = java.awt.Color.HSBtoRGB(t, 0.85f, 1f) & 0xFFFFFF;
@@ -158,46 +195,28 @@ public class ClickGuiScreenLegacy extends Screen {
         this(null, false);
     }
 
-    private static Category lastFilter;
+    private static int lastOpenCard = -1;
     private static Module lastSelected;
     private static int lastTopTab;
-    private static int lastScroll;
-    private static boolean lastBoundKeys;
+    private static int lastYouTab;
 
     private void layoutPanel() {
-        int maxW = Math.max(8, width - 24);
-        int maxH = Math.max(8, height - 24);
-        pw = Math.min(maxW, 540);
-        ph = Math.min(maxH, 310);
-        if (pw < 460) {
-            SIDE_W = Math.max(76, pw * 22 / 100);
-            RIGHT_W = Math.max(96, pw * 30 / 100);
-        } else {
-            SIDE_W = 122;
-            RIGHT_W = 178;
-        }
-        ox = Math.max(0, (width - pw) / 2);
-        oy = Math.max(0, (height - ph) / 2);
-        compactH = ph < 250;
-        int cats = (int) java.util.Arrays.stream(Category.values()).filter(Category::inSidebar).count();
-        int rows = (compactH ? 1 : 2) + (int) cats;
-        int avail = ph - 114;
-        navStep = Math.max(13, Math.min(22, avail / rows));
-        navH = navStep - 2;
-        if (pw < 470) {
-            SIDE_W = compactH ? 96 : Math.max(70, pw * 20 / 100);
-            RIGHT_W = Math.max(128, pw * (compactH ? 38 : 42) / 100);
-        }
+        s = Math.max(0.5f, Math.min(3f, Math.min(width * 0.92f / PW, height * 0.9f / PH)));
+        int vw = Math.round(width / s);
+        int vh = Math.round(height / s);
+        pw = PW;
+        ph = PH;
+        ox = (vw - pw) / 2;
+        oy = (vh - ph) / 2;
     }
 
-    private boolean inMenu(Module module) {
-        return module != null && module.category.inSidebar();
+    private int lm(double v) {
+        return (int) Math.floor(v / s);
     }
 
     private String groupKey(Module module, String name) {
         return module.name + "/" + name;
     }
-
     private boolean groupExpanded(Module.Setting setting) {
         if (selected == null || setting == null) {
             return false;
@@ -208,14 +227,12 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         return setting.kind == Module.Setting.Kind.BOOL && setting.boolGet != null && setting.boolGet.getAsBoolean();
     }
-
     private void toggleGroup(Module.Setting setting) {
         if (selected == null || setting == null) {
             return;
         }
         groupState.put(groupKey(selected, setting.name), !groupExpanded(setting));
     }
-
     private Module.Setting settingNamed(String name) {
         if (selected == null || name == null) {
             return null;
@@ -227,7 +244,6 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         return null;
     }
-
     private boolean settingVisible(Module.Setting setting) {
         if (setting.tab != null && !setting.tab.equals(currentTab(selected))) {
             return false;
@@ -257,7 +273,6 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         return tabs;
     }
-
     private String currentTab(Module module) {
         List<String> tabs = tabsFor(module);
         if (tabs.isEmpty()) {
@@ -270,23 +285,37 @@ public class ClickGuiScreenLegacy extends Screen {
     @Override
     protected void init() {
         super.init();
-        filter = lastFilter;
         topTab = lastTopTab;
-        scroll = lastScroll;
-        boundKeysOnly = lastBoundKeys;
+        youTab = lastYouTab;
+        openCard = lastOpenCard;
+        cardAnimAt = 0;
+        closing = false;
         rebuild();
         selected = lastSelected != null && visible.contains(lastSelected) ? lastSelected
                 : !visible.isEmpty() ? visible.get(0) : null;
+        Shards.refresh(false);
     }
 
     @Override
     public void removed() {
         super.removed();
-        lastFilter = filter;
+        lastOpenCard = closing ? -1 : openCard;
         lastSelected = selected;
         lastTopTab = topTab;
-        lastScroll = scroll;
-        lastBoundKeys = boundKeysOnly;
+        lastYouTab = youTab;
+    }
+
+    private boolean searching() {
+        return !search.isBlank();
+    }
+
+    private static boolean settingMatches(Module module, String q) {
+        for (Module.Setting setting : module.settings) {
+            if (setting.name != null && setting.name.toLowerCase(Locale.ROOT).contains(q)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void rebuild() {
@@ -295,94 +324,185 @@ public class ClickGuiScreenLegacy extends Screen {
             return;
         }
         String q = search.toLowerCase(Locale.ROOT).trim();
+        Category cat = openCard >= 0 && openCard < CARDS.size() ? CARDS.get(openCard).category() : null;
         for (Module module : AeroClient.MODULES.all) {
-            if (!inMenu(module)) {
+            if (!module.category.inSidebar()) {
                 continue;
             }
-            if (filter != null && module.category != filter) {
-                continue;
-            }
-            if (!q.isEmpty() && !module.name.toLowerCase(Locale.ROOT).contains(q)
-                    && !module.description.toLowerCase(Locale.ROOT).contains(q)) {
-                continue;
-            }
-            if (boundKeysOnly && module.style().toggleKey < 0) {
+            if (!q.isEmpty()) {
+                if (!module.name.toLowerCase(Locale.ROOT).contains(q)
+                        && !module.description.toLowerCase(Locale.ROOT).contains(q)
+                        && !settingMatches(module, q)) {
+                    continue;
+                }
+            } else if (cat == null || module.category != cat) {
                 continue;
             }
             visible.add(module);
         }
-        int max = Math.max(0, visible.size() * ROW_H + sectionGaps() - listH());
-        scroll = Math.min(scroll, max);
+        scroll = Math.max(0, Math.min(scroll, Math.max(0, contentH() - listH0)));
+        if (!visible.isEmpty() && (selected == null || !visible.contains(selected))) {
+            selected = visible.get(0);
+        }
     }
 
     private int sectionGaps() {
+        if (!searching()) {
+            return 0;
+        }
         Category last = null;
         int extra = 0;
         for (Module module : visible) {
             if (module.category != last) {
-                extra += 22;
+                extra += 20;
                 last = module.category;
             }
         }
         return extra;
     }
 
+    private int contentH() {
+        return visible.size() * ROW_H + sectionGaps();
+    }
+
     private int listX() {
         return ox + SIDE_W + 8;
     }
 
-    private int listW() {
-        return Math.max(80, pw - SIDE_W - RIGHT_W - 16);
+    // ---- card animation ---------------------------------------------------------------------
+
+    /** 0 = card grid, 1 = card fully open (eased). */
+    private float cardT() {
+        if (openCard < 0) {
+            return 0f;
+        }
+        float e = cardAnimAt == 0 ? 1f : Math.min(1f, (System.currentTimeMillis() - cardAnimAt) / (float) ANIM_MS);
+        if (closing && e >= 1f) {
+            openCard = -1;
+            closing = false;
+            rebuild();
+            return 0f;
+        }
+        float t = closing ? 1f - e : e;
+        return 1f - (1f - t) * (1f - t) * (1f - t);
     }
 
-    private int listH() {
-        return ph - TOP - 22;
+    private void openCardAt(int i) {
+        CardDef c = CARDS.get(i);
+        if (c.kind() == 1) {
+            client.setScreen(new ProfilesScreen(this));
+            return;
+        }
+        if (c.kind() == 2) {
+            client.setScreen(new HudLayoutScreen(this));
+            return;
+        }
+        openCard = i;
+        closing = false;
+        cardAnimAt = System.currentTimeMillis();
+        scroll = 0;
+        settingsScroll = 0;
+        selected = null;
+        rebuild();
     }
+
+    private void closeCard() {
+        if (openCard >= 0 && !closing) {
+            closing = true;
+            cardAnimAt = System.currentTimeMillis();
+        }
+    }
+
+    private int contentX() {
+        return ox + 12;
+    }
+
+    private int contentY() {
+        return oy + TOP + 6;
+    }
+
+    private int contentW() {
+        return pw - 24;
+    }
+
+    private int contentH0() {
+        return ph - TOP - 18;
+    }
+
+    /** Grid slot of card i: {x, y, w, h}. */
+    private int[] cardRect(int i) {
+        int cols = 3;
+        int rows = (CARDS.size() + cols - 1) / cols;
+        int gap = 8;
+        int w = (contentW() - gap * (cols - 1)) / cols;
+        int h = (contentH0() - gap * (rows - 1)) / rows;
+        return new int[]{contentX() + (i % cols) * (w + gap), contentY() + (i / cols) * (h + gap), w, h};
+    }
+
+    // ---- render ---------------------------------------------------------------------------
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         UiDraw.menuOpen = true;
         try {
             layoutPanel();
-            context.fillGradient(0, 0, width, height, 0x3A0A1224, 0x54040810);
+            try {
+                applyBlur(context);
+            } catch (Throwable ignored) {
+            }
+            context.fillGradient(0, 0, width, height, 0x38F2F5FA, 0x5CDCE3EE);
             if (AeroClient.MODULES == null) {
                 return;
             }
-            UiDraw.glass(context, ox, oy, pw, ph, 0x9A10162A, 20);
-            drawTop(context, mouseX, mouseY);
-            if (topTab == 1) {
-                wardrobe.render(context, mouseX, mouseY, ox, oy + TOP, pw, ph - TOP);
-            } else if (topTab == 2) {
-                drawFriends(context, mouseX, mouseY);
-            } else {
-                int midX = listX() - 6;
-                int midW = listW() + 10;
-                int rightX = ox + pw - RIGHT_W + 2;
-                UiDraw.innerCard(context, midX, oy + TOP + 6, midW, ph - TOP - 14);
-                UiDraw.innerCard(context, rightX, oy + TOP + 6, RIGHT_W - 10, ph - TOP - 14);
-                drawSidebar(context, mouseX, mouseY);
-                drawList(context, mouseX, mouseY);
-                drawRight(context, mouseX, mouseY);
+            context.getMatrices().pushMatrix();
+            context.getMatrices().scale(s, s);
+            try {
+                renderScaled(context, lm(mouseX), lm(mouseY));
+            } finally {
+                context.getMatrices().popMatrix();
             }
         } catch (Throwable t) {
-            context.drawText(textRenderer, Text.literal("Menu draw failed"), ox + 16, oy + 48, TEXT, false);
+            context.drawText(textRenderer, Text.literal("Menu draw failed: " + t), 16, 16, 0xFFFF5555, true);
         } finally {
+            UiDraw.fade = 1f;
             UiDraw.menuOpen = false;
         }
+    }
+
+    private void renderScaled(DrawContext context, int mx, int my) {
+        UiDraw.glass(context, ox, oy, pw, ph, 0, 22);
+        drawTop(context, mx, my);
+        if (topTab == 1) {
+            drawYou(context, mx, my);
+        } else if (topTab == 2) {
+            SIDE_W = 150;
+            RIGHT_W = 200;
+            drawFriends(context, mx, my);
+        } else {
+            drawClient(context, mx, my);
+        }
+    }
+
+    private int tabX(int i) {
+        return ox + 118 + i * 74;
+    }
+
+    private int searchX() {
+        return ox + pw - 16 - 20 - 8 - shardChipW() - 8 - 128;
+    }
+
+    private int shardChipW() {
+        return textRenderer.getWidth(Shards.balanceLabel()) + 26;
     }
 
     private void drawTop(DrawContext context, int mx, int my) {
         int x0 = ox;
         int y0 = oy;
         int x1 = ox + pw;
-        UiDraw.roundRect(context, x0 + 6, y0 + 5, pw - 12, TOP - 8, 12, BAR);
-        context.fill(x0 + 14, y0 + TOP - 1, x1 - 14, y0 + TOP, 0x22FFFFFF);
 
-        UiDraw.aeroMark(context, x0 + 12, y0 + 8, 18, UiDraw.accent());
-        if (!compactTop()) {
-            context.drawText(textRenderer, Text.literal("Aero"), x0 + 34, y0 + 10, TEXT, false);
-            context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 34, y0 + 20, MUTED, false);
-        }
+        UiDraw.aeroMark(context, x0 + 16, y0 + 11, 18, UiDraw.accent());
+        context.drawText(textRenderer, Text.literal("Aero"), x0 + 38, y0 + 12, TEXT, false);
+        context.drawText(textRenderer, Text.literal(AeroClient.VERSION), x0 + 38, y0 + 22, MUTED, false);
 
         if (ModUpdater.state() == ModUpdater.State.IDLE) {
             ModUpdater.check();
@@ -397,140 +517,240 @@ public class ClickGuiScreenLegacy extends Screen {
                     ModUpdater.state() == ModUpdater.State.AVAILABLE ? UiDraw.accent() : MUTED, false);
         }
 
-        int tabX = topTabX();
-        tabPill(context, tabX, y0 + 8, tabW(0), topTab == 0, inside(mx, my, tabX, y0 + 8, tabW(0), 20), "Client");
-        tabPill(context, tabX + tabW(0) + 4, y0 + 8, tabW(1), topTab == 1, inside(mx, my, tabX + tabW(0) + 4, y0 + 8, tabW(1), 20), "Wardrobe");
-        tabPill(context, tabX + tabW(0) + tabW(1) + 8, y0 + 8, tabW(2), topTab == 2, inside(mx, my, tabX + tabW(0) + tabW(1) + 8, y0 + 8, tabW(2), 20), "Friends");
-
-        int closeX = x1 - 28;
-        boolean closeH = inside(mx, my, closeX, y0 + 9, 16, 16);
-        UiDraw.roundRect(context, closeX, y0 + 9, 16, 16, 8, closeH ? 0x66E05555 : 0x22FFFFFF);
-        context.drawText(textRenderer, Text.literal("x"), closeX + 5, y0 + 12, closeH ? TEXT : MUTED, false);
-
-        int profilesX = profilesButtonX();
-        boolean profilesH = inside(mx, my, profilesX, y0 + 8, PROFILES_W, 20);
-        UiDraw.pill(context, profilesX, y0 + 8, PROFILES_W, 20, profilesH);
-        String profilesLabel = "Profiles";
-        context.drawText(textRenderer, Text.literal(profilesLabel),
-                profilesX + (PROFILES_W - textRenderer.getWidth(profilesLabel)) / 2, y0 + 14,
-                profilesH ? TEXT : MUTED, false);
-
-        int tabsEnd = tabX + tabW(0) + tabW(1) + tabW(2) + 8;
-        int room = profilesX - 10 - (tabsEnd + 8);
-        if (room >= 60) {
-            String name = fit(AccountManager.currentName(), Math.min(90, room - 26));
-            int nw = textRenderer.getWidth(name);
-            int chipW = nw + 26;
-            int nameX = profilesX - 10 - chipW;
-            UiDraw.pill(context, nameX, y0 + 8, chipW, 20, false);
-            UiDraw.roundRect(context, nameX + 4, y0 + 12, 12, 12, 6, 0xFFC8A0E8);
-            context.drawText(textRenderer, Text.literal(name), nameX + 20, y0 + 14, TEXT, false);
-        }
-    }
-
-    private boolean compactTop() {
-        return pw < 470;
-    }
-
-    private int topTabX() {
-        return ox + (compactTop() ? 38 : 86);
-    }
-
-    private int tabW(int i) {
-        if (compactTop()) {
-            return i == 1 ? 56 : 46;
-        }
-        return i == 1 ? 76 : 64;
-    }
-
-    private static final int PROFILES_W = 58;
-
-    private int profilesButtonX() {
-        return ox + pw - 28 - 8 - PROFILES_W;
-    }
-
-    private void tabPill(DrawContext context, int x, int y, int w, boolean on, boolean hover, String label) {
-        UiDraw.pill(context, x, y, w, 20, on || hover);
-        int tw = textRenderer.getWidth(label);
-        context.drawText(textRenderer, Text.literal(label), x + (w - tw) / 2, y + 6, on || hover ? TEXT : MUTED, false);
-    }
-
-    private void drawSidebar(DrawContext context, int mx, int my) {
-        int x0 = ox;
-        int y0 = oy + TOP;
-        int y1 = oy + ph;
-        context.fill(x0 + SIDE_W - 1, y0 + 8, x0 + SIDE_W, y1 - 8, 0x14FFFFFF);
-
-        int sy = y0 + 10;
-        UiDraw.field(context, x0 + 10, sy, SIDE_W - 20, 22, searchFocus);
-        String q = search.isEmpty() && !searchFocus ? "Search modules" : search + (searchFocus ? "|" : "");
-        context.drawText(textRenderer, Text.literal(fit(q, SIDE_W - 36)), x0 + 16, sy + 7,
-                search.isEmpty() && !searchFocus ? MUTED : TEXT, false);
-
-        sy += 30;
-        nav(context, mx, my, sy, null, "All", AeroClient.MODULES.menuCount(), !boundKeysOnly && filter == null);
-        sy += navStep;
-        for (Category category : Category.values()) {
-            if (!category.inSidebar()) {
-                continue;
+        // Segmented tab control
+        String[] tabs = {"Client", "You", "Friends"};
+        UiDraw.roundRect(context, tabX(0) - 3, y0 + 9, 3 * 74 + 2, 24, 12, 0x14000000);
+        for (int i = 0; i < 3; i++) {
+            int tx = tabX(i);
+            boolean on = topTab == i;
+            boolean h = inside(mx, my, tx, y0 + 12, 70, 18);
+            if (on) {
+                UiDraw.roundRect(context, tx, y0 + 13, 70, 18, 9, 0x10000000);
+                UiDraw.roundRect(context, tx, y0 + 12, 70, 18, 9, 0xFFFFFFFF);
+            } else if (h) {
+                UiDraw.roundRect(context, tx, y0 + 12, 70, 18, 9, 0x66FFFFFF);
             }
-            nav(context, mx, my, sy, category, category.title, AeroClient.MODULES.count(category),
-                    !boundKeysOnly && filter == category);
-            sy += navStep;
+            int tw = textRenderer.getWidth(tabs[i]);
+            context.drawText(textRenderer, Text.literal(tabs[i]), tx + (70 - tw) / 2, y0 + 17, on ? TEXT : MUTED, false);
         }
-        if (compactH) {
-            int by = y1 - 30;
-            int half = (SIDE_W - 24) / 2;
-            boolean kH = inside(mx, my, x0 + 8, by, half, 22);
-            UiDraw.pill(context, x0 + 8, by, half, 22, boundKeysOnly || kH);
-            context.drawText(textRenderer, Text.literal("Keys"), x0 + 8 + (half - textRenderer.getWidth("Keys")) / 2, by + 7,
-                    boundKeysOnly || kH ? TEXT : MUTED, false);
-            boolean hH = inside(mx, my, x0 + 12 + half, by, half, 22);
-            UiDraw.pill(context, x0 + 12 + half, by, half, 22, hH);
-            context.drawText(textRenderer, Text.literal("HUD"), x0 + 12 + half + (half - textRenderer.getWidth("HUD")) / 2, by + 7,
-                    hH ? TEXT : MUTED, false);
+
+        if (topTab == 0) {
+            int sx = searchX();
+            UiDraw.field(context, sx, y0 + 10, 128, 22, searchFocus);
+            drawSearchGlyph(context, sx + 8, y0 + 16, searchFocus ? UiDraw.accent() : MUTED);
+            String q = search.isEmpty() && !searchFocus ? "Search" : search + (searchFocus ? "|" : "");
+            context.drawText(textRenderer, Text.literal(fitLeft(q, 96)), sx + 22, y0 + 17,
+                    search.isEmpty() && !searchFocus ? MUTED : TEXT, false);
+        }
+
+        int chipW = shardChipW();
+        int chipX = x1 - 16 - 20 - 8 - chipW;
+        boolean chipH = inside(mx, my, chipX, y0 + 10, chipW, 22);
+        UiDraw.roundRect(context, chipX, y0 + 10, chipW, 22, 11, chipH ? 0xFFFFFFFF : 0xB4FFFFFF);
+        UiDraw.roundBorder(context, chipX, y0 + 10, chipW, 22, 11, 0x14000000);
+        Shards.drawGem(context, chipX + 7, y0 + 15, 12);
+        context.drawText(textRenderer, Text.literal(Shards.balanceLabel()), chipX + 22, y0 + 17, TEXT, false);
+
+        int closeX = x1 - 16 - 20;
+        boolean closeH = inside(mx, my, closeX, y0 + 11, 20, 20);
+        UiDraw.roundRect(context, closeX, y0 + 11, 20, 20, 10, closeH ? 0xFFFF5F57 : 0x12000000);
+        context.drawText(textRenderer, Text.literal("×"), closeX + 7, y0 + 17, closeH ? 0xFFFFFFFF : MUTED, false);
+        UiDraw.divider(context, x0 + 16, y0 + TOP, pw - 32);
+    }
+
+    private static void drawSearchGlyph(DrawContext context, int x, int y, int col) {
+        for (int a = 0; a < 360; a += 30) {
+            double rad = Math.toRadians(a);
+            int px = x + 3 + (int) Math.round(Math.cos(rad) * 3);
+            int py = y + 3 + (int) Math.round(Math.sin(rad) * 3);
+            context.fill(px, py, px + 1, py + 1, col);
+        }
+        context.fill(x + 6, y + 6, x + 8, y + 8, col);
+        context.fill(x + 7, y + 7, x + 9, y + 9, col);
+    }
+
+    /** Keeps the end of a string visible (search field while typing). */
+    private String fitLeft(String text, int maxW) {
+        if (textRenderer.getWidth(text) <= maxW) {
+            return text;
+        }
+        String cut = text;
+        while (cut.length() > 1 && textRenderer.getWidth("…" + cut) > maxW) {
+            cut = cut.substring(1);
+        }
+        return "…" + cut;
+    }
+
+    // ---- Client tab: cards ------------------------------------------------------------------
+
+    static int catColor(Category category) {
+        if (category == null) {
+            return 0xFF3B82F6;
+        }
+        return switch (category) {
+            case PVP -> 0xFFEF4444;
+            case HUD -> 0xFF0EA5E9;
+            case RENDER -> 0xFF8B5CF6;
+            case PLAYER -> 0xFF10B981;
+            case MISC -> 0xFF64748B;
+            case PERFORMANCE -> 0xFFF59E0B;
+            case PREVIEW -> 0xFFEC4899;
+        };
+    }
+
+    private void drawClient(DrawContext context, int mx, int my) {
+        if (searching()) {
+            UiDraw.roundRect(context, contentX(), contentY(), contentW(), contentH0(), 14, 0xD8FFFFFF);
+            UiDraw.roundBorder(context, contentX(), contentY(), contentW(), contentH0(), 14, 0x10000000);
+            drawExpanded(context, mx, my, "Search", "\"" + search.trim() + "\"", null);
             return;
         }
-        sy += 4;
-        UiDraw.divider(context, x0 + 14, sy - 3, SIDE_W - 28);
-        boolean boundH = inside(mx, my, x0 + 8, sy, SIDE_W - 16, navH);
-        if (boundKeysOnly) {
-            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, navH, 8, PILL_ON);
-            UiDraw.roundRect(context, x0 + 8, sy + 4, 3, navH - 8, 1, UiDraw.accent());
-        } else if (boundH) {
-            UiDraw.roundRect(context, x0 + 8, sy, SIDE_W - 16, navH, 8, 0x8014121C);
+        float t = cardT();
+        int[] full = {contentX(), contentY(), contentW(), contentH0()};
+        int[] sel = openCard >= 0 ? cardRect(openCard) : null;
+        for (int i = 0; i < CARDS.size(); i++) {
+            if (i == openCard) {
+                continue;
+            }
+            int[] r = cardRect(i);
+            int ddx = 0;
+            int ddy = 0;
+            if (sel != null) {
+                float vx = (r[0] + r[2] / 2f) - (sel[0] + sel[2] / 2f);
+                float vy = (r[1] + r[3] / 2f) - (sel[1] + sel[3] / 2f);
+                float len = Math.max(1f, (float) Math.sqrt(vx * vx + vy * vy));
+                ddx = Math.round(vx / len * 60f * t);
+                ddy = Math.round(vy / len * 60f * t);
+                UiDraw.fade = 1f - t;
+            }
+            if (UiDraw.fade > 0.02f) {
+                drawCard(context, CARDS.get(i), r[0] + ddx, r[1] + ddy, r[2], r[3],
+                        openCard < 0 && inside(mx, my, r[0], r[1], r[2], r[3]), false);
+            }
+            UiDraw.fade = 1f;
         }
-        context.drawText(textRenderer, Text.literal("Bound keys"), x0 + 18, sy + 6,
-                boundKeysOnly ? TEXT : MUTED, false);
-
-        int hy = y1 - 34;
-        boolean hudH = inside(mx, my, x0 + 10, hy, SIDE_W - 20, 22);
-        UiDraw.pill(context, x0 + 10, hy, SIDE_W - 20, 22, hudH);
-        String hudLabel = "HUD layout";
-        context.drawText(textRenderer, Text.literal(hudLabel),
-                x0 + 10 + (SIDE_W - 20 - textRenderer.getWidth(hudLabel)) / 2, hy + 7, hudH ? TEXT : MUTED, false);
+        if (sel != null) {
+            int x = Math.round(sel[0] + (full[0] - sel[0]) * t);
+            int y = Math.round(sel[1] + (full[1] - sel[1]) * t);
+            int w = Math.round(sel[2] + (full[2] - sel[2]) * t);
+            int h = Math.round(sel[3] + (full[3] - sel[3]) * t);
+            drawCard(context, CARDS.get(openCard), x, y, w, h, false, t > 0.98f);
+            if (t > 0.98f && !closing) {
+                CardDef c = CARDS.get(openCard);
+                int on = 0;
+                for (Module m : visible) {
+                    if (m.enabled()) {
+                        on++;
+                    }
+                }
+                drawExpanded(context, mx, my, c.title(), visible.size() + " modules · " + on + " on", c.category());
+            }
+        }
     }
 
-    private void nav(DrawContext context, int mx, int my, int y, Category category, String name, int count, boolean on) {
-        boolean h = inside(mx, my, ox + 8, y, SIDE_W - 16, navH);
-        if (on) {
-            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, navH, 8, PILL_ON);
-            UiDraw.roundRect(context, ox + 8, y + 4, 3, navH - 8, 1, UiDraw.accent());
-        } else if (h) {
-            UiDraw.roundRect(context, ox + 8, y, SIDE_W - 16, navH, 8, 0x8014121C);
+    private void drawCard(DrawContext context, CardDef c, int x, int y, int w, int h, boolean hover, boolean open) {
+        int col = catColor(c.category());
+        if (c.kind() == 1) {
+            col = 0xFF14B8A6;
+        } else if (c.kind() == 2) {
+            col = 0xFF6366F1;
         }
-        context.drawText(textRenderer, Text.literal(name), ox + 18, y + (navH - 8) / 2 + 1, on ? TEXT : MUTED, false);
-        String n = String.valueOf(count);
-        if (18 + textRenderer.getWidth(name) + textRenderer.getWidth(n) + 10 < SIDE_W - 16) {
-            context.drawText(textRenderer, Text.literal(n), ox + SIDE_W - 16 - textRenderer.getWidth(n), y + (navH - 8) / 2 + 1, MUTED, false);
+        int yy = hover ? y - 2 : y;
+        UiDraw.roundRect(context, x + 1, yy + 3, w - 2, h, 14, hover ? 0x14000000 : 0x0A000000);
+        UiDraw.roundRect(context, x, yy, w, h, 14, open ? 0xE8FFFFFF : hover ? 0xFAFFFFFF : 0xC4FFFFFF);
+        UiDraw.roundBorder(context, x, yy, w, h, 14, hover ? UiDraw.withAlpha(col, 0x90) : 0x12000000);
+        if (open) {
+            return;
         }
+        UiDraw.roundRect(context, x + 12, yy + 12, 24, 24, 12, UiDraw.withAlpha(col, 0x24));
+        drawCardIcon(context, c, x + 19, yy + 19, UiDraw.fa(col));
+        context.drawText(textRenderer, Text.literal(c.title()), x + 44, yy + 13, UiDraw.fa(TEXT), false);
+        String sub;
+        String preview = "";
+        if (c.kind() == 0) {
+            int total = 0;
+            int on = 0;
+            StringBuilder names = new StringBuilder();
+            for (Module m : AeroClient.MODULES.all) {
+                if (m.category != c.category()) {
+                    continue;
+                }
+                total++;
+                if (m.enabled()) {
+                    on++;
+                    if (names.length() < 80) {
+                        names.append(names.length() == 0 ? "" : " · ").append(m.name);
+                    }
+                }
+            }
+            sub = total + " modules · " + on + " on";
+            preview = names.length() == 0 ? "Nothing enabled yet" : names.toString();
+        } else if (c.kind() == 1) {
+            sub = "Saved and public setups";
+            preview = "Switch or share your settings";
+        } else {
+            sub = "Move, hide and lock";
+            preview = "Drag every HUD element";
+        }
+        context.drawText(textRenderer, Text.literal(fit(sub, w - 56)), x + 44, yy + 24, UiDraw.fa(MUTED), false);
+        if (h > 62) {
+            context.drawText(textRenderer, Text.literal(fit(preview, w - 24)), x + 12, yy + h - 18, UiDraw.fa(0xFF8A90A0), false);
+        }
+        context.drawText(textRenderer, Text.literal("›"), x + w - 16, yy + 13, UiDraw.fa(hover ? col : 0xFFB0B6C2), false);
+    }
+
+    private static void drawCardIcon(DrawContext context, CardDef c, int x, int y, int col) {
+        if (c.kind() == 1) {
+            // sliders
+            context.fill(x, y + 1, x + 10, y + 2, col);
+            context.fill(x, y + 5, x + 10, y + 6, col);
+            context.fill(x, y + 9, x + 10, y + 10, col);
+            context.fill(x + 6, y - 1, x + 8, y + 4, col);
+            context.fill(x + 2, y + 3, x + 4, y + 8, col);
+            context.fill(x + 5, y + 7, x + 7, y + 12, col);
+        } else if (c.kind() == 2) {
+            iconMonitor(context, x, y, col);
+        } else {
+            iconForCategory(context, c.category(), x, y, col);
+        }
+    }
+
+    /** Open card (or search results): module list on the left, settings of the picked module on the right. */
+    private void drawExpanded(DrawContext context, int mx, int my, String title, String sub, Category category) {
+        int x = contentX();
+        int y = contentY();
+        int w = contentW();
+        int h = contentH0();
+        boolean backH = inside(mx, my, x + 10, y + 9, 22, 22);
+        UiDraw.roundRect(context, x + 10, y + 9, 22, 22, 11, backH ? 0xFFFFFFFF : 0x10000000);
+        context.drawText(textRenderer, Text.literal("‹"), x + 18, y + 16, backH ? UiDraw.accent() : TEXT, false);
+        if (category != null) {
+            UiDraw.roundRect(context, x + 38, y + 9, 22, 22, 11, UiDraw.withAlpha(catColor(category), 0x24));
+            iconForCategory(context, category, x + 44, y + 15, catColor(category));
+        }
+        int tx = x + (category != null ? 66 : 40);
+        context.drawText(textRenderer, Text.literal(title), tx, y + 10, TEXT, false);
+        context.drawText(textRenderer, Text.literal(fit(sub, w / 2 - 80)), tx, y + 21, MUTED, false);
+
+        listX0 = x + 8;
+        listY0 = y + 38;
+        listW0 = w * 46 / 100;
+        listH0 = h - 44;
+        paneX = listX0 + listW0 + 10;
+        paneY = y + 4;
+        RIGHT_W = x + w - 6 - paneX;
+        paneBottom = y + h - 2;
+        context.fill(paneX - 5, y + 12, paneX - 4, y + h - 12, 0x12000000);
+        drawList(context, mx, my);
+        drawRight(context, mx, my);
     }
 
     private void drawList(DrawContext context, int mx, int my) {
-        int x = listX();
-        int y0 = oy + TOP + 10;
-        int w = listW();
-        int view = listH();
+        int x = listX0;
+        int y0 = listY0;
+        int w = listW0;
+        int view = listH0;
+        scroll = Math.max(0, Math.min(scroll, Math.max(0, contentH() - view)));
         context.enableScissor(x, y0, x + w, y0 + view);
         try {
             if (visible.isEmpty()) {
@@ -540,13 +760,13 @@ public class ClickGuiScreenLegacy extends Screen {
             Category last = null;
             int bottom = y0 + view;
             for (Module module : visible) {
-                if (module.category != last) {
+                if (searching() && module.category != last) {
                     last = module.category;
-                    if (y + 22 >= y0 && y <= bottom) {
+                    if (y + 20 >= y0 && y <= bottom) {
                         context.drawText(textRenderer, Text.literal(last.title.toUpperCase(Locale.ROOT)),
-                                x + 10, y + 8, MUTED, false);
+                                x + 10, y + 7, catColor(last), false);
                     }
-                    y += 22;
+                    y += 20;
                 }
                 if (y + ROW_H < y0) {
                     y += ROW_H;
@@ -555,40 +775,40 @@ public class ClickGuiScreenLegacy extends Screen {
                 if (y > bottom) {
                     break;
                 }
-                boolean h = inside(mx, my, x, y, w, ROW_H - 2);
+                boolean h = inside(mx, my, x, y, w, ROW_H - 2) && my >= y0 && my < bottom;
                 boolean sel = module == selected;
-                int rowBottom = y + ROW_H - 4;
+                int rh = ROW_H - 4;
                 if (sel) {
-                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, UiDraw.withAlpha(UiDraw.accent(), 0x44));
-                    UiDraw.roundRect(context, x + 6, y + 6, 3, rowBottom - y - 12, 1, UiDraw.accent());
+                    UiDraw.roundRect(context, x + 2, y, w - 8, rh, 10, UiDraw.withAlpha(UiDraw.accent(), 0x1C));
+                    UiDraw.roundBorder(context, x + 2, y, w - 8, rh, 10, UiDraw.withAlpha(UiDraw.accent(), 0x55));
                 } else if (h) {
-                    UiDraw.roundRect(context, x + 6, y, w - 12, rowBottom - y, 8, 0x28FFFFFF);
+                    UiDraw.roundRect(context, x + 2, y, w - 8, rh, 10, UiDraw.HOVER);
                 }
-                drawModIcon(context, module, x + 12, y + 7);
-                int nameMax = w - 86;
-                context.drawText(textRenderer, Text.literal(fit(module.name, nameMax)), x + 30, y + 7,
-                        module.enabled() ? TEXT : MUTED, false);
+                drawModIcon(context, module, x + 10, y + 8);
+                int nameMax = w - 80;
+                context.drawText(textRenderer, Text.literal(fit(module.name, nameMax)), x + 28, y + 4, TEXT, false);
+                String second;
                 int key = module.style().toggleKey;
                 if (key >= 0) {
-                    String kn = org.lwjgl.glfw.GLFW.glfwGetKeyName(key, 0);
-                    String hint = kn == null ? "Key" : kn.toUpperCase(Locale.ROOT);
-                    context.drawText(textRenderer, Text.literal(hint), x + 30, y + 17, MUTED, false);
+                    second = "Key " + keyLabel(key);
+                } else {
+                    second = module.description;
                 }
-                drawSwitch(context, x + w - 44, y + 8, module.enabled());
+                context.drawText(textRenderer, Text.literal(fit(second, nameMax)), x + 28, y + 14, MUTED, false);
+                drawSwitch(context, x + w - 42, y + 5, module.enabled());
                 y += ROW_H;
             }
         } finally {
             context.disableScissor();
         }
-        int content = visible.size() * ROW_H + sectionGaps();
-        UiDraw.scrollbar(context, x + w - 5, y0, view, scroll, content, view);
+        UiDraw.scrollbar(context, x + w - 4, y0, view, scroll, contentH(), view);
     }
 
     private void drawRight(DrawContext context, int mx, int my) {
-        int x = ox + pw - RIGHT_W;
-        int y0 = oy + TOP;
-        int y1 = oy + ph;
-        context.fill(x, y0, ox + pw, y1, 0);
+        int x = paneX;
+        int y0 = paneY;
+        int y1 = paneBottom;
+        context.fill(x, y0, (paneX + RIGHT_W), y1, 0);
         context.fill(x, y0, x + 1, y1, 0);
 
         if (selected == null) {
@@ -598,10 +818,10 @@ public class ClickGuiScreenLegacy extends Screen {
         }
 
         context.drawText(textRenderer, Text.literal(fit(selected.name, RIGHT_W - 110)), x + 14, y0 + 12, TEXT, false);
-        drawSwitch(context, ox + pw - 42, y0 + 10, selected.enabled());
-        boolean resetHover = inside(mx, my, ox + pw - 42 - 46, y0 + 9, 40, 16);
-        UiDraw.pill(context, ox + pw - 42 - 46, y0 + 9, 40, 16, resetHover);
-        context.drawText(textRenderer, Text.literal("Reset"), ox + pw - 42 - 46 + 6, y0 + 13,
+        drawSwitch(context, (paneX + RIGHT_W) - 42, y0 + 10, selected.enabled());
+        boolean resetHover = inside(mx, my, (paneX + RIGHT_W) - 42 - 46, y0 + 9, 40, 16);
+        UiDraw.pill(context, (paneX + RIGHT_W) - 42 - 46, y0 + 9, 40, 16, resetHover);
+        context.drawText(textRenderer, Text.literal("Reset"), (paneX + RIGHT_W) - 42 - 46 + 6, y0 + 13,
                 resetHover ? TEXT : MUTED, false);
         wrap(context, selected.description, x + 14, y0 + 30, RIGHT_W - 28, MUTED, 3);
         UiDraw.divider(context, x + 14, settingsStartY() - 8, RIGHT_W - 28);
@@ -615,7 +835,7 @@ public class ClickGuiScreenLegacy extends Screen {
         settingsScroll = Math.max(0, Math.min(settingsScroll, Math.max(0, settingsContentH - (viewBottom - viewTop))));
         int contentStart = settingsStartY() - settingsScroll;
         int y = contentStart;
-        context.enableScissor(x + 1, viewTop, ox + pw, viewBottom);
+        context.enableScissor(x + 1, viewTop, (paneX + RIGHT_W), viewBottom);
         try {
         Module.ModuleStyle style = selected.style();
         String keyLabel = "Emotes".equals(selected.name) ? "Hold Key" : "Toggle Key";
@@ -695,7 +915,7 @@ public class ClickGuiScreenLegacy extends Screen {
             } else if (setting.kind == Module.Setting.Kind.TEXT) {
                 context.drawText(textRenderer, Text.literal(setting.name), tx, y, MUTED, false);
                 boolean focused = setting == focusedTextSetting;
-                UiDraw.inset(context, tx, y + 12, RIGHT_W - 28 - indent, 18, focused ? 0xFF16141F : CARD);
+                UiDraw.inset(context, tx, y + 12, RIGHT_W - 28 - indent, 18, focused ? 0xFFFFFFFF : CARD);
                 String shown = focused ? textDraft + "|" : setting.choiceGet.get();
                 if (shown == null || shown.isBlank()) {
                     shown = "Empty";
@@ -728,13 +948,13 @@ public class ClickGuiScreenLegacy extends Screen {
                         int hc = java.awt.Color.HSBtoRGB(i / (float) barW, 0.85f, 1f) & 0xFFFFFF;
                         context.fill(barX + i, y, barX + i + 1, y + 10, 0xFF000000 | hc);
                     }
-                    UiDraw.roundBorder(context, barX - 1, y - 1, barW + 2, 12, 3, 0x33FFFFFF);
+                    UiDraw.roundBorder(context, barX - 1, y - 1, barW + 2, 12, 3, 0x22000000);
                     int sw2 = Math.min(16, (barW - 4) / PRESETS.length - 3);
                     for (int i = 0; i < PRESETS.length; i++) {
                         int px2 = barX + i * (sw2 + 3);
                         UiDraw.roundRect(context, px2, y + 15, sw2, sw2, 3, 0xFF000000 | PRESETS[i]);
                         if ((rgb & 0xFFFFFF) == PRESETS[i]) {
-                            UiDraw.roundBorder(context, px2 - 1, y + 14, sw2 + 2, sw2 + 2, 3, 0xFFFFFFFF);
+                            UiDraw.roundBorder(context, px2 - 1, y + 14, sw2 + 2, sw2 + 2, 3, UiDraw.accent());
                         }
                     }
                     y += 20 + sw2 + 6;
@@ -764,20 +984,17 @@ public class ClickGuiScreenLegacy extends Screen {
             context.disableScissor();
         }
         settingsContentH = y - contentStart + 12;
-        UiDraw.scrollbar(context, ox + pw - 16, viewTop, viewBottom - viewTop, settingsScroll, settingsContentH, viewBottom - viewTop);
+        UiDraw.scrollbar(context, (paneX + RIGHT_W) - 16, viewTop, viewBottom - viewTop, settingsScroll, settingsContentH, viewBottom - viewTop);
     }
-
     private int pillW(String label) {
         return Math.max(40, Math.min(78, RIGHT_W - 28 - textRenderer.getWidth(label) - 6));
     }
-
     private int settingsStartY() {
         int lines = selected == null ? 1 : descLines(selected.description, RIGHT_W - 28);
-        return oy + TOP + 30 + lines * 10 + 14;
+        return paneY + 30 + lines * 10 + 14;
     }
-
     private int settingsViewBottom() {
-        return oy + ph - 12;
+        return paneBottom - 12;
     }
 
     private int youLeft() {
@@ -799,14 +1016,12 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         return AccountManager.currentName().toLowerCase();
     }
-
     private String wardrobeSkinKey() {
         if (!playerLookup.isBlank()) {
             return playerLookup.trim().toLowerCase();
         }
         return ownSkinKey();
     }
-
     /** The friend's live PlayerEntity if they're currently in this world/server, else null. */
     private static net.minecraft.entity.player.PlayerEntity onlinePlayerEntity(String name) {
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -823,7 +1038,6 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         return null;
     }
-
     private void drawFriends(DrawContext context, int mx, int my) {
         int y0 = oy + TOP;
         int y1 = oy + ph;
@@ -872,12 +1086,12 @@ public class ClickGuiScreenLegacy extends Screen {
                     UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, UiDraw.withAlpha(UiDraw.accent(), 0x44));
                     UiDraw.roundRect(context, lx - 2, y + 6, 3, ROW_H - 16, 1, UiDraw.accent());
                 } else if (inside(mx, my, lx - 2, y, lw + 4, ROW_H - 4)) {
-                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, 0x28FFFFFF);
+                    UiDraw.roundRect(context, lx - 2, y, lw + 4, ROW_H - 4, 10, UiDraw.HOVER);
                 }
                 if (SkinPreview.ready(n.toLowerCase())) {
                     SkinPreview.drawHead(context, n.toLowerCase(), lx + 4, y + 6, 16);
                 } else {
-                    UiDraw.roundRect(context, lx + 6, y + 8, 12, 12, 6, on ? 0xFFC8A0E8 : 0xFF3A3A44);
+                    UiDraw.roundRect(context, lx + 6, y + 8, 12, 12, 6, on ? 0xFF22C55E : 0xFFC4C9D4);
                 }
                 context.drawText(textRenderer, Text.literal(fit(n, lw - 70)), lx + 24, y + 6, TEXT, false);
                 context.drawText(textRenderer, Text.literal(on ? "online" : "offline"), lx + 24, y + 16, MUTED, false);
@@ -917,7 +1131,7 @@ public class ClickGuiScreenLegacy extends Screen {
             } else if (SkinPreview.ready(picked.toLowerCase())) {
                 SkinPreview.drawBody(context, picked.toLowerCase(), rx + 20, y0 + 50, 3);
             } else {
-                UiDraw.roundRect(context, rx + 28, y0 + 54, 36, 90, 8, 0x6614101C);
+                UiDraw.roundRect(context, rx + 28, y0 + 54, 36, 90, 8, 0x14000000);
             }
             boolean remH = inside(mx, my, rx, y1 - 38, RIGHT_W - 28, 22);
             UiDraw.pill(context, rx, y1 - 38, RIGHT_W - 28, 22, remH);
@@ -929,11 +1143,35 @@ public class ClickGuiScreenLegacy extends Screen {
         }
     }
 
-    private void rowToggle(DrawContext context, int panelX, int y, String name, boolean on) {
-        UiDraw.inset(context, panelX + 10, y, RIGHT_W - 20, 22, 0xFF12101A);
-        context.drawText(textRenderer, Text.literal(name), panelX + 16, y + 7, TEXT, false);
-        drawSwitch(context, panelX + RIGHT_W - 48, y + 3, on);
+    // ---- You tab -------------------------------------------------------------------------
+
+    private int youTabX(int i) {
+        return ox + 16 + i * 80;
     }
+
+    private void drawYou(DrawContext context, int mx, int my) {
+        int y = oy + TOP + 8;
+        for (int i = 0; i < YOU_TABS.length; i++) {
+            int x = youTabX(i);
+            boolean on = youTab == i;
+            boolean h = inside(mx, my, x, y, 74, 20);
+            UiDraw.pill(context, x, y, 74, 20, on || h);
+            int tw = textRenderer.getWidth(YOU_TABS[i]);
+            context.drawText(textRenderer, Text.literal(YOU_TABS[i]), x + (74 - tw) / 2, y + 6, on ? TEXT : MUTED, false);
+        }
+        String streak = Shards.streakLabel();
+        if (!streak.isEmpty()) {
+            context.drawText(textRenderer, Text.literal(streak), ox + pw - 16 - textRenderer.getWidth(streak), y + 6, MUTED, false);
+        }
+        int top = y + 22;
+        if (youTab == 0) {
+            wardrobe.render(context, mx, my, ox, top, pw, oy + ph - top);
+        } else {
+            shop.render(context, mx, my, ox + 12, top + 4, pw - 24, oy + ph - top - 16, youTab);
+        }
+    }
+
+    // ---- icons ---------------------------------------------------------------------------
 
     /**
      * One deliberate glyph per module: a handful of the most-used modules get a bespoke icon by
@@ -942,15 +1180,7 @@ public class ClickGuiScreenLegacy extends Screen {
      * rather than actual icons.
      */
     private void drawModIcon(DrawContext context, Module module, int x, int y) {
-        int col = switch (module.category) {
-            case PVP -> 0xFF4F8EFF;
-            case HUD -> 0xFF00B9E8;
-            case RENDER -> 0xFFDDD6FE;
-            case PLAYER -> 0xFFE9D5FF;
-            case MISC -> 0xFFB8B0C8;
-            case PERFORMANCE -> 0xFF9AE6B4;
-            case PREVIEW -> 0xFFFFC94D;
-        };
+        int col = catColor(module.category);
         switch (module.name) {
             case "FPS" -> iconBolt(context, x, y, col);
             case "Ping" -> iconBars(context, x, y, col);
@@ -963,7 +1193,6 @@ public class ClickGuiScreenLegacy extends Screen {
             default -> iconForCategory(context, module.category, x, y, col);
         }
     }
-
     private static void iconForCategory(DrawContext context, Category category, int x, int y, int col) {
         switch (category) {
             case PVP -> iconCross(context, x, y, col);
@@ -975,7 +1204,6 @@ public class ClickGuiScreenLegacy extends Screen {
             case PREVIEW -> iconSparkle(context, x, y, col);
         }
     }
-
     /** Crossed blades - PvP. */
     private static void iconCross(DrawContext context, int x, int y, int col) {
         for (int i = 0; i < 9; i++) {
@@ -983,7 +1211,6 @@ public class ClickGuiScreenLegacy extends Screen {
             context.fill(x + 8 - i, y + i, x + 10 - i, y + i + 2, col);
         }
     }
-
     /** Screen + stand - HUD. */
     private static void iconMonitor(DrawContext context, int x, int y, int col) {
         context.fill(x + 1, y + 1, x + 9, y + 2, col);
@@ -992,53 +1219,45 @@ public class ClickGuiScreenLegacy extends Screen {
         context.fill(x + 8, y + 1, x + 9, y + 7, col);
         context.fill(x + 4, y + 7, x + 6, y + 9, col);
     }
-
     /** Four-point sparkle - Visuals. */
     private static void iconSparkle(DrawContext context, int x, int y, int col) {
         context.fill(x + 4, y, x + 6, y + 10, col);
         context.fill(x, y + 4, x + 10, y + 6, col);
     }
-
     /** Head + shoulders - Player. */
     private static void iconPerson(DrawContext context, int x, int y, int col) {
         context.fill(x + 3, y, x + 7, y + 4, col);
         context.fill(x + 2, y + 5, x + 8, y + 10, col);
     }
-
     /** Vertical ellipsis - Misc. */
     private static void iconDots(DrawContext context, int x, int y, int col) {
         context.fill(x + 3, y + 1, x + 6, y + 3, col);
         context.fill(x + 3, y + 4, x + 6, y + 6, col);
         context.fill(x + 3, y + 7, x + 6, y + 9, col);
     }
-
     /** Ascending bars - Performance / Ping / signal strength. */
     private static void iconBars(DrawContext context, int x, int y, int col) {
         context.fill(x + 1, y + 7, x + 3, y + 10, col);
         context.fill(x + 4, y + 4, x + 6, y + 10, col);
         context.fill(x + 7, y + 1, x + 9, y + 10, col);
     }
-
     /** Lightning bolt - FPS. */
     private static void iconBolt(DrawContext context, int x, int y, int col) {
         context.fill(x + 5, y, x + 8, y + 4, col);
         context.fill(x + 2, y + 4, x + 8, y + 6, col);
         context.fill(x + 2, y + 6, x + 5, y + 10, col);
     }
-
     /** Single keycap - Keystrokes. */
     private static void iconKey(DrawContext context, int x, int y, int col) {
         context.fill(x + 1, y + 1, x + 9, y + 9, col);
-        context.fill(x + 3, y + 3, x + 7, y + 7, 0xFF16141F);
+        context.fill(x + 3, y + 3, x + 7, y + 7, 0xFFFFFFFF);
     }
-
     /** Flask - Potion HUD. */
     private static void iconFlask(DrawContext context, int x, int y, int col) {
         context.fill(x + 4, y, x + 6, y + 3, col);
         context.fill(x + 2, y + 3, x + 8, y + 4, col);
         context.fill(x + 1, y + 4, x + 9, y + 10, col);
     }
-
     /** Target ring + center dot - Crosshair. */
     private static void iconTarget(DrawContext context, int x, int y, int col) {
         for (int a = 0; a < 360; a += 30) {
@@ -1049,14 +1268,12 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         context.fill(x + 4, y + 4, x + 6, y + 6, col);
     }
-
     /** Luggage tag - Nametags. */
     private static void iconTag(DrawContext context, int x, int y, int col) {
         context.fill(x + 1, y + 2, x + 7, y + 8, col);
         context.fill(x + 7, y + 3, x + 9, y + 7, col);
-        context.fill(x + 3, y + 4, x + 5, y + 6, 0xFF16141F);
+        context.fill(x + 3, y + 4, x + 5, y + 6, 0xFFFFFFFF);
     }
-
     /** Magnifying glass - Zoom. */
     private static void iconMagnifier(DrawContext context, int x, int y, int col) {
         for (int a = 0; a < 360; a += 30) {
@@ -1067,11 +1284,9 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         context.fill(x + 6, y + 6, x + 9, y + 9, col);
     }
-
     private void wrap(DrawContext context, String text, int x, int y, int max, int color) {
         wrap(context, text, x, y, max, color, Integer.MAX_VALUE);
     }
-
     private void wrap(DrawContext context, String text, int x, int y, int max, int color, int maxLines) {
         int lines = 0;
         String[] words = text.split(" ");
@@ -1093,7 +1308,6 @@ public class ClickGuiScreenLegacy extends Screen {
             context.drawText(textRenderer, Text.literal(line.toString()), x, y, color, false);
         }
     }
-
     private int descLines(String text, int max) {
         int lines = 1;
         StringBuilder line = new StringBuilder();
@@ -1108,23 +1322,12 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         return Math.min(3, lines);
     }
-
     private void drawSwitch(DrawContext context, int x, int y, boolean on) {
         UiDraw.toggle(context, x, y, on);
     }
-
-    private static void pill(DrawContext context, int x, int y, int w, int h, boolean on) {
-        UiDraw.pill(context, x, y, w, h, on);
-    }
-
-    private static void fillRound(DrawContext context, int x, int y, int w, int h, int color) {
-        UiDraw.raised(context, x, y, w, h, color);
-    }
-
     private static boolean inside(int mx, int my, int x, int y, int w, int h) {
         return mx >= x && my >= y && mx < x + w && my < y + h;
     }
-
     private String fit(String text, int maxW) {
         if (text == null) {
             return "";
@@ -1139,19 +1342,17 @@ public class ClickGuiScreenLegacy extends Screen {
         return cut + "…";
     }
 
-    public boolean handleClick(double x, double y, int button) {
+    // ---- input ---------------------------------------------------------------------------
+
+    public boolean handleClick(double rawX, double rawY, int button) {
         layoutPanel();
-        int mx = (int) x;
-        int my = (int) y;
+        int mx = lm(rawX);
+        int my = lm(rawY);
         if (button != 0) {
             return false;
         }
-        if (inside(mx, my, ox + pw - 28, oy + 9, 16, 16)) {
+        if (inside(mx, my, ox + pw - 16 - 20, oy + 11, 20, 20)) {
             closeMenu();
-            return true;
-        }
-        if (inside(mx, my, profilesButtonX(), oy + 8, PROFILES_W, 20)) {
-            MinecraftClient.getInstance().setScreen(new ProfilesScreen(this));
             return true;
         }
         int updW = textRenderer.getWidth(ModUpdater.label()) + 16;
@@ -1159,28 +1360,54 @@ public class ClickGuiScreenLegacy extends Screen {
             ModUpdater.click();
             return true;
         }
-        int tx = topTabX();
-        if (inside(mx, my, tx, oy + 8, tabW(0), 20)) {
-            topTab = 0;
-            return true;
+        for (int i = 0; i < 3; i++) {
+            if (inside(mx, my, tabX(i), oy + 10, 70, 22)) {
+                topTab = i;
+                searchFocus = false;
+                return true;
+            }
         }
-        if (inside(mx, my, tx + tabW(0) + 4, oy + 8, tabW(1), 20)) {
+        int chipW = shardChipW();
+        if (inside(mx, my, ox + pw - 16 - 20 - 8 - chipW, oy + 10, chipW, 22)) {
             topTab = 1;
+            youTab = 2;
+            Shards.refresh(true);
             return true;
         }
-        if (inside(mx, my, tx + tabW(0) + tabW(1) + 8, oy + 8, tabW(2), 20)) {
-            topTab = 2;
+        if (topTab == 0 && inside(mx, my, searchX(), oy + 10, 128, 22)) {
+            searchFocus = true;
             return true;
         }
+        searchFocus = false;
         if (topTab == 1) {
-            searchFocus = false;
             friendFocus = false;
             playerLookupFocus = false;
-            return wardrobe.click(mx, my, ox, oy + TOP, pw, ph - TOP);
+            int y = oy + TOP + 8;
+            for (int i = 0; i < YOU_TABS.length; i++) {
+                if (inside(mx, my, youTabX(i), y, 74, 20)) {
+                    youTab = i;
+                    if (i > 0) {
+                        Shards.refresh(true);
+                    }
+                    return true;
+                }
+            }
+            int top = y + 22;
+            if (youTab == 0) {
+                return wardrobe.click(mx, my, ox, top, pw, oy + ph - top);
+            }
+            boolean used = shop.click(mx, my, ox + 12, top + 4, pw - 24, oy + ph - top - 16, youTab);
+            dev.aero.client.cosmetic.Cosmetics.Item buy = shop.takeBuyRequest();
+            if (buy != null) {
+                youTab = 0;
+                wardrobe.openBuy(buy);
+            }
+            return used;
         }
         if (topTab == 2) {
-            searchFocus = false;
             wardrobe.searchFocus = false;
+            SIDE_W = 150;
+            RIGHT_W = 200;
             return clickFriends(mx, my);
         }
         wardrobe.searchFocus = false;
@@ -1217,60 +1444,37 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private boolean clickClient(int mx, int my) {
-        searchFocus = inside(mx, my, ox + 10, oy + TOP + 10, SIDE_W - 20, 20);
-
-        if (compactH) {
-            int half = (SIDE_W - 24) / 2;
-            int by = oy + ph - 30;
-            if (inside(mx, my, ox + 12 + half, by, half, 22)) {
-                MinecraftClient.getInstance().setScreen(new HudLayoutScreen(this));
-                return true;
+        boolean expanded = searching() || (openCard >= 0 && !closing && cardT() > 0.98f);
+        if (!expanded) {
+            if (openCard >= 0) {
+                return true; // mid-animation
             }
-            if (inside(mx, my, ox + 8, by, half, 22)) {
-                boundKeysOnly = !boundKeysOnly;
-                filter = null;
+            for (int i = 0; i < CARDS.size(); i++) {
+                int[] r = cardRect(i);
+                if (inside(mx, my, r[0], r[1], r[2], r[3])) {
+                    openCardAt(i);
+                    return true;
+                }
+            }
+            return false;
+        }
+        int x = contentX();
+        int y = contentY();
+        if (inside(mx, my, x + 10, y + 9, 22, 22)) {
+            if (searching()) {
+                search = "";
                 rebuild();
-                return true;
+            } else {
+                closeCard();
             }
-        } else if (inside(mx, my, ox + 10, oy + ph - 34, SIDE_W - 20, 22)) {
-            MinecraftClient.getInstance().setScreen(new HudLayoutScreen(this));
             return true;
         }
-
-        int sy = oy + TOP + 40;
-        if (inside(mx, my, ox + 8, sy, SIDE_W - 16, navH)) {
-            filter = null;
-            boundKeysOnly = false;
-            rebuild();
-            return true;
-        }
-        sy += navStep;
-        for (Category category : Category.values()) {
-            if (!category.inSidebar()) {
-                continue;
-            }
-            if (inside(mx, my, ox + 8, sy, SIDE_W - 16, navH)) {
-                filter = category;
-                boundKeysOnly = false;
-                rebuild();
-                return true;
-            }
-            sy += navStep;
-        }
-        sy += 4;
-        if (!compactH && inside(mx, my, ox + 8, sy, SIDE_W - 16, navH)) {
-            boundKeysOnly = true;
-            filter = null;
-            rebuild();
-            return true;
-        }
-
-        if (selected != null && inside(mx, my, ox + pw - 42, oy + TOP + 10, 28, 16)) {
+        if (selected != null && inside(mx, my, paneX + RIGHT_W - 42, paneY + 10, 28, 16)) {
             selected.toggle();
             AeroClient.CONFIG.save();
             return true;
         }
-        if (selected != null && inside(mx, my, ox + pw - 42 - 46, oy + TOP + 9, 40, 16)) {
+        if (selected != null && inside(mx, my, paneX + RIGHT_W - 42 - 46, paneY + 9, 40, 16)) {
             resetModule(selected);
             AeroClient.CONFIG.save();
             return true;
@@ -1279,26 +1483,27 @@ public class ClickGuiScreenLegacy extends Screen {
             AeroClient.CONFIG.save();
             return true;
         }
-
-        int lx = listX();
-        int rowY = oy + TOP + 10 - scroll;
-        int w = listW();
+        int lx = listX0;
+        int rowY = listY0 - scroll;
+        int w = listW0;
         Category last = null;
         for (Module module : visible) {
-            if (module.category != last) {
+            if (searching() && module.category != last) {
                 last = module.category;
-                rowY += 22;
+                rowY += 20;
             }
-            if (inside(mx, my, lx, rowY, w, ROW_H - 2) && my >= oy + TOP + 10 && my <= oy + TOP + 10 + listH()) {
+            if (inside(mx, my, lx, rowY, w, ROW_H - 2) && my >= listY0 && my <= listY0 + listH0) {
                 if (selected != module) {
                     focusedTextSetting = null;
                     accentFocus = false;
                     capturingKeybind = null;
+                    settingsScroll = 0;
                 }
                 selected = module;
                 if (mx >= lx + w - 48) {
                     module.toggle();
                     AeroClient.CONFIG.save();
+                    Notifications.toggled(module);
                 }
                 return true;
             }
@@ -1335,7 +1540,6 @@ public class ClickGuiScreenLegacy extends Screen {
         style.shadow = true;
         style.accent = 0xFF4F8EFF;
     }
-
     private void applySliderDrag(Module.Setting setting, int barX, int barW, int mx) {
         float t = Math.max(0f, Math.min(1f, (mx - barX) / (float) barW));
         if (setting.kind == Module.Setting.Kind.FLOAT) {
@@ -1346,12 +1550,11 @@ public class ClickGuiScreenLegacy extends Screen {
             setting.intSet.set(Math.max(setting.min, Math.min(setting.max, value)));
         }
     }
-
     private boolean clickSelectedSettings(int mx, int my) {
         if (selected == null) {
             return false;
         }
-        int x = ox + pw - RIGHT_W;
+        int x = paneX;
         if (my < settingsStartY() - 6 || my >= settingsViewBottom()) {
             return false;
         }
@@ -1368,7 +1571,8 @@ public class ClickGuiScreenLegacy extends Screen {
         if ("Emotes".equals(selected.name)) {
             if (inside(mx, my, x + RIGHT_W - 14 - pillW("Edit pose"), y - 3, pillW("Edit pose"), 20)) {
                 topTab = 1;
-                cosTab = 7;
+                youTab = 0;
+                wardrobe.debugTab(7);
                 return true;
             }
             y += 28;
@@ -1500,15 +1704,16 @@ public class ClickGuiScreenLegacy extends Screen {
 
     @Override
     public boolean mouseDragged(Click click, double deltaX, double deltaY) {
-        if (topTab == 1 && wardrobe.drag(deltaX)) {
+        layoutPanel();
+        if (topTab == 1 && youTab == 0 && wardrobe.drag(deltaX / s)) {
             return true;
         }
         if (hueDrag != null) {
-            applyHue(hueDrag, hueBarX, hueBarW, (int) click.x());
+            applyHue(hueDrag, hueBarX, hueBarW, lm(click.x()));
             return true;
         }
         if (draggingSetting != null) {
-            applySliderDrag(draggingSetting, dragBarX, dragBarW, (int) click.x());
+            applySliderDrag(draggingSetting, dragBarX, dragBarW, lm(click.x()));
             return true;
         }
         return false;
@@ -1531,23 +1736,28 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
+    public boolean mouseScrolled(double rawX, double rawY, double horizontalAmount, double verticalAmount) {
+        layoutPanel();
+        int mouseX = lm(rawX);
+        int mouseY = lm(rawY);
         if (topTab == 1) {
-            layoutPanel();
-            wardrobe.scroll((int) mouseX, (int) mouseY, verticalAmount);
-            return true;
-        }
-        if (topTab == 0 && selected != null && mouseX >= ox + pw - RIGHT_W) {
-            int view = settingsViewBottom() - (settingsStartY() - 6);
-            settingsScroll = (int) Math.max(0, Math.min(Math.max(0, settingsContentH - view), settingsScroll - verticalAmount * 16));
+            if (youTab == 0) {
+                wardrobe.scroll(mouseX, mouseY, verticalAmount);
+            } else {
+                shop.scroll(verticalAmount);
+            }
             return true;
         }
         if (topTab == 2) {
             friendScroll = (int) Math.max(0, friendScroll - verticalAmount * 16);
             return true;
         }
-        int max = Math.max(0, visible.size() * ROW_H + sectionGaps() - listH());
-        scroll = (int) Math.max(0, Math.min(max, scroll - verticalAmount * 16));
+        if (selected != null && mouseX >= paneX - 4) {
+            int view = settingsViewBottom() - (settingsStartY() - 6);
+            settingsScroll = (int) Math.max(0, Math.min(Math.max(0, settingsContentH - view), settingsScroll - verticalAmount * 16));
+            return true;
+        }
+        scroll = (int) Math.max(0, Math.min(Math.max(0, contentH() - listH0), scroll - verticalAmount * 16));
         return true;
     }
 
@@ -1603,20 +1813,6 @@ public class ClickGuiScreenLegacy extends Screen {
             friendSel = Math.min(friendSel, FriendStore.size() - 1);
             return true;
         }
-        if (playerLookupFocus) {
-            if (key == GLFW.GLFW_KEY_BACKSPACE && !playerLookup.isEmpty()) {
-                playerLookup = playerLookup.substring(0, playerLookup.length() - 1);
-                return true;
-            }
-            if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
-                SkinPreview.requestLookup(playerLookup);
-                return true;
-            }
-            if (key == GLFW.GLFW_KEY_ESCAPE) {
-                playerLookupFocus = false;
-                return true;
-            }
-        }
         if (wardrobe.searchFocus) {
             if (key == GLFW.GLFW_KEY_BACKSPACE && !wardrobe.search.isEmpty()) {
                 wardrobe.search = wardrobe.search.substring(0, wardrobe.search.length() - 1);
@@ -1658,26 +1854,41 @@ public class ClickGuiScreenLegacy extends Screen {
                 return true;
             }
         }
-        if (searchFocus) {
+        if (searchFocus || (topTab == 0 && searching())) {
             if (key == GLFW.GLFW_KEY_BACKSPACE && !search.isEmpty()) {
                 search = search.substring(0, search.length() - 1);
+                searchFocus = true;
                 rebuild();
                 return true;
             }
             if (key == GLFW.GLFW_KEY_ESCAPE) {
                 searchFocus = false;
+                search = "";
+                rebuild();
                 return true;
             }
         }
+        if (key == GLFW.GLFW_KEY_F && (GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS)) {
+            topTab = 0;
+            searchFocus = true;
+            return true;
+        }
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            closeMenu();
+            if (topTab == 0 && openCard >= 0) {
+                closeCard();
+            } else if (topTab != 0) {
+                topTab = 0;
+            } else {
+                closeMenu();
+            }
             return true;
         }
         return false;
     }
 
     public boolean handleChar(int cp) {
-        if (focusedTextSetting != null && cp >= 32 && cp != 127) {
+        boolean printable = cp >= 32 && cp != 127;
+        if (focusedTextSetting != null && printable) {
             textDraft += Character.toString(cp);
             return true;
         }
@@ -1696,28 +1907,35 @@ public class ClickGuiScreenLegacy extends Screen {
                 if (accentDraft.length() < 7) {
                     accentDraft += ch;
                 }
-                return true;
             }
             return true;
         }
-        if (playerLookupFocus && cp >= 32 && cp != 127) {
+        if (playerLookupFocus && printable) {
             playerLookup += Character.toString(cp);
             return true;
         }
-        if (wardrobe.searchFocus && cp >= 32 && cp != 127) {
-            wardrobe.search += Character.toString(cp);
-            return true;
-        }
-        if (wardrobe.publishFocus && cp >= 32 && cp != 127) {
+        if (wardrobe.publishFocus && printable) {
             wardrobe.publishName += Character.toString(cp);
             return true;
         }
-        if (friendFocus && cp >= 32 && cp != 127) {
+        if (friendFocus && printable) {
             friendDraft += Character.toString(cp);
             return true;
         }
-        if (searchFocus && cp >= 32 && cp != 127) {
+        if (topTab == 1 && youTab == 0 && printable) {
+            // Typing in the wardrobe goes straight into its search.
+            wardrobe.searchFocus = true;
+            wardrobe.search += Character.toString(cp);
+            return true;
+        }
+        if (topTab == 0 && printable && keyCapture == null && capturingKeybind == null) {
+            // Start typing anywhere in the client tab to search modules and settings.
+            if (!searchFocus && search.isEmpty() && cp == ' ') {
+                return false;
+            }
+            searchFocus = true;
             search += Character.toString(cp);
+            scroll = 0;
             rebuild();
             return true;
         }

@@ -13,10 +13,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Real Minecraft cape textures (64x32 PNGs, design in the top-left 10x16). Mojang's cape images are
- * not shipped with the game, so they're picked up from <gameDir>/aero-capes/<id>.png (or from a
- * resource pack / this mod's assets/aero/textures/cape/<id>.png). Capes without a file fall back to a
- * plain colored cape.
+ * Cape textures (64x32 PNGs, design in the top-left 10x16): Aero's own capes from this mod's
+ * assets/aero/textures/cape/<id>.png (animated ones as <id>_<frame>.png), community capes downloaded
+ * into <gameDir>/aero-capes/. Capes without a file fall back to a plain colored cape.
  */
 public final class CapeTextures {
     /** A loaded cape texture and its pixel size (legacy capes are 22x17, newer ones 64x32). */
@@ -35,6 +34,11 @@ public final class CapeTextures {
 
     /** The texture for a cape id, or null when no file for it exists (yet, for a custom cape still downloading). */
     public static Tex get(String capeId) {
+        Integer frames = Cosmetics.ANIMATED.get(capeId);
+        if (frames != null) {
+            // Animated capes ship one texture per frame: <id>_0.png .. <id>_<n-1>.png, 150 ms each.
+            capeId = capeId + "_" + (int) ((System.currentTimeMillis() / 150L) % frames);
+        }
         Tex cached = CACHE.get(capeId);
         if (cached != null) {
             return cached;

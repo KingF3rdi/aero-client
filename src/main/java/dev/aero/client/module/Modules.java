@@ -534,10 +534,15 @@ public final class Modules {
                 .setting("Web", () -> c.highlightWeb, v -> c.highlightWeb = v)
                 .setting("Potion", () -> c.highlightPotion, v -> c.highlightPotion = v)
                 .setting("Any enchanted", () -> c.highlightEnchanted, v -> c.highlightEnchanted = v));
-        add(new Module("Chat", "Timestamps and no background", Category.MISC,
+        add(new Module("Chat", "Timestamps, no background and translation", Category.MISC,
                 () -> c.chatTimestamps, v -> c.chatTimestamps = v)
                 .setting("Mention ping", () -> c.chatMentionPing, v -> c.chatMentionPing = v)
-                .setting("No BG", () -> c.noChatBg, v -> c.noChatBg = v));
+                .setting("No BG", () -> c.noChatBg, v -> c.noChatBg = v)
+                .setting("Translate chat", () -> c.chatTranslate, v -> c.chatTranslate = v).expandLast()
+                .setting("Language", () -> c.chatTranslateLang, v -> c.chatTranslateLang = v, dev.aero.client.ChatTranslate.NAMES).nestLast("Translate chat")
+                .settingKey("Toggle key", () -> c.chatTranslateToggleKey, v -> c.chatTranslateToggleKey = v).nestLast("Translate chat")
+                .settingKey("Translate my message", () -> c.chatTranslateOwnKey, v -> c.chatTranslateOwnKey = v).nestLast("Translate chat")
+                .setting("My message into", () -> c.chatTranslateOwnLang, v -> c.chatTranslateOwnLang = v, dev.aero.client.ChatTranslate.NAMES).nestLast("Translate chat"));
 
         add(new Module("Ambience", "Sky, weather, lava, fire", Category.RENDER,
                 () -> c.ambience, v -> c.ambience = v)

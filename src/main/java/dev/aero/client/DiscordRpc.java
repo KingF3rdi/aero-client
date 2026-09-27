@@ -1,19 +1,25 @@
 package dev.aero.client;
 
 import java.io.RandomAccessFile;
+import java.net.StandardProtocolFamily;
+import java.net.UnixDomainSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Minimal Discord IPC client (local named pipe only, talks to the user's own already-running
+ * Minimal Discord IPC client (named pipe on Windows, Unix socket on macOS / Linux; talks to the user's own already-running
  * Discord app - nothing leaves the machine besides what Discord itself displays). Requires the
  * user's own Discord Application client ID (from the Discord Developer Portal) in
  * ClientConfig.discordClientId; does nothing if that's left empty, since Discord's handshake
  * protocol requires a registered client ID and there is no generic/shared one to fall back to.
  */
 public final class DiscordRpc {
-    private static RandomAccessFile pipe;
+    private static ByteChannel pipe;
     private static Thread thread;
     private static volatile boolean running;
     private static String connectedClientId;
@@ -55,17 +61,48 @@ public final class DiscordRpc {
         connectedClientId = null;
     }
 
-    private static void run(String clientId) {
-        RandomAccessFile local = null;
-        for (int i = 0; i < 10 && running; i++) {
-            try {
-                local = new RandomAccessFile("\\\\.\\pipe\\discord-ipc-" + i, "rw");
-                break;
-            } catch (Exception ignored) {
-                local = null;
+    /** Folders Discord puts its IPC socket in on macOS / Linux (plain, Flatpak and Snap installs). */
+    private static java.util.List<Path> socketDirs() {
+        java.util.List<Path> base = new java.util.ArrayList<>();
+        for (String env : new String[]{"XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP"}) {
+            String v = System.getenv(env);
+            if (v != null && !v.isBlank()) {
+                base.add(Path.of(v));
             }
         }
-        pipe = local;
+        base.add(Path.of("/tmp"));
+        java.util.List<Path> all = new java.util.ArrayList<>();
+        for (Path d : base) {
+            all.add(d);
+            all.add(d.resolve("app/com.discordapp.Discord"));
+            all.add(d.resolve("snap.discord"));
+        }
+        return all;
+    }
+
+    private static ByteChannel open() {
+        boolean windows = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("win");
+        for (int i = 0; i < 10 && running; i++) {
+            try {
+                if (windows) {
+                    return new RandomAccessFile("\\\\.\\pipe\\discord-ipc-" + i, "rw").getChannel();
+                }
+                for (Path dir : socketDirs()) {
+                    Path sock = dir.resolve("discord-ipc-" + i);
+                    if (Files.exists(sock)) {
+                        SocketChannel ch = SocketChannel.open(StandardProtocolFamily.UNIX);
+                        ch.connect(UnixDomainSocketAddress.of(sock));
+                        return ch;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return null;
+    }
+
+    private static void run(String clientId) {
+        pipe = open();
         if (pipe == null) {
             running = false;
             return;
@@ -107,8 +144,11 @@ public final class DiscordRpc {
         ByteBuffer header = ByteBuffer.allocate(8).order(ByteOrder.LITTLE_ENDIAN);
         header.putInt(opcode);
         header.putInt(data.length);
-        pipe.write(header.array());
-        pipe.write(data);
+        ByteBuffer frame = ByteBuffer.allocate(8 + data.length);
+        frame.put(header.array()).put(data).flip();
+        while (frame.hasRemaining()) {
+            pipe.write(frame);
+        }
     }
 
     private static String escape(String s) {

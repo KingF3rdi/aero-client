@@ -25,8 +25,20 @@ public final class AeroApi {
     private static volatile long tokenAt;
     private static volatile long lastBeat;
     private static volatile boolean busy;
+    /** Account the current token belongs to; a switch drops the token and every cached shard/cape answer. */
+    private static volatile String tokenName;
+    /** Ticks since the last heartbeat that were spent in a world with no menu open. */
+    private static int activeTicks;
+    private static int sampledTicks;
 
     private AeroApi() {}
+
+    /** Dev harness only (DevShot): use a pre-made token against a local test server. */
+    public static void devToken(String t) {
+        token = t;
+        tokenAt = System.currentTimeMillis();
+        tokenName = MinecraftClient.getInstance().getSession().getUsername();
+    }
 
     /** Bearer token for authenticated calls (custom capes, delete-my-data), or null before the server login finishes. */
     public static String authToken() {
@@ -52,6 +64,18 @@ public final class AeroApi {
         if (c == null || !c.shareProfile || busy || base().isEmpty()) {
             return;
         }
+        sampledTicks++;
+        if (mc.world != null && !mc.isPaused() && (mc.currentScreen == null
+                || mc.currentScreen instanceof net.minecraft.client.gui.screen.ChatScreen)) {
+            activeTicks++;
+        }
+        String sessionName = mc.getSession().getUsername();
+        if (tokenName != null && !tokenName.equals(sessionName)) {
+            token = null;
+            tokenName = null;
+            lastBeat = 0;
+            Shards.reset();
+        }
         long now = System.currentTimeMillis();
         if (now - lastBeat < BEAT_MS) {
             return;
@@ -63,11 +87,16 @@ public final class AeroApi {
         String name = session.getUsername();
         java.util.UUID uuid = session.getUuidOrNull();
         String access = session.getAccessToken();
-        String body = profileBody();
+        // "In game" = at least half of the last minute in a world outside menus (menus don't earn shards).
+        String body = profileBody(activeTicks * 2 >= Math.max(1, sampledTicks));
+        activeTicks = 0;
+        sampledTicks = 0;
         Thread t = new Thread(() -> {
             try {
                 if (token == null || System.currentTimeMillis() - tokenAt > TOKEN_MS) {
                     login(mc, b, name, uuid, access);
+                    tokenName = name;
+                    Shards.refresh(true);
                 }
                 if (token != null) {
                     int code = post(b + "/api/heartbeat", body, token).statusCode();
@@ -186,8 +215,9 @@ public final class AeroApi {
         return HTTP.send(r.build(), HttpResponse.BodyHandlers.ofString());
     }
 
-    private static String profileBody() {
+    private static String profileBody(boolean inGame) {
         JsonObject o = new JsonObject();
+        o.addProperty("inGame", inGame);
         o.addProperty("badge", Cosmetics.equipped(Cosmetics.Kind.BADGE));
         JsonObject cos = new JsonObject();
         cos.addProperty("cape", Cosmetics.equipped(Cosmetics.Kind.CAPE));

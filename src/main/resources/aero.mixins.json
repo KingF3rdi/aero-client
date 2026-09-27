@@ -57,7 +57,12 @@
     "VanillaUiHotbarMixin",
     "VanillaButtonMixin",
     "VanillaSliderMixin",
-    "MotionBlurHudMixin"
+    "MotionBlurHudMixin",
+    "ChatScreenMixin",
+    "InactivityFpsLimiterMixin",
+    "ScreenBackgroundMixin",
+    "PackEntryMixin",
+    "PackOrganizerAccessor"
   ],
   "injectors": {
     "defaultRequire": 0

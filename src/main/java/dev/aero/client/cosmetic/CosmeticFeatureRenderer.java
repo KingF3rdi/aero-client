@@ -36,7 +36,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
 
     private String idOf(Cosmetics.Kind kind) {
         if (self) {
-            return Cosmetics.equipped(kind);
+            return Cosmetics.shown(kind);
         }
         String key = switch (kind) {
             case CAPE -> "cape";
@@ -50,7 +50,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
 
     private int colorOf(Cosmetics.Kind kind) {
         if (self) {
-            return Cosmetics.equippedColor(kind);
+            return Cosmetics.shownColor(kind);
         }
         String id = idOf(kind);
         if ("none".equals(id)) {

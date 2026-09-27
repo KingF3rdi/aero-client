@@ -2,6 +2,7 @@ package dev.aero.client.cosmetic;
 
 import dev.aero.client.AeroClient;
 import dev.aero.client.config.ClientConfig;
+import dev.aero.client.social.Shards;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,33 +11,77 @@ import java.util.Locale;
 public final class Cosmetics {
     public enum Kind { CAPE, WINGS, HEAD, TRAIL, PET, EMOTE, TAG, BADGE, KILL_EFFECT, MACE, NONE }
 
-    public record Item(String id, String name, Kind kind, int color) {}
+    public enum Rarity {
+        COMMON("Common", 0xFF8A94A6, 150),
+        UNCOMMON("Uncommon", 0xFF22C55E, 300),
+        RARE("Rare", 0xFF3B82F6, 600),
+        LEGENDARY("Legendary", 0xFFF59E0B, 1200);
+
+        public final String label;
+        public final int color;
+        public final int price;
+
+        Rarity(String label, int color, int price) {
+            this.label = label;
+            this.color = color;
+            this.price = price;
+        }
+    }
+
+    /**
+     * added = release wave, higher is newer (sorting "newest" and the store's New shelf).
+     * Capes and the Supporter badge are bought with shards; keep ids in sync with the server CATALOG.
+     */
+    public record Item(String id, String name, Kind kind, int color, Rarity rarity, int added) {
+        public Item(String id, String name, Kind kind, int color) {
+            this(id, name, kind, color, Rarity.COMMON, 0);
+        }
+
+        /** Server catalog id ("cape:frost"), or null for items that aren't sold. */
+        public String catalogId() {
+            if ("none".equals(id)) {
+                return null;
+            }
+            if (kind == Kind.CAPE && !id.startsWith("custom_") && !id.startsWith("rank_")) {
+                return "cape:" + id;
+            }
+            if (kind == Kind.BADGE && "supporter".equals(id)) {
+                return "badge:supporter";
+            }
+            return null;
+        }
+    }
 
     /** Alternative colors offered as the dots under each item; index 0 is the item's own color. */
     private static final int[] ALT = {0xFFFF6B9B, 0xFF6BE8FF, 0xFF8CFF6B, 0xFFFFC94D};
 
     private static final List<Item> ALL = new ArrayList<>();
 
+    /** Capes whose texture has several frames (textures/cape/<id>_<n>.png). */
+    public static final java.util.Map<String, Integer> ANIMATED = java.util.Map.of("blossom", 8, "samurai", 8, "galaxy", 8);
+
     static {
-        cape("none", "None", 0xFF2A2A32);
-        cape("migrator", "Migrator", 0xFFC04040);
-        cape("vanilla", "Vanilla", 0xFF4A90C8);
-        cape("minecon2011", "Minecon 2011", 0xFFB03030);
-        cape("minecon2012", "Minecon 2012", 0xFF6A4A8A);
-        cape("minecon2013", "Minecon 2013", 0xFF3A7A4A);
-        cape("minecon2015", "Minecon 2015", 0xFFC8A040);
-        cape("minecon2016", "Minecon 2016", 0xFF5A6A8A);
-        cape("mojang", "Mojang", 0xFFB02020);
-        cape("mojang_studios", "Mojang Studios", 0xFFD84A3A);
-        cape("cherry", "Cherry Blossom", 0xFFF4C8DC);
-        cape("15th", "15th Anniversary", 0xFFE8C878);
-        cape("copper", "Copper", 0xFFB06050);
-        cape("founders", "Founder's", 0xFF8A6A3A);
-        cape("home", "Home", 0xFF5AA0D8);
-        cape("menace", "Menace", 0xFF3A3A48);
-        cape("purple_heart", "Purple Heart", 0xFF9A50C8);
-        cape("yearn", "Yearn", 0xFFC85A8A);
-        cape("zombie_horse", "Zombie Horse", 0xFF6A8A4A);
+        cape("none", "None", 0xFF2A2A32, Rarity.COMMON, 0);
+        cape("frost", "Frost", 0xFF9FD8F5, Rarity.COMMON, 1);
+        cape("ember", "Ember", 0xFFE8633A, Rarity.COMMON, 1);
+        cape("tide", "Tide", 0xFF2E7FD1, Rarity.COMMON, 1);
+        cape("checker", "Checker", 0xFF2B2F3A, Rarity.COMMON, 1);
+        cape("verdant", "Verdant", 0xFF3FA66B, Rarity.UNCOMMON, 1);
+        cape("nightfall", "Nightfall", 0xFF2A2F5E, Rarity.UNCOMMON, 1);
+        cape("sunset", "Sunset", 0xFFF08A4B, Rarity.UNCOMMON, 1);
+        cape("circuit", "Circuit", 0xFF14B8A6, Rarity.RARE, 1);
+        cape("aero", "Aero", 0xFF3B82F6, Rarity.RARE, 1);
+        cape("galaxy", "Galaxy", 0xFF6D28D9, Rarity.LEGENDARY, 1);
+        cape("katana", "Katana", 0xFF1F2937, Rarity.UNCOMMON, 2);
+        cape("kitsune", "Kitsune", 0xFFF97316, Rarity.RARE, 2);
+        cape("dragon", "Dragon", 0xFFB91C1C, Rarity.RARE, 2);
+        cape("samurai", "Samurai", 0xFFDC2626, Rarity.LEGENDARY, 2);
+        cape("blossom", "Blossom", 0xFFF9A8D4, Rarity.LEGENDARY, 2);
+        // Rank capes: owned automatically by Owner / Staff / Media / Partner, in the rank colour.
+        cape("rank_owner", "Owner Aura", 0xFFF59E0B, Rarity.LEGENDARY, 2);
+        cape("rank_staff", "Staff Aura", 0xFF3B82F6, Rarity.LEGENDARY, 2);
+        cape("rank_media", "Media Aura", 0xFFEC4899, Rarity.LEGENDARY, 2);
+        cape("rank_partner", "Partner Aura", 0xFF10B981, Rarity.LEGENDARY, 2);
         wings("none", "None", 0xFF2A2A32);
         wings("angel", "Angel", 0xFFF6F2FC);
         wings("dragon", "Dragon", 0xFFB03828);
@@ -67,17 +112,17 @@ public final class Cosmetics {
         emote("clap", "Clap", 0xFFE8C878);
         emote("gg", "GG", 0xFF8CFF6B);
         emote("o7", "o7", 0xFFFF6B9B);
-        tag("none", "None", 0xFF2A2A32);
-        tag("og", "OG", 0xFFFFC94D);
-        tag("star", "Star", 0xFFFFD86B);
-        tag("heart", "Heart", 0xFFFF6B9B);
-        tag("skull", "Skull", 0xFFC8C8D8);
-        tag("bolt", "Bolt", 0xFF6BE8FF);
-        badge("none", "None", 0xFF2A2A32);
-        badge("staff", "Staff", 0xFF4F8EFF);
-        badge("beta", "Beta", 0xFF88C0D0);
-        badge("supporter", "Supporter", 0xFFFF6B9B);
-        badge("dev", "Dev", 0xFF8CFF6B);
+        badge("none", "None", 0xFF2A2A32, Rarity.COMMON);
+        badge("beta", "Beta", 0xFF38BDF8, Rarity.COMMON);
+        badge("streak", "On Fire", 0xFFF97316, Rarity.UNCOMMON);
+        badge("veteran", "Veteran", 0xFF22C55E, Rarity.RARE);
+        badge("collector", "Collector", 0xFFA855F7, Rarity.RARE);
+        badge("supporter", "Supporter", 0xFFFF6B9B, Rarity.RARE);
+        badge("partner", "Partner", 0xFF10B981, Rarity.LEGENDARY);
+        badge("media", "Media", 0xFFEC4899, Rarity.LEGENDARY);
+        badge("staff", "Staff", 0xFF3B82F6, Rarity.LEGENDARY);
+        badge("dev", "Dev", 0xFF8CFF6B, Rarity.LEGENDARY);
+        badge("owner", "Owner", 0xFFF59E0B, Rarity.LEGENDARY);
         killEffect("none", "None", 0xFF2A2A32);
         killEffect("spark", "Spark", 0xFF4F8EFF);
         killEffect("ember", "Ember", 0xFFFF7A45);
@@ -97,6 +142,11 @@ public final class Cosmetics {
 
     private Cosmetics() {}
 
+    /** Wings, trails, kill and mace effects are locked for now: shown, but not equippable. */
+    public static boolean locked(Kind kind) {
+        return kind == Kind.WINGS || kind == Kind.TRAIL || kind == Kind.KILL_EFFECT || kind == Kind.MACE;
+    }
+
     public static List<Item> of(Kind kind, String query) {
         String q = query == null ? "" : query.toLowerCase(Locale.ROOT).trim();
         List<Item> out = new ArrayList<>();
@@ -104,10 +154,25 @@ public final class Cosmetics {
             if (item.kind != kind) {
                 continue;
             }
-            if (!q.isEmpty() && !item.name.toLowerCase(Locale.ROOT).contains(q) && !item.id.contains(q)) {
+            if (kind == Kind.CAPE && item.id.startsWith("rank_") && !owns(item)) {
+                continue; // rank capes only show up for the rank that has them
+            }
+            if (!q.isEmpty() && !item.name.toLowerCase(Locale.ROOT).contains(q) && !item.id.contains(q)
+                    && !item.rarity.label.toLowerCase(Locale.ROOT).contains(q)) {
                 continue;
             }
             out.add(item);
+        }
+        return out;
+    }
+
+    /** Every item of a kind, rank capes included (badges page). */
+    public static List<Item> all(Kind kind) {
+        List<Item> out = new ArrayList<>();
+        for (Item item : ALL) {
+            if (item.kind == kind && !"none".equals(item.id)) {
+                out.add(item);
+            }
         }
         return out;
     }
@@ -142,7 +207,6 @@ public final class Cosmetics {
             case 5 -> Kind.MACE;
             case 6 -> Kind.PET;
             case 7 -> Kind.EMOTE;
-            case 8 -> Kind.TAG;
             case 9 -> Kind.BADGE;
             default -> Kind.CAPE;
         };
@@ -155,32 +219,109 @@ public final class Cosmetics {
         };
     }
 
+    /** Whether the player may equip this item: bought capes, earned badges, rank capes of their rank. */
+    public static boolean owns(Item item) {
+        if (item == null || "none".equals(item.id)) {
+            return true;
+        }
+        if (locked(item.kind)) {
+            return false;
+        }
+        if (item.kind == Kind.CAPE) {
+            if (item.id.startsWith("custom_")) {
+                return true;
+            }
+            if (item.id.startsWith("rank_")) {
+                return item.id.equals("rank_" + Shards.rank());
+            }
+            return Shards.owns("cape:" + item.id);
+        }
+        if (item.kind == Kind.BADGE) {
+            return Shards.earnedBadge(item.id);
+        }
+        return true;
+    }
+
+    // ---- try-on preview ------------------------------------------------------------------------
+
+    private static Kind previewKind;
+    private static String previewId;
+    private static long previewAt;
+
+    /**
+     * Try-on (hover / buy dialog): the local player shows this item instead of the equipped one. GUI entity
+     * previews render after the screen's render call, so the override is kept alive by the wardrobe calling
+     * this every frame and simply expires a moment after it stops.
+     */
+    public static void preview(Kind kind, String id) {
+        previewKind = kind;
+        previewId = id;
+        previewAt = System.currentTimeMillis();
+    }
+
+    public static void clearPreview() {
+        previewKind = null;
+        previewId = null;
+    }
+
+    /** What the local player shows for a kind: the try-on item while a GUI preview draws, else the equipped one. */
+    public static String shown(Kind kind) {
+        if (previewKind == kind && previewId != null && System.currentTimeMillis() - previewAt < 250) {
+            return previewId;
+        }
+        return equipped(kind);
+    }
+
+    public static int shownColor(Kind kind) {
+        String id = shown(kind);
+        if ("none".equals(id)) {
+            return 0;
+        }
+        Item item = named(kind, id);
+        return item == null ? 0 : variantColor(item, variantIndex(kind, id));
+    }
+
     public static String equipped(Kind kind) {
         ClientConfig c = AeroClient.CONFIG;
         if (c == null) {
             return "none";
         }
-        return switch (kind) {
+        String id = switch (kind) {
             case CAPE -> nz(c.equippedCape);
             case WINGS -> nz(c.equippedWings);
             case HEAD -> nz(c.equippedHead);
             case TRAIL -> nz(c.equippedTrail);
             case PET -> nz(c.equippedPet);
             case EMOTE -> nz(c.equippedEmote);
-            case TAG -> nz(c.equippedTag);
+            case TAG -> "none";
             case BADGE -> nz(c.equippedBadge);
             case KILL_EFFECT -> nz(c.equippedKillEffect);
             case MACE -> nz(c.equippedMace);
             case NONE -> "none";
         };
+        if (locked(kind)) {
+            return "none";
+        }
+        // Capes that no longer exist (the old Mojang ones) fall back to none.
+        if (kind == Kind.CAPE && !"none".equals(id) && !id.startsWith("custom_") && named(kind, id) == null) {
+            return "none";
+        }
+        return id;
     }
 
-    public static void equip(Kind kind, String id) {
+    /** Equips an item; refused (false) for locked kinds and for capes/badges the player doesn't own. */
+    public static boolean equip(Kind kind, String id) {
         ClientConfig c = AeroClient.CONFIG;
         if (c == null) {
-            return;
+            return false;
         }
         String value = id == null || id.isBlank() ? "none" : id;
+        if (!"none".equals(value)) {
+            Item item = named(kind, value);
+            if (locked(kind) || (item != null && !owns(item))) {
+                return false;
+            }
+        }
         switch (kind) {
             case CAPE -> c.equippedCape = value;
             case WINGS -> c.equippedWings = value;
@@ -193,10 +334,11 @@ public final class Cosmetics {
             case KILL_EFFECT -> c.equippedKillEffect = value;
             case MACE -> c.equippedMace = value;
             case NONE -> {
-                return;
+                return false;
             }
         }
         c.save();
+        return true;
     }
 
     public static Item named(Kind kind, String id) {
@@ -254,7 +396,7 @@ public final class Cosmetics {
         return item == null ? 0 : variantColor(item, variantIndex(kind, id));
     }
 
-    /** Text glyph shown for chat tags and name badges. */
+    /** Text glyph shown for name badges. */
     public static String glyph(Kind kind, String id) {
         if (kind == Kind.BADGE) {
             return switch (id) {
@@ -262,31 +404,29 @@ public final class Cosmetics {
                 case "beta" -> "β";
                 case "supporter" -> "♥";
                 case "dev" -> "</>";
+                case "streak" -> "☀";
+                case "veteran" -> "⌛";
+                case "collector" -> "❖";
+                case "media" -> "▶";
+                case "partner" -> "✚";
+                case "owner" -> "♛";
                 default -> "A";
             };
         }
-        return switch (id) {
-            case "og" -> "OG";
-            case "star" -> "★";
-            case "heart" -> "♥";
-            case "skull" -> "☠";
-            case "bolt" -> "⚡";
-            default -> "";
-        };
+        return "";
     }
 
     private static String nz(String s) {
         return s == null || s.isBlank() ? "none" : s;
     }
 
-    private static void cape(String id, String name, int color) { ALL.add(new Item(id, name, Kind.CAPE, color)); }
+    private static void cape(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.CAPE, color, rarity, added)); }
     private static void wings(String id, String name, int color) { ALL.add(new Item(id, name, Kind.WINGS, color)); }
     private static void head(String id, String name, int color) { ALL.add(new Item(id, name, Kind.HEAD, color)); }
     private static void trail(String id, String name, int color) { ALL.add(new Item(id, name, Kind.TRAIL, color)); }
     private static void pet(String id, String name, int color) { ALL.add(new Item(id, name, Kind.PET, color)); }
     private static void emote(String id, String name, int color) { ALL.add(new Item(id, name, Kind.EMOTE, color)); }
-    private static void tag(String id, String name, int color) { ALL.add(new Item(id, name, Kind.TAG, color)); }
-    private static void badge(String id, String name, int color) { ALL.add(new Item(id, name, Kind.BADGE, color)); }
+    private static void badge(String id, String name, int color, Rarity rarity) { ALL.add(new Item(id, name, Kind.BADGE, color, rarity, 1)); }
     private static void killEffect(String id, String name, int color) { ALL.add(new Item(id, name, Kind.KILL_EFFECT, color)); }
     private static void mace(String id, String name, int color) { ALL.add(new Item(id, name, Kind.MACE, color)); }
 }

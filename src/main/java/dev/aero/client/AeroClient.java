@@ -61,6 +61,27 @@ public class AeroClient implements ClientModInitializer {
         ModUpdater.cleanup();
         dev.aero.client.cosmetic.CosmeticEffects.register();
         ClientTickEvents.END_CLIENT_TICK.register(AeroClient::tick);
+        registerScreenExtras();
+    }
+
+    /** Sky button on the title screen, texture preview on the resource pack screen. */
+    private static void registerScreenExtras() {
+        net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
+            if (screen instanceof net.minecraft.client.gui.screen.TitleScreen) {
+                net.minecraft.client.gui.widget.ButtonWidget[] ref = new net.minecraft.client.gui.widget.ButtonWidget[1];
+                ref[0] = net.minecraft.client.gui.widget.ButtonWidget.builder(
+                                net.minecraft.text.Text.literal("Sky: " + dev.aero.client.ui.TitleSky.current()), b -> {
+                                    dev.aero.client.ui.TitleSky.cycle();
+                                    b.setMessage(net.minecraft.text.Text.literal("Sky: " + dev.aero.client.ui.TitleSky.current()));
+                                })
+                        .dimensions(w - 92, 6, 86, 20).build();
+                net.fabricmc.fabric.api.client.screen.v1.Screens.getButtons(screen).add(ref[0]);
+            }
+            if (screen instanceof net.minecraft.client.gui.screen.pack.PackScreen) {
+                net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.afterRender(screen).register((s, ctx, mx, my, delta) ->
+                        dev.aero.client.ui.PackPreview.draw(ctx, s.width, s.height));
+            }
+        });
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -180,6 +201,7 @@ public class AeroClient implements ClientModInitializer {
             tickTotemReset(client);
             dev.aero.client.ui.ConflictScreen.tick(client);
             dev.aero.client.social.AeroApi.tick(client);
+            ChatTranslate.tick(client);
             applyMaxFps(client);
             tickRenderDistanceOverride(client);
             tickUnfocusedCpu(client);
@@ -253,6 +275,7 @@ public class AeroClient implements ClientModInitializer {
                 } else if (!"Emotes".equals(module.name)) {
                     module.toggle();
                     CONFIG.save();
+                    dev.aero.client.ui.Notifications.toggled(module);
                 }
             }
             moduleKeyWasDown.put(module.name, down);

@@ -41,7 +41,14 @@ public final class CosmeticPreview {
             }
             Vector3f offset = new Vector3f(0f, state.height / 2f + 0.0625f, 0f);
             Quaternionf rot = new Quaternionf().rotateZ((float) Math.PI);
-            context.addEntity(state, scale, offset, rot, new Quaternionf(), x1, y1, x2, y2);
+            // Entity previews are placed in screen pixels and ignore the pose matrix, so a scaled menu
+            // has to map its bounds and size through the current matrix itself.
+            var m = context.getMatrices();
+            org.joml.Vector2f p1 = m.transformPosition(new org.joml.Vector2f(x1, y1));
+            org.joml.Vector2f p2 = m.transformPosition(new org.joml.Vector2f(x2, y2));
+            float k = m.m00();
+            context.addEntity(state, scale * k, offset, rot, new Quaternionf(),
+                    Math.round(p1.x), Math.round(p1.y), Math.round(p2.x), Math.round(p2.y));
         } catch (Throwable t) {
             t.printStackTrace();
         } finally {
