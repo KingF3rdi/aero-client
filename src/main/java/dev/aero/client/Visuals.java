@@ -61,12 +61,21 @@ public final class Visuals {
         return c.hideArmorOthers && entity instanceof PlayerEntity;
     }
 
+    /** Registry id (e.g. "explosion", "totem_of_undying") of the particle currently being spawned, "" otherwise. */
+    public static String currentParticle = "";
+
     public static boolean skipParticle(Object particle) {
         ClientConfig c = cfg();
         if (c == null || particle == null) {
             return false;
         }
-        String n = particle.getClass().getName().toLowerCase();
+        // Go by particle type id: class names are class_1234 in the released jar. Block-break dust is
+        // created directly (no particle type), so it's recognised by its class.
+        String n = !currentParticle.isEmpty() ? currentParticle
+                : particle instanceof net.minecraft.client.particle.BlockDustParticle ? "block_dust" : "";
+        if (n.isEmpty()) {
+            return false;
+        }
         boolean crystalCut = Optimizer.crystal() && (c.crystalOptimizerParticles || Optimizer.on("marlowcrystal"));
         if ((c.noExplosions || crystalCut)
                 && (n.contains("explosion") || n.contains("flash") || n.contains("largeexplode"))) {
@@ -87,7 +96,7 @@ public final class Visuals {
         if ((c.crossbowOptimizer || Optimizer.crossbow()) && c.crossbowOptimizerParticles && n.contains("crit")) {
             return true;
         }
-        if (Optimizer.mace() && (n.contains("smash") || n.contains("gust") || n.contains("explosion"))) {
+        if (Optimizer.mace() && (n.contains("gust") || n.equals("dust_pillar") || n.contains("explosion"))) {
             return true;
         }
         if (c.noFireworks && (n.contains("firework") || n.contains("fireworks"))) {
@@ -102,7 +111,7 @@ public final class Visuals {
         if (c.hideEnchantParticles && n.contains("enchant")) {
             return true;
         }
-        if ((c.totemTweaks && n.contains("totemparticle")) || (Optimizer.totem() && n.contains("totem"))) {
+        if ((c.totemTweaks && n.equals("totem_of_undying")) || (Optimizer.totem() && n.contains("totem"))) {
             if (c.totemPopNoParticles || Optimizer.totem()) {
                 return true;
             }
@@ -123,8 +132,7 @@ public final class Visuals {
         if (c.cleanPotionSwirls && (n.contains("spell") || n.contains("effect") || n.contains("ambient"))) {
             return true;
         }
-        if (c.cleanSprintDust && (n.contains("blockdust") || n.contains("block_dust")
-                || n.contains("cloudparticle") || n.contains(".cloud")
+        if (c.cleanSprintDust && (n.equals("block") || n.equals("block_dust") || n.equals("cloud")
                 || n.contains("sneeze") || n.contains("sprint"))) {
             return true;
         }

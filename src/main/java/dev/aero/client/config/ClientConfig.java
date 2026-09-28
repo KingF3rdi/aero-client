@@ -205,6 +205,27 @@ public class ClientConfig {
     public boolean damageTintChroma = false;
     /** Damage Tint: only the armor flashes (skin keeps no flash); off = skin and armor both flash. */
     public boolean damageTintArmorOnly = true;
+    /** Fullbright: "Gamma" (brightness boost) or "Night vision"; fade in/out instead of snapping. */
+    public String fullbrightMode = "Gamma";
+    /** Saturation Overlay (AppleSkin-style): flashing preview of what held food restores, food values in tooltips. */
+    public boolean satFoodPreview = true;
+    public boolean satFoodTooltip = true;
+    /** Toggle Sprint: sneak toggles too (vanilla toggle option under the hood). */
+    public boolean toggleSneak = false;
+    /** Potion HUD: remaining time under the vanilla effect icons (top right). */
+    public boolean potionVanillaTimers = true;
+    /** Ping: latency as a colored number in the tab list instead of bars. */
+    public boolean pingTabNumbers = true;
+    /** Armor HUD: also the held item; durability percent on damaged items everywhere. */
+    public boolean armorHeldItem = true;
+    public boolean durabilityOnItems = false;
+    /** Freelook: hold a key to look around your character in third person without turning. */
+    public boolean freelook = false;
+    public int freelookKey = 342; // Left Alt
+    public boolean freelookToggle = false;
+    /** Unfocused CPU: also mute the game while the window is in the background. */
+    public boolean unfocusedMute = false;
+    public boolean fullbrightFade = true;
     /** GUI Tweaks: darkening behind container screens and tooltip background, 0-100 %. */
     public float guiContainerOpacity = 100f;
     public float guiTooltipOpacity = 100f;

@@ -43,3 +43,16 @@ java {
     sourceCompatibility = JavaVersion.VERSION_21
     targetCompatibility = JavaVersion.VERSION_21
 }
+
+// Production test run: starts the remapped jar the way players get it (intermediary names), so bugs that
+// only exist outside the dev environment (reflection / class-name checks) show up. ./gradlew prodClient
+configurations {
+    prodMods
+}
+dependencies {
+    prodMods "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+}
+tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
+    mods.from(configurations.prodMods)
+    mods.from(tasks.named("remapJar"))
+}

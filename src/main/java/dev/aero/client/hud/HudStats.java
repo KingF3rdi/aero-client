@@ -147,44 +147,40 @@ public final class HudStats {
         if (cfg.hideArmorStands && entity instanceof ArmorStandEntity) {
             return true;
         }
-        String n = entity.getClass().getName();
-        if (cfg.noLightning && n.contains("Lightning")) {
+        // instanceof, not class names: in the released jar Minecraft classes are named class_1234.
+        if (cfg.noLightning && entity instanceof net.minecraft.entity.LightningEntity) {
             return true;
         }
-        if (cfg.hideFrames && (n.contains("ItemFrame") || n.contains("Painting") || n.contains("GlowItemFrame"))) {
+        if (cfg.hideFrames && (entity instanceof net.minecraft.entity.decoration.ItemFrameEntity
+                || entity instanceof net.minecraft.entity.decoration.painting.PaintingEntity)) {
             return true;
         }
-        if (cfg.hideFalling && n.contains("FallingBlock")) {
+        if (cfg.hideFalling && entity instanceof net.minecraft.entity.FallingBlockEntity) {
             return true;
         }
-        if (cfg.hideXpOrbs && n.contains("ExperienceOrb") && dist > 64) {
+        if (cfg.hideXpOrbs && entity instanceof net.minecraft.entity.ExperienceOrbEntity && dist > 64) {
             return true;
         }
         if ((cfg.itemLimiter && entity instanceof ItemEntity && dist > 32 * 32)
                 || (cfg.hideDroppedItems && entity instanceof ItemEntity)) {
             return true;
         }
-        String low = n.toLowerCase();
-        if (cfg.hideTnt && (low.contains("tnt") || low.contains("primedtnt"))) {
+        if (cfg.hideTnt && entity instanceof net.minecraft.entity.TntEntity) {
             return true;
         }
-        if (cfg.hideProjectiles && (low.contains("arrow") || low.contains("trident") || low.contains("snowball")
-                || low.contains("egg") || low.contains("fireworkrocket") || low.contains("potionentity")
-                || low.contains("enderpearl") || low.contains("shulkerbullet") || low.contains("llama"))) {
+        if (cfg.hideProjectiles && entity instanceof net.minecraft.entity.projectile.ProjectileEntity) {
             return entity != client.player;
         }
-        if (cfg.hidePassiveMobs && (low.contains("cow") || low.contains("pig") || low.contains("sheep")
-                || low.contains("chicken") || low.contains("rabbit") || low.contains("bat")
-                || low.contains("bee") || low.contains("villager") || low.contains("cat")
-                || low.contains("wolf") || low.contains("horse") || low.contains("squid")
-                || low.contains("fish") || low.contains("axolotl"))) {
+        if (cfg.hidePassiveMobs && (entity instanceof net.minecraft.entity.passive.PassiveEntity
+                || entity instanceof net.minecraft.entity.mob.WaterCreatureEntity
+                || entity instanceof net.minecraft.entity.mob.AmbientEntity)) {
             return true;
         }
         if (cfg.entityDistance && dist > (double) cfg.entityRange * cfg.entityRange) {
             return entity != client.player;
         }
         if (dev.aero.client.Optimizer.crystal() && cfg.crystalOptimizerRange
-                && low.contains("endcrystal")
+                && entity instanceof net.minecraft.entity.decoration.EndCrystalEntity
                 && dist > (double) cfg.crystalOptimizerRangeValue * cfg.crystalOptimizerRangeValue) {
             return true;
         }

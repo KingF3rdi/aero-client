@@ -66,8 +66,7 @@ public final class Optimizer {
         if (target == null || !crystal()) {
             return;
         }
-        String n = target.getClass().getName().toLowerCase();
-        if (!n.contains("endcrystal") && !n.contains("end_crystal")) {
+        if (!(target instanceof net.minecraft.entity.decoration.EndCrystalEntity)) {
             return;
         }
         MinecraftClient mc = MinecraftClient.getInstance();
@@ -146,7 +145,7 @@ public final class Optimizer {
         } catch (Throwable t) {
             return;
         }
-        if (!chest.isEmpty() && chest.getItem().toString().toLowerCase().contains("elytra")) {
+        if (chest.isOf(net.minecraft.item.Items.ELYTRA)) {
             return;
         }
         stopGliding(player);
@@ -162,29 +161,11 @@ public final class Optimizer {
     }
 
     private static boolean gliding(PlayerEntity player) {
-        try {
-            Object v = player.getClass().getMethod("isGliding").invoke(player);
-            if (Boolean.TRUE.equals(v)) {
-                return true;
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            Object v = player.getClass().getMethod("isFallFlying").invoke(player);
-            return Boolean.TRUE.equals(v);
-        } catch (Throwable ignored) {
-            return false;
-        }
+        return player.isGliding();
     }
 
     private static void stopGliding(PlayerEntity player) {
-        for (String m : new String[]{"stopGliding", "stopFallFlying"}) {
-            try {
-                player.getClass().getMethod(m).invoke(player);
-                return;
-            } catch (Throwable ignored) {
-            }
-        }
+        ((dev.aero.client.mixin.EntityFlagInvoker) player).aero$setFlag(7, false);
     }
 
     private static void removeLocal(Entity entity) {

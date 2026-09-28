@@ -132,6 +132,45 @@ public class InGameHudMixin {
         }
     }
 
+    /**
+     * Potion HUD "Timers on vanilla icons" (like Effect Timer Plus): remaining time under each vanilla
+     * effect icon. Same order and positions as InGameHud#renderStatusEffectOverlay.
+     */
+    @Inject(method = "renderStatusEffectOverlay", at = @At("TAIL"), require = 0)
+    private void aero$effectTimers(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
+        var c = AeroClient.CONFIG;
+        var mc = net.minecraft.client.MinecraftClient.getInstance();
+        if (c == null || !c.potionHud || !c.potionVanillaTimers || mc.player == null
+                || (mc.currentScreen != null && mc.currentScreen.showsStatusEffects())) {
+            return;
+        }
+        int good = 0;
+        int bad = 0;
+        for (var effect : com.google.common.collect.Ordering.natural().reverse().sortedCopy(mc.player.getStatusEffects())) {
+            if (!((net.minecraft.entity.effect.StatusEffectInstance) effect).shouldShowIcon()) {
+                continue;
+            }
+            var e = (net.minecraft.entity.effect.StatusEffectInstance) effect;
+            int x = context.getScaledWindowWidth();
+            int y = mc.isDemo() ? 16 : 1;
+            if (e.getEffectType().value().isBeneficial()) {
+                x -= 25 * ++good;
+            } else {
+                x -= 25 * ++bad;
+                y += 26;
+            }
+            String t = e.isInfinite() ? "∞" : net.minecraft.entity.effect.StatusEffectUtil.getDurationText(e, 1f,
+                    mc.world == null ? 20f : mc.world.getTickManager().getTickRate()).getString();
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(x + 12, y + 18);
+            context.getMatrices().scale(0.5f, 0.5f);
+            int w = mc.textRenderer.getWidth(t);
+            int col = !e.isInfinite() && e.isDurationBelow(200) ? 0xFFFF6B6B : 0xFFFFFFFF;
+            context.drawText(mc.textRenderer, net.minecraft.text.Text.literal(t), -w / 2, 0, col, true);
+            context.getMatrices().popMatrix();
+        }
+    }
+
     @Inject(method = {"renderOverlayMessage", "renderActionBar"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$action(CallbackInfo ci) {
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.guiTweaks && AeroClient.CONFIG.guiHideActionBar) {

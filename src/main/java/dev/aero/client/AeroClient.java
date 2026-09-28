@@ -66,6 +66,15 @@ public class AeroClient implements ClientModInitializer {
 
     /** Sky button on the title screen, texture preview on the resource pack screen. */
     private static void registerScreenExtras() {
+        // Saturation Overlay: hunger and saturation a food restores, in its tooltip (like AppleSkin).
+        net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback.EVENT.register((stack, context, type, lines) -> {
+            var food = stack.get(net.minecraft.component.DataComponentTypes.FOOD);
+            if (food == null || CONFIG == null || !CONFIG.saturationOverlay || !CONFIG.satFoodTooltip) {
+                return;
+            }
+            lines.add(net.minecraft.text.Text.literal("Hunger +" + food.nutrition() + "  ·  Saturation +"
+                    + String.format(java.util.Locale.ROOT, "%.1f", food.saturation())).formatted(net.minecraft.util.Formatting.GOLD));
+        });
         net.fabricmc.fabric.api.client.screen.v1.ScreenEvents.AFTER_INIT.register((client, screen, w, h) -> {
             if (screen instanceof net.minecraft.client.gui.screen.TitleScreen) {
                 net.minecraft.client.gui.widget.ButtonWidget[] ref = new net.minecraft.client.gui.widget.ButtonWidget[1];
@@ -202,6 +211,7 @@ public class AeroClient implements ClientModInitializer {
             dev.aero.client.ui.ConflictScreen.tick(client);
             dev.aero.client.social.AeroApi.tick(client);
             ChatTranslate.tick(client);
+            Freelook.tick(client);
             applyMaxFps(client);
             tickRenderDistanceOverride(client);
             tickUnfocusedCpu(client);
@@ -356,21 +366,7 @@ public class AeroClient implements ClientModInitializer {
     }
 
     private static boolean isVanillaPause(Screen screen) {
-        if (screen == null) {
-            return false;
-        }
-        String n = screen.getClass().getName();
-        return n.endsWith("GameMenuScreen") || n.endsWith("PauseScreen");
+        return screen instanceof net.minecraft.client.gui.screen.GameMenuScreen;
     }
 
-    private static void applyFpsCap(Object window, int fps) {
-        try {
-            window.getClass().getMethod("setFramerateLimit", int.class).invoke(window, fps);
-        } catch (ReflectiveOperationException ignored) {
-            try {
-                window.getClass().getMethod("setMaxFps", int.class).invoke(window, fps);
-            } catch (ReflectiveOperationException ignored2) {
-            }
-        }
-    }
 }

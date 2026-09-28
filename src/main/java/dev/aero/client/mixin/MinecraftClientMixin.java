@@ -26,8 +26,7 @@ public class MinecraftClientMixin {
         boolean down = GLFW.glfwGetKey(mc.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
         if (down && !this.aeroGuiHeld && mc.world != null) {
             Screen screen = mc.currentScreen;
-            String name = screen == null ? "" : screen.getClass().getName();
-            boolean chat = name.endsWith("ChatScreen") || name.endsWith("SleepingChatScreen");
+            boolean chat = screen instanceof net.minecraft.client.gui.screen.ChatScreen;
             if (Menus.isClickGui(screen)) {
                 mc.setScreen(null);
             } else if (!chat && (screen == null || Menus.isPauseOverlay(screen))) {

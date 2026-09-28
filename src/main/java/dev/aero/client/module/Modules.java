@@ -52,7 +52,8 @@ public final class Modules {
                 () -> c.noLightning, v -> c.noLightning = v));
         add(new Module("Unfocused CPU", "Low FPS when the window is not focused", Category.PERFORMANCE,
                 () -> c.unfocusedCpu, v -> c.unfocusedCpu = v)
-                .setting("FPS", () -> c.unfocusedFps, v -> c.unfocusedFps = v, 5, 60));
+                .setting("FPS", () -> c.unfocusedFps, v -> c.unfocusedFps = v, 5, 60)
+                .setting("Mute in background", () -> c.unfocusedMute, v -> c.unfocusedMute = v));
         add(new Module("Hide Armor Stands", "Skip armor-stand models", Category.PERFORMANCE,
                 () -> c.hideArmorStands, v -> c.hideArmorStands = v));
         add(new Module("Item Limit", "Skip far dropped items", Category.PERFORMANCE,
@@ -101,7 +102,9 @@ public final class Modules {
                 .setting("Style vanilla UI (hotbar, inventories, buttons)", () -> c.vanillaUi, v -> c.vanillaUi = v));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
                 () -> c.fullbright, v -> c.fullbright = v)
-                .settingF("Brightness", () -> (double) c.brightness, v -> c.brightness = (float) v, 1, 15));
+                .setting("Mode", () -> c.fullbrightMode, v -> c.fullbrightMode = v, "Gamma", "Night vision")
+                .settingF("Brightness", () -> (double) c.brightness, v -> c.brightness = (float) v, 1, 15)
+                .setting("Smooth fade", () -> c.fullbrightFade, v -> c.fullbrightFade = v));
         add(new Module("No Hurtcam", "Removes screen shake when hit", Category.RENDER,
                 () -> c.noHurtcam, v -> c.noHurtcam = v));
         add(new Module("Low Fire", "Smaller first-person fire overlay", Category.RENDER,
@@ -166,6 +169,10 @@ public final class Modules {
                     c.weatherMode = v;
                     c.weatherClear = "Clear".equalsIgnoreCase(v);
                 }, "Clear", "Rain", "Thunder"));
+        add(new Module("Freelook", "Hold a key to look around your character in third person without turning", Category.PLAYER,
+                () -> c.freelook, v -> c.freelook = v)
+                .settingKey("Freelook key", () -> c.freelookKey, v -> c.freelookKey = v)
+                .setting("Toggle instead of hold", () -> c.freelookToggle, v -> c.freelookToggle = v));
         add(new Module("Zoom", "Hold zoom key to zoom the camera", Category.PLAYER,
                 () -> c.zoom, v -> c.zoom = v)
                 .setting("Zoom Key", () -> c.zoomKey, v -> c.zoomKey = v, 32, 90)
@@ -400,7 +407,8 @@ public final class Modules {
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.SHIELD);
         add(new Module("Toggle Sprint", "Keeps sprint on while moving forward", Category.HUD,
                 () -> c.toggleSprint, v -> c.toggleSprint = v)
-                .setting("Always sprint", () -> c.alwaysSprint, v -> c.alwaysSprint = v));
+                .setting("Always sprint", () -> c.alwaysSprint, v -> c.alwaysSprint = v)
+                .setting("Toggle sneak", () -> c.toggleSneak, v -> c.toggleSneak = v));
         add(new Module("Combo", "Counts consecutive hits on the same target", Category.HUD,
                 () -> c.comboHud, v -> c.comboHud = v));
         add(new Module("CPS", "Shows your own click rate", Category.HUD,
@@ -411,7 +419,9 @@ public final class Modules {
                 .setting("Durability style", () -> c.armorDurabilityStyle, v -> c.armorDurabilityStyle = v, "Bars", "Text", "None")
                 .setting("Layout", () -> c.armorLayout, v -> c.armorLayout = v, "Horizontal", "Vertical")
                 .setting("Color by durability", () -> c.armorDurabilityColor, v -> c.armorDurabilityColor = v)
-                .setting("Break warning", () -> c.armorBreakWarning, v -> c.armorBreakWarning = v));
+                .setting("Break warning", () -> c.armorBreakWarning, v -> c.armorBreakWarning = v)
+                .setting("Held item", () -> c.armorHeldItem, v -> c.armorHeldItem = v)
+                .setting("Durability on all items", () -> c.durabilityOnItems, v -> c.durabilityOnItems = v));
         add(new Module("Coordinates", "XYZ position", Category.HUD,
                 () -> c.coordsHud, v -> c.coordsHud = v)
                 .setting("Shadow", () -> c.coordsShadow, v -> c.coordsShadow = v));
@@ -465,18 +475,22 @@ public final class Modules {
                 .settingColor("OK color", () -> c.pingColWarn, v -> c.pingColWarn = v)
                 .settingColor("High color", () -> c.pingColBad, v -> c.pingColBad = v)
                 .setting("OK from (ms)", () -> c.pingWarnMs, v -> c.pingWarnMs = v, 10, 300)
-                .setting("High from (ms)", () -> c.pingBadMs, v -> c.pingBadMs = v, 20, 500));
+                .setting("High from (ms)", () -> c.pingBadMs, v -> c.pingBadMs = v, 20, 500)
+                .setting("Numbers in tab list", () -> c.pingTabNumbers, v -> c.pingTabNumbers = v));
         add(new Module("Potion HUD", "Active effect list", Category.HUD,
                 () -> c.potionHud, v -> c.potionHud = v)
                 .setting("Icons", () -> c.potionIcons, v -> c.potionIcons = v)
                 .setting("Name", () -> c.potionName, v -> c.potionName = v)
                 .setting("Level", () -> c.potionLevel, v -> c.potionLevel = v)
                 .setting("Timer", () -> c.potionTimer, v -> c.potionTimer = v)
-                .setting("Hide vanilla icons", () -> c.potionHideVanilla, v -> c.potionHideVanilla = v));
+                .setting("Hide vanilla icons", () -> c.potionHideVanilla, v -> c.potionHideVanilla = v)
+                .setting("Timers on vanilla icons", () -> c.potionVanillaTimers, v -> c.potionVanillaTimers = v));
         add(new Module("Saturation Overlay", "Hunger saturation on the bar", Category.HUD,
                 () -> c.saturationOverlay, v -> c.saturationOverlay = v)
                 .settingF("Opacity", () -> (double) c.satOpacity, v -> c.satOpacity = (float) v, 0, 100)
-                .setting("Hide when full", () -> c.satHideFull, v -> c.satHideFull = v));
+                .setting("Hide when full", () -> c.satHideFull, v -> c.satHideFull = v)
+                .setting("Food preview", () -> c.satFoodPreview, v -> c.satFoodPreview = v)
+                .setting("Food values in tooltip", () -> c.satFoodTooltip, v -> c.satFoodTooltip = v));
         add(new Module("Watermark", "Icon + name, bottom-right when HUD or a menu is open", Category.HUD,
                 () -> c.watermark, v -> c.watermark = v)
                 .setting("Rainbow", () -> c.watermarkRainbow, v -> c.watermarkRainbow = v)

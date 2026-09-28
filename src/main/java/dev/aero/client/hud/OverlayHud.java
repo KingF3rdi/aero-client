@@ -33,17 +33,7 @@ public final class OverlayHud {
     private static long satAt;
 
     private static boolean flying(MinecraftClient mc) {
-        try {
-            Object v = mc.player.getClass().getMethod("isGliding").invoke(mc.player);
-            return Boolean.TRUE.equals(v);
-        } catch (Throwable ignored) {
-            try {
-                Object v = mc.player.getClass().getMethod("isFallFlying").invoke(mc.player);
-                return Boolean.TRUE.equals(v);
-            } catch (Throwable ignored2) {
-                return false;
-            }
-        }
+        return mc.player != null && mc.player.isGliding();
     }
 
     public static void renderAny(Object context, Object tickCounter) {
@@ -245,27 +235,14 @@ public final class OverlayHud {
         }
 
         if (cfg.armorHud) {
-            int x = Math.max(0, Math.min(cfg.armorHudX, sw - 24));
-            int y = Math.max(0, Math.min(cfg.armorHudY, sh - 24));
-            boolean horiz = "Horizontal".equalsIgnoreCase(cfg.armorLayout);
-            for (EquipmentSlot slot : new EquipmentSlot[]{
-                    EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET
-            }) {
-                ItemStack stack = mc.player.getEquippedStack(slot);
-                context.fill(x - 2, y - 2, x + 18, y + 18, 0xE014121C);
-                if (!stack.isEmpty()) {
-                    context.drawItem(stack, x, y);
-                    context.drawStackOverlay(mc.textRenderer, stack, x, y);
-                }
-                if (horiz) {
-                    x += 22;
-                } else {
-                    y += 18;
-                }
-            }
+            drawArmorHud(context, mc, cfg, sw, sh);
         }
 
-        if (cfg.saturationOverlay) {
+        boolean hungerBar = mc.interactionManager != null && mc.interactionManager.hasStatusBars();
+        if (cfg.saturationOverlay && cfg.satFoodPreview && hungerBar) {
+            drawFoodPreview(context, mc, sw, sh);
+        }
+        if (cfg.saturationOverlay && hungerBar) {
             float sat = splashSaturation(mc);
             if (!(cfg.satHideFull && sat >= 20f)) {
                 // Hunger icons run right to left starting at sw/2 + 82, one row above the hotbar (sh - 39).
@@ -656,18 +633,7 @@ public final class OverlayHud {
     }
 
     private static int selectedHotbar(MinecraftClient mc) {
-        try {
-            Object inv = mc.player.getInventory();
-            try {
-                Object v = inv.getClass().getMethod("getSelectedSlot").invoke(inv);
-                return ((Number) v).intValue();
-            } catch (Throwable ignored) {
-                var f = inv.getClass().getField("selectedSlot");
-                return f.getInt(inv);
-            }
-        } catch (Throwable ignored) {
-            return 0;
-        }
+        return mc.player.getInventory().getSelectedSlot();
     }
 
     /** ARGB background for a stack per the Item Highlighter (per-item override, else the default color), or 0 for none. */
@@ -835,12 +801,139 @@ public final class OverlayHud {
         context.drawText(mc.textRenderer, (Text) cached[0], x + 8, y + 3, textColor, shadow);
     }
 
+    /** The food being held (main hand first), or null. */
+    public static net.minecraft.component.type.FoodComponent heldFood(MinecraftClient mc) {
+        for (ItemStack st : new ItemStack[]{mc.player.getMainHandStack(), mc.player.getOffHandStack()}) {
+            var food = st.get(net.minecraft.component.DataComponentTypes.FOOD);
+            if (food != null) {
+                return food;
+            }
+        }
+        return null;
+    }
+
+    private static final net.minecraft.util.Identifier FOOD_FULL = net.minecraft.util.Identifier.ofVanilla("hud/food_full");
+    private static final net.minecraft.util.Identifier FOOD_HALF = net.minecraft.util.Identifier.ofVanilla("hud/food_half");
+
+    /** AppleSkin-style: pulsing hunger icons for what the held food would restore, plus the saturation it adds. */
+    private static void drawFoodPreview(DrawContext context, MinecraftClient mc, int sw, int sh) {
+        if (mc.player.isCreative() || mc.player.isSpectator() || mc.interactionManager == null) {
+            return;
+        }
+        var food = heldFood(mc);
+        if (food == null) {
+            return;
+        }
+        var hunger = mc.player.getHungerManager();
+        int cur = hunger.getFoodLevel();
+        int next = Math.min(20, cur + food.nutrition());
+        float alpha = 0.35f + 0.35f * (float) Math.sin(System.currentTimeMillis() / 200.0);
+        int white = ((int) (Math.max(0.1f, alpha) * 255) << 24) | 0xFFFFFF;
+        int y = sh - 39;
+        for (int i = 0; i < 10; i++) {
+            int curHalf = Math.max(0, Math.min(2, cur - i * 2));
+            int newHalf = Math.max(0, Math.min(2, next - i * 2));
+            if (newHalf > curHalf) {
+                int x = sw / 2 + 91 - i * 8 - 9;
+                context.drawGuiTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, newHalf == 2 ? FOOD_FULL : FOOD_HALF, x, y, 9, 9, white);
+            }
+        }
+        float sat = hunger.getSaturationLevel();
+        float newSat = Math.min(next, sat + food.saturation());
+        int col = (((int) (Math.max(0.1f, alpha) * 255)) << 24) | 0xFFD84A;
+        for (int i = 0; i < 10; i++) {
+            float from = Math.max(0f, Math.min(2f, sat - i * 2f));
+            float to = Math.max(0f, Math.min(2f, newSat - i * 2f));
+            if (to <= from) {
+                continue;
+            }
+            int px = sw / 2 + 82 - i * 8;
+            int x0 = px + 1 + Math.round(7 * from / 2f);
+            int x1 = px + 1 + Math.max(1, Math.round(7 * to / 2f));
+            context.fill(x0, y + 8, x1, y + 9, col);
+            context.fill(x0, y + 1, x1, y + 2, col);
+        }
+    }
+
+    /** Durability 0..1 of a damageable stack, or -1 when it has none. */
+    public static float durability(ItemStack stack) {
+        if (stack.isEmpty() || !stack.isDamageable() || stack.getMaxDamage() <= 0) {
+            return -1f;
+        }
+        return 1f - stack.getDamage() / (float) stack.getMaxDamage();
+    }
+
+    /** Green -> yellow -> red by durability. */
+    public static int durabilityColor(float d) {
+        int r = d > 0.5f ? (int) (255 * (1f - d) * 2f) : 255;
+        int g = d > 0.5f ? 255 : (int) (255 * d * 2f);
+        return 0xFF000000 | (Math.min(255, r) << 16) | (Math.min(255, g) << 8) | 0x40;
+    }
+
+    private static final java.util.Map<EquipmentSlot, Boolean> WARNED = new java.util.EnumMap<>(EquipmentSlot.class);
+
+    /** Armor HUD: armor (+ held item) with durability as bars, percent text or nothing; warns once below 10 %. */
+    private static void drawArmorHud(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
+        int x = Math.max(0, Math.min(cfg.armorHudX, sw - 24));
+        int y = Math.max(0, Math.min(cfg.armorHudY, sh - 24));
+        boolean horiz = "Horizontal".equalsIgnoreCase(cfg.armorLayout);
+        String style = cfg.armorDurabilityStyle == null ? "Bars" : cfg.armorDurabilityStyle;
+        java.util.List<EquipmentSlot> slots = new java.util.ArrayList<>(java.util.List.of(
+                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET));
+        if (cfg.armorHeldItem) {
+            slots.add(EquipmentSlot.MAINHAND);
+        }
+        for (EquipmentSlot slot : slots) {
+            ItemStack stack = mc.player.getEquippedStack(slot);
+            float d = durability(stack);
+            if (slot == EquipmentSlot.MAINHAND && stack.isEmpty()) {
+                continue;
+            }
+            context.fill(x - 2, y - 2, x + 18, y + 18, 0xB014121C);
+            if (!stack.isEmpty()) {
+                context.drawItem(stack, x, y);
+                if ("Bars".equalsIgnoreCase(style)) {
+                    context.drawStackOverlay(mc.textRenderer, stack, x, y);
+                } else if (stack.getCount() > 1) {
+                    context.drawStackOverlay(mc.textRenderer, stack, x, y, null);
+                }
+            }
+            if (d >= 0f && "Text".equalsIgnoreCase(style)) {
+                String pct = Math.round(d * 100f) + "%";
+                int col = cfg.armorDurabilityColor ? durabilityColor(d) : TEXT;
+                int tx = horiz ? x + 8 - mc.textRenderer.getWidth(pct) / 2 : x + 20;
+                int ty = horiz ? y + 20 : y + 5;
+                context.drawText(mc.textRenderer, Text.literal(pct), tx, ty, col, true);
+            }
+            // Break warning: a flash and a ding once when a piece drops under 10 %.
+            boolean low = d >= 0f && d < 0.1f;
+            if (cfg.armorBreakWarning && low) {
+                if ((System.currentTimeMillis() / 300) % 2 == 0) {
+                    context.fill(x - 2, y - 2, x + 18, y + 18, 0x55FF3030);
+                }
+                if (!Boolean.TRUE.equals(WARNED.get(slot))) {
+                    WARNED.put(slot, true);
+                    mc.player.playSound(net.minecraft.sound.SoundEvents.BLOCK_NOTE_BLOCK_PLING.value(), 0.8f, 0.6f);
+                }
+            } else if (!low) {
+                WARNED.remove(slot);
+            }
+            if (horiz) {
+                x += "Text".equalsIgnoreCase(style) ? 26 : 22;
+            } else {
+                y += 20;
+            }
+        }
+    }
+
     private static String sprintText(MinecraftClient mc, ClientConfig cfg) {
+        boolean full = "Full".equalsIgnoreCase(cfg.sprintStyle);
         if (cfg.sprintShowSprint && mc.player.isSprinting()) {
-            return "Full".equalsIgnoreCase(cfg.sprintStyle) ? "Sprinting" : "Sprint";
+            String t = full ? "Sprinting" : "Sprint";
+            return cfg.toggleSprint || cfg.alwaysSprint ? t + " (Toggled)" : t;
         }
         if (cfg.sprintShowSneak && mc.player.isSneaking()) {
-            return "Sneak";
+            return cfg.toggleSneak ? (full ? "Sneaking" : "Sneak") + " (Toggled)" : full ? "Sneaking" : "Sneak";
         }
         if (cfg.sprintShowSwim && mc.player.isSwimming()) {
             return "Swim";
@@ -893,74 +986,12 @@ public final class OverlayHud {
     }
 
     private static String resolveCurrentMusic(MinecraftClient mc) {
-        try {
-            Object tracker = MinecraftClient.class.getMethod("getMusicTracker").invoke(mc);
-            for (String field : new String[]{"current", "playing", "field_5580"}) {
-                try {
-                    var f = tracker.getClass().getDeclaredField(field);
-                    f.setAccessible(true);
-                    Object cur = f.get(tracker);
-                    if (cur != null) {
-                        return cur.toString().replace("minecraft:", "").replace('_', ' ');
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
-            for (var m : tracker.getClass().getMethods()) {
-                if (m.getParameterCount() == 0 && m.getName().toLowerCase().contains("current")) {
-                    Object cur = m.invoke(tracker);
-                    if (cur != null) {
-                        return cur.toString().replace("minecraft:", "").replace('_', ' ');
-                    }
-                }
-            }
-        } catch (Throwable ignored) {
+        String key = mc.getMusicTracker().getCurrentMusicTranslationKey();
+        if (key == null || key.isBlank()) {
+            return "";
         }
-        try {
-            Object sm = mc.getSoundManager();
-            for (var f : sm.getClass().getDeclaredFields()) {
-                f.setAccessible(true);
-                Object v = f.get(sm);
-                if (v == null) {
-                    continue;
-                }
-                String s = v.toString().toLowerCase();
-                if (s.contains("music") && !s.contains("empty")) {
-                    return v.toString().replace("minecraft:", "").replace('_', ' ');
-                }
-            }
-            Object dbg = sm.getClass().getMethod("getDebugString").invoke(sm);
-            if (dbg != null && dbg.toString().toLowerCase().contains("music")) {
-                return dbg.toString();
-            }
-        } catch (Throwable ignored) {
-        }
-        try {
-            float vol = 1f;
-            for (var m : mc.options.getClass().getMethods()) {
-                if (m.getName().toLowerCase().contains("sound") && m.getParameterCount() == 1) {
-                    Object cat = null;
-                    for (Class<?> e : m.getParameterTypes()) {
-                        if (e.isEnum()) {
-                            for (Object c : e.getEnumConstants()) {
-                                if (c.toString().equalsIgnoreCase("MUSIC")) {
-                                    cat = c;
-                                }
-                            }
-                        }
-                    }
-                    if (cat != null) {
-                        Object o = m.invoke(mc.options, cat);
-                        if (o instanceof Number n) {
-                            vol = n.floatValue();
-                        }
-                    }
-                }
-            }
-            return vol > 0.01f ? "Minecraft soundtrack" : "Musik aus";
-        } catch (Throwable ignored) {
-        }
-        return "";
+        String name = Text.translatable(key).getString();
+        return name.equals(key) ? key.substring(key.lastIndexOf('.') + 1).replace('_', ' ') : name;
     }
 
     /** Same reflection-avoidance idea as currentMusic(): saturation only changes on eat/regen ticks. */
@@ -975,19 +1006,7 @@ public final class OverlayHud {
     }
 
     private static float resolveSplashSaturation(MinecraftClient mc) {
-        try {
-            Object food = mc.player.getClass().getMethod("getHungerManager").invoke(mc.player);
-            Object v = food.getClass().getMethod("getSaturationLevel").invoke(food);
-            return ((Number) v).floatValue();
-        } catch (Throwable t) {
-            try {
-                Object food = mc.player.getClass().getMethod("getHungerManager").invoke(mc.player);
-                Object v = food.getClass().getMethod("getSaturation").invoke(food);
-                return ((Number) v).floatValue();
-            } catch (Throwable ignored) {
-                return 0;
-            }
-        }
+        return mc.player.getHungerManager().getSaturationLevel();
     }
 
     private static int fps(MinecraftClient mc) {

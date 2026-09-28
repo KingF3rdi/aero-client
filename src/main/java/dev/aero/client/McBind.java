@@ -1,27 +1,26 @@
 package dev.aero.client;
 
 import dev.aero.client.config.ClientConfig;
-import dev.aero.client.Visuals;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.option.CloudRenderMode;
 import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.option.GraphicsMode;
+import net.minecraft.client.option.SimpleOption;
+import net.minecraft.item.Items;
+import net.minecraft.particle.ParticlesMode;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 
 /**
- * Applies module flags to live Minecraft options and world state.
- * Works even when a mixin target was renamed.
+ * Applies module flags to live Minecraft options every tick. A module that forces an option remembers the
+ * player's own value and puts it back when the module is switched off. Direct calls only: reflection by
+ * method name breaks in the released jar, where Minecraft's names are intermediary ones.
+ * (Fullbright is not an option here - it drives the lightmap, see LightmapTextureManagerMixin.)
  */
 public final class McBind {
-    private static Double gammaBackup;
-    private static Object cloudsBackup;
-    private static Object particlesBackup;
-    private static Object graphicsBackup;
-    private static Double entityBackup;
-    private static Double distortionBackup;
-    private static Double fovFxBackup;
-    private static Boolean bobBackup;
-    private static Double fovBackup;
+    private static final Map<String, Object> BACKUP = new HashMap<>();
 
     private McBind() {}
 
@@ -32,25 +31,19 @@ public final class McBind {
         }
         GameOptions opt = mc.options;
         try {
-            bindGamma(opt, c.fullbright);
-            bindEnum(opt, c.cloudsOff, "getCloudRenderMode", "OFF", true);
-            bindEnum(opt, c.particleLimiter, "getParticles", "MINIMAL", true);
-            bindDouble(opt, c.entityDistance, "getEntityDistanceScaling",
-                    Math.max(0.5, Math.min(5.0, c.entityRange / 64.0)), true);
-            bindDouble(opt, c.guiTweaks, "getDistortionEffectScale", 0.0, true);
-            bindDouble(opt, c.guiTweaks, "getFovEffectScale", 0.0, true);
+            bind("clouds", opt.getCloudRenderMode(), c.cloudsOff, CloudRenderMode.OFF);
+            bind("particles", opt.getParticles(), c.particleLimiter, ParticlesMode.MINIMAL);
+            bind("entityDistance", opt.getEntityDistanceScaling(), c.entityDistance,
+                    Math.max(0.5, Math.min(5.0, c.entityRange / 64.0)));
+            bind("distortion", opt.getDistortionEffectScale(), c.guiTweaks, 0.0);
+            bind("fovEffect", opt.getFovEffectScale(), c.guiTweaks, 0.0);
             boolean bow = c.crossbowTweaks && usingRanged(mc);
-            bindBool(opt, bow || c.noHurtcam || c.noBobbing, "getBobView", false, true);
-            bindBool(opt, c.noShadows, "getEntityShadows", false, true);
-            bindEnum(opt, c.fastGraphics, "getGraphicsMode", "FAST", true);
-        } catch (Throwable ignored) {
-        }
-
-        // Rain/thunder overrides are applied in WorldMixin getters so disabling the module
-        // does not leave a mutated client weather value stuck on the world.
-
-        try {
-            // Zoom is applied in GameRendererMixin via Initial zoom.
+            bind("bob", opt.getBobView(), bow || c.noHurtcam || c.noBobbing, false);
+            bind("shadows", opt.getEntityShadows(), c.noShadows, false);
+            bind("graphics", opt.getPreset(), c.fastGraphics, GraphicsMode.FAST);
+            bind("sneakToggle", opt.getSneakToggled(), c.toggleSneak, true);
+            bind("mute", opt.getSoundVolumeOption(net.minecraft.sound.SoundCategory.MASTER),
+                    c.unfocusedCpu && c.unfocusedMute && !mc.isWindowFocused(), 0.0);
         } catch (Throwable ignored) {
         }
 
@@ -59,229 +52,24 @@ public final class McBind {
         }
     }
 
+    /** While on: force value (remembering the player's own). When switched off: restore it once. */
+    @SuppressWarnings("unchecked")
+    private static <T> void bind(String key, SimpleOption<T> option, boolean on, T value) {
+        if (on) {
+            BACKUP.putIfAbsent(key, option.getValue());
+            if (!Objects.equals(option.getValue(), value)) {
+                option.setValue(value);
+            }
+        } else if (BACKUP.containsKey(key)) {
+            option.setValue((T) BACKUP.remove(key));
+        }
+    }
+
     private static boolean usingRanged(MinecraftClient mc) {
         if (mc.player == null || !mc.player.isUsingItem()) {
             return false;
         }
-        String n = mc.player.getActiveItem().getItem().toString().toLowerCase();
-        return n.contains("bow") || n.contains("crossbow") || n.contains("trident");
-    }
-
-    private static void bindFov(GameOptions opt, boolean on, double value) {
-        Object option = option(opt, "getFov");
-        if (option == null) {
-            return;
-        }
-        if (on) {
-            Double cur = asDouble(getValue(option));
-            if (fovBackup == null && cur != null) {
-                fovBackup = cur;
-            }
-            setValue(option, value);
-        } else if (fovBackup != null) {
-            setValue(option, fovBackup);
-            fovBackup = null;
-        }
-    }
-
-    private static void bindGamma(GameOptions opt, boolean on) {
-        Object option = option(opt, "getGamma");
-        if (option == null) {
-            return;
-        }
-        Double cur = asDouble(getValue(option));
-        if (on) {
-            if (gammaBackup == null && cur != null) {
-                gammaBackup = cur;
-            }
-            float bright = AeroClient.CONFIG != null ? AeroClient.CONFIG.brightness : 10f;
-            setValue(option, Math.min(16.0, Math.max(1.0, bright)) / 10.0);
-        } else if (gammaBackup != null) {
-            setValue(option, gammaBackup);
-            gammaBackup = null;
-        }
-    }
-
-    private static void bindEnum(GameOptions opt, boolean on, String getter, String offName, boolean backup) {
-        Object option = option(opt, getter);
-        if (option == null) {
-            return;
-        }
-        Object cur = getValue(option);
-        if (on) {
-            if (backup && cloudsOr(getter) && cloudsBackup == null) {
-                cloudsBackup = cur;
-            }
-            if (backup && getter.contains("Particle") && particlesBackup == null) {
-                particlesBackup = cur;
-            }
-            if (backup && getter.contains("Graphics") && graphicsBackup == null) {
-                graphicsBackup = cur;
-            }
-            Object off = enumConst(cur, offName);
-            if (off != null) {
-                setValue(option, off);
-            }
-        } else if (getter.contains("Cloud") && cloudsBackup != null) {
-            setValue(option, cloudsBackup);
-            cloudsBackup = null;
-        } else if (getter.contains("Particle") && particlesBackup != null) {
-            setValue(option, particlesBackup);
-            particlesBackup = null;
-        } else if (getter.contains("Graphics") && graphicsBackup != null) {
-            setValue(option, graphicsBackup);
-            graphicsBackup = null;
-        }
-    }
-
-    private static boolean cloudsOr(String getter) {
-        return getter.contains("Cloud");
-    }
-
-    private static void bindDouble(GameOptions opt, boolean on, String getter, double value, boolean unused) {
-        Object option = option(opt, getter);
-        if (option == null) {
-            return;
-        }
-        Double cur = asDouble(getValue(option));
-        if (on) {
-            if (getter.contains("Entity") && entityBackup == null) {
-                entityBackup = cur;
-            }
-            if (getter.contains("Distortion") && distortionBackup == null) {
-                distortionBackup = cur;
-            }
-            if (getter.contains("Fov") && fovFxBackup == null) {
-                fovFxBackup = cur;
-            }
-            setValue(option, value);
-        } else if (getter.contains("Entity") && entityBackup != null) {
-            setValue(option, entityBackup);
-            entityBackup = null;
-        } else if (getter.contains("Distortion") && distortionBackup != null) {
-            setValue(option, distortionBackup);
-            distortionBackup = null;
-        } else if (getter.contains("Fov") && fovFxBackup != null) {
-            setValue(option, fovFxBackup);
-            fovFxBackup = null;
-        }
-    }
-
-    private static void bindBool(GameOptions opt, boolean forceOff, String getter, boolean offVal, boolean unused) {
-        Object option = option(opt, getter);
-        if (option == null) {
-            return;
-        }
-        Object cur = getValue(option);
-        if (forceOff) {
-            if (bobBackup == null && cur instanceof Boolean b) {
-                bobBackup = b;
-            }
-            setValue(option, offVal);
-        } else if (bobBackup != null) {
-            setValue(option, bobBackup);
-            bobBackup = null;
-        }
-    }
-
-    private static Object option(GameOptions opt, String getter) {
-        try {
-            return GameOptions.class.getMethod(getter).invoke(opt);
-        } catch (Throwable ignored) {
-            try {
-                Field f = findField(opt.getClass(), getter.replace("get", ""));
-                if (f != null) {
-                    f.setAccessible(true);
-                    return f.get(opt);
-                }
-            } catch (Throwable ignored2) {
-            }
-        }
-        return null;
-    }
-
-    private static Field findField(Class<?> type, String name) {
-        String n = name.isEmpty() ? name : Character.toLowerCase(name.charAt(0)) + name.substring(1);
-        for (Class<?> c = type; c != null; c = c.getSuperclass()) {
-            for (Field f : c.getDeclaredFields()) {
-                if (f.getName().equalsIgnoreCase(n) || f.getName().equalsIgnoreCase(name)) {
-                    return f;
-                }
-            }
-        }
-        return null;
-    }
-
-    private static Object getValue(Object option) {
-        for (String m : new String[]{"getValue", "get"}) {
-            try {
-                return option.getClass().getMethod(m).invoke(option);
-            } catch (Throwable ignored) {
-            }
-        }
-        return null;
-    }
-
-    private static void setValue(Object option, Object value) {
-        for (Method m : option.getClass().getMethods()) {
-            if ((m.getName().equals("setValue") || m.getName().equals("set")) && m.getParameterCount() == 1) {
-                try {
-                    m.invoke(option, value);
-                    return;
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-    }
-
-    private static Object enumConst(Object sample, String name) {
-        Class<?> type = sample == null ? null : sample.getClass();
-        if (type == null || !type.isEnum()) {
-            return null;
-        }
-        for (Object e : type.getEnumConstants()) {
-            if (((Enum<?>) e).name().equalsIgnoreCase(name)) {
-                return e;
-            }
-        }
-        return null;
-    }
-
-    private static Double asDouble(Object v) {
-        return v instanceof Number n ? n.doubleValue() : null;
-    }
-
-    private static int intOption(GameOptions opt, String getter, int fallback) {
-        try {
-            Object v = getValue(option(opt, getter));
-            if (v instanceof Number n) {
-                return n.intValue();
-            }
-        } catch (Throwable ignored) {
-        }
-        return fallback;
-    }
-
-    private static void invoke(Object target, String name, Object... args) {
-        if (target == null) {
-            return;
-        }
-        for (Method m : target.getClass().getMethods()) {
-            if (!m.getName().equals(name) || m.getParameterCount() != args.length) {
-                continue;
-            }
-            try {
-                m.invoke(target, args);
-                return;
-            } catch (Throwable ignored) {
-            }
-        }
-    }
-
-    private static void invoke(Object target, String name, Class<?> type, Object arg) {
-        try {
-            target.getClass().getMethod(name, type).invoke(target, arg);
-        } catch (Throwable ignored) {
-        }
+        var item = mc.player.getActiveItem();
+        return item.isOf(Items.BOW) || item.isOf(Items.CROSSBOW) || item.isOf(Items.TRIDENT);
     }
 }

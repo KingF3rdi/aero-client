@@ -12,6 +12,33 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /** Blue "A" for Aero Client users and TierTagger ranks in the tab list. */
 @Mixin(value = PlayerListHud.class, priority = 2000)
 public class PlayerListHudMixin {
+    private static boolean aero$pingNumbers() {
+        var c = dev.aero.client.AeroClient.CONFIG;
+        return c != null && c.pingHud && c.pingTabNumbers;
+    }
+
+    /** Ping "Numbers in tab list" (like Better Ping Display): widen the ping column for the number. */
+    @org.spongepowered.asm.mixin.injection.ModifyConstant(method = "render", constant = @org.spongepowered.asm.mixin.injection.Constant(intValue = 13), require = 0)
+    private int aero$pingColumn(int original) {
+        return aero$pingNumbers() ? original + 18 : original;
+    }
+
+    @Inject(method = "renderLatencyIcon", at = @At("HEAD"), cancellable = true, require = 0)
+    private void aero$pingNumber(net.minecraft.client.gui.DrawContext context, int width, int x, int y, PlayerListEntry entry,
+                                 org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        if (!aero$pingNumbers()) {
+            return;
+        }
+        ci.cancel();
+        var c = dev.aero.client.AeroClient.CONFIG;
+        int ms = entry.getLatency();
+        String s = ms < 0 ? "?" : String.valueOf(ms);
+        int col = ms < 0 ? 0xFFAAAAAA : !c.pingColorByLatency ? 0xFFFFFFFF
+                : ms < c.pingWarnMs ? c.pingColGood : ms < c.pingBadMs ? c.pingColWarn : c.pingColBad;
+        var tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
+        context.drawText(tr, Text.literal(s), x + width - 1 - tr.getWidth(s), y, col | 0xFF000000, true);
+    }
+
     @Inject(method = "getPlayerName", at = @At("RETURN"), cancellable = true, require = 0)
     private void aero$badge(PlayerListEntry entry, CallbackInfoReturnable<Text> cir) {
         java.util.UUID id = entry.getProfile().id();

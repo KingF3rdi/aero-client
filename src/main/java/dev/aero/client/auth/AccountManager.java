@@ -72,15 +72,6 @@ public final class AccountManager {
         }
         try {
             MinecraftClient mc = MinecraftClient.getInstance();
-            Object session = sessionOf(mc);
-            if (session != null) {
-                for (String m : new String[]{"getUsername", "getName", "username"}) {
-                    try {
-                        return String.valueOf(session.getClass().getMethod(m).invoke(session));
-                    } catch (ReflectiveOperationException ignored) {
-                    }
-                }
-            }
             if (mc.getSession() != null) {
                 return mc.getSession().getUsername();
             }
@@ -159,27 +150,15 @@ public final class AccountManager {
     public static void applySession(SavedAccount logged) {
         MinecraftClient mc = MinecraftClient.getInstance();
         try {
-            Object session = createSession(logged);
-            if (session == null) {
-                status.set("Angemeldet als " + logged.name + " (Session-API nicht gesetzt, nach Relog gilt der Token)");
-                return;
-            }
-            boolean set = false;
-            for (Field field : MinecraftClient.class.getDeclaredFields()) {
-                if (Modifier.isStatic(field.getModifiers())) {
-                    continue;
-                }
-                String type = field.getType().getName();
-                if (type.endsWith("Session") || type.endsWith(".User")) {
-                    field.setAccessible(true);
-                    field.set(mc, session);
-                    set = true;
-                }
-                if (type.contains("CompletableFuture") && field.getName().toLowerCase().contains("gameprofile")) {
-                    field.setAccessible(true);
-                    field.set(mc, java.util.concurrent.CompletableFuture.completedFuture(null));
-                }
-            }
+            // Direct constructor + accessor: class and field names are intermediary in the released jar,
+            // so looking them up by name ("...Session") never matched and the switch silently did nothing.
+            var session = new net.minecraft.client.session.Session(logged.name, logged.uuid, logged.mcToken,
+                    Optional.ofNullable(logged.xuid), Optional.empty());
+            var acc = (dev.aero.client.mixin.MinecraftClientSessionAccessor) mc;
+            acc.aero$setSession(session);
+            acc.aero$setGameProfileFuture(java.util.concurrent.CompletableFuture.completedFuture(null));
+            boolean set = true;
+            dev.aero.client.social.Shards.reset();
             SkinPreview.requestOwn();
             try {
                 mc.getSkinProvider().fetchSkinTextures(mc.getGameProfile());
@@ -191,75 +170,6 @@ public final class AccountManager {
         } catch (Throwable t) {
             status.set("Account gespeichert: " + logged.name);
             SkinPreview.requestOwn();
-        }
-    }
-
-    private static Object createSession(SavedAccount logged) {
-        String[] classes = {
-                "net.minecraft.client.session.Session",
-                "net.minecraft.client.util.Session"
-        };
-        for (String name : classes) {
-            try {
-                Class<?> session = Class.forName(name);
-                Object type = msaType(session);
-                UUID uuid = logged.uuid;
-                java.util.Optional<String> xuid = Optional.ofNullable(logged.xuid);
-                java.util.Optional<String> empty = Optional.empty();
-                for (Constructor<?> ctor : session.getDeclaredConstructors()) {
-                    Class<?>[] p = ctor.getParameterTypes();
-                    ctor.setAccessible(true);
-                    try {
-                        if (p.length == 5 && p[0] == String.class && p[1] == UUID.class && p[2] == String.class) {
-                            if (p[3] == Optional.class) {
-                                return ctor.newInstance(logged.name, uuid, logged.mcToken, xuid, empty);
-                            }
-                            return ctor.newInstance(logged.name, uuid, logged.mcToken, empty, type);
-                        }
-                        if (p.length == 6 && p[0] == String.class && p[2] == String.class) {
-                            return ctor.newInstance(logged.name, uuid, logged.mcToken,
-                                    Optional.ofNullable(logged.xuid), Optional.empty(), type);
-                        }
-                        if (p.length == 4 && p[0] == String.class && p[1] == String.class) {
-                            return ctor.newInstance(logged.name, uuid.toString(), logged.mcToken, type);
-                        }
-                        if (p.length == 4 && p[0] == String.class) {
-                            return ctor.newInstance(logged.name, uuid, logged.mcToken, type);
-                        }
-                    } catch (ReflectiveOperationException ignored) {
-                    }
-                }
-            } catch (ClassNotFoundException ignored) {
-            }
-        }
-        return null;
-    }
-
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private static Object msaType(Class<?> session) {
-        for (Class<?> inner : session.getDeclaredClasses()) {
-            if (!inner.isEnum()) {
-                continue;
-            }
-            for (Object c : inner.getEnumConstants()) {
-                String n = ((Enum) c).name();
-                if (n.contains("MSA") || n.contains("MICROSOFT")) {
-                    return c;
-                }
-            }
-            Object[] all = inner.getEnumConstants();
-            if (all.length > 0) {
-                return all[0];
-            }
-        }
-        return null;
-    }
-
-    private static Object sessionOf(MinecraftClient mc) {
-        try {
-            return mc.getSession();
-        } catch (Throwable ignored) {
-            return null;
         }
     }
 

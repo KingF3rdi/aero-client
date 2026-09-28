@@ -22,6 +22,20 @@ public class ParticleManagerMixin {
         }
     }
 
+    /** Remember which particle type is being spawned, so the filters below can go by its registry id. */
+    @Inject(method = "addParticle(Lnet/minecraft/particle/ParticleEffect;DDDDDD)Lnet/minecraft/client/particle/Particle;", at = @At("HEAD"), require = 0)
+    private void aero$typeStart(net.minecraft.particle.ParticleEffect effect, double x, double y, double z,
+                                double vx, double vy, double vz, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Particle> cir) {
+        var id = net.minecraft.registry.Registries.PARTICLE_TYPE.getId(effect.getType());
+        dev.aero.client.Visuals.currentParticle = id == null ? "" : id.getPath();
+    }
+
+    @Inject(method = "addParticle(Lnet/minecraft/particle/ParticleEffect;DDDDDD)Lnet/minecraft/client/particle/Particle;", at = @At("RETURN"), require = 0)
+    private void aero$typeEnd(net.minecraft.particle.ParticleEffect effect, double x, double y, double z,
+                              double vx, double vy, double vz, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Particle> cir) {
+        dev.aero.client.Visuals.currentParticle = "";
+    }
+
     @Inject(method = "addParticle(Lnet/minecraft/client/particle/Particle;)V", at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$limit(Particle particle, CallbackInfo ci) {
         if (dev.aero.client.Visuals.skipParticle(particle)) {
