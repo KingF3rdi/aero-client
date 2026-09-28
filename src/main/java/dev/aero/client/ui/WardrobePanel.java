@@ -501,6 +501,9 @@ public final class WardrobePanel {
                     } else if (sel) {
                         status = "Equipped";
                         scol = UiDraw.accent();
+                    } else if (owned && Shards.shopMissing()) {
+                        status = "Free";
+                        scol = 0xFF16A34A;
                     } else if (owned) {
                         status = "Owned";
                         scol = 0xFF16A34A;

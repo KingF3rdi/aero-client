@@ -30,6 +30,8 @@ public final class CosmeticPreview {
             EntityRenderer<? super LivingEntity, ?> renderer = dispatcher.getRenderer(entity);
             EntityRenderState state = renderer.getAndUpdateRenderState(entity, 1.0F);
             state.light = 15728880;
+            state.displayName = null; // no own nametag floating over the wardrobe preview
+            state.nameLabelPos = null;
             state.outlineColor = 0;
             if (state instanceof LivingEntityRenderState living && living.baseScale > 0f) {
                 living.bodyYaw = yaw;

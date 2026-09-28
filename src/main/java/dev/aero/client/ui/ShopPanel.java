@@ -136,7 +136,9 @@ public final class ShopPanel {
     private void drawStore(DrawContext ctx, TextRenderer tr, int mx, int my, int x, int y, int w, int h) {
         Shards.Offer f = Shards.featured();
         if (f == null) {
-            ctx.drawText(tr, Text.literal(Shards.status.isEmpty() ? "Loading the store…" : Shards.status), x + 8, y + 8, MUTED, false);
+            String msg = Shards.shopMissing() ? "The store opens once the Aero server is updated. Until then every cape is free to wear."
+                    : Shards.status.isEmpty() ? "Loading the store…" : Shards.status;
+            ctx.drawText(tr, Text.literal(msg), x + 8, y + 8, MUTED, false);
             return;
         }
         float t = (System.currentTimeMillis() % 100000L) / 1000f;
@@ -272,7 +274,9 @@ public final class ShopPanel {
     private void drawRewards(DrawContext ctx, TextRenderer tr, int mx, int my, int x, int y, int w, int h) {
         JsonObject wlt = Shards.wallet();
         if (wlt == null) {
-            ctx.drawText(tr, Text.literal(Shards.status.isEmpty() ? "Connecting to the Aero server…" : Shards.status), x + 8, y + 8, MUTED, false);
+            String msg = Shards.shopMissing() ? "Rewards start once the Aero server is updated."
+                    : Shards.status.isEmpty() ? "Connecting to the Aero server…" : Shards.status;
+            ctx.drawText(tr, Text.literal(msg), x + 8, y + 8, MUTED, false);
             return;
         }
         int colW = (w - 16) / 3;

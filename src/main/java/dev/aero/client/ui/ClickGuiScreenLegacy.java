@@ -38,7 +38,7 @@ public class ClickGuiScreenLegacy extends Screen {
     private static final int PW = 620;
     private static final int PH = 350;
     private static final int TOP = 40;
-    private static final int ROW_H = 30;
+    private static final int ROW_H = 26;
     private static final int ANIM_MS = 200;
 
     private int SIDE_W = 150;
@@ -670,41 +670,35 @@ public class ClickGuiScreenLegacy extends Screen {
         if (open) {
             return;
         }
-        UiDraw.roundRect(context, x + 12, yy + 12, 24, 24, 12, UiDraw.withAlpha(col, 0x24));
-        drawCardIcon(context, c, x + 19, yy + 19, UiDraw.fa(col));
-        context.drawText(textRenderer, Text.literal(c.title()), x + 44, yy + 13, UiDraw.fa(TEXT), false);
+        UiDraw.roundRect(context, x + 12, yy + 12, 26, 26, 13, UiDraw.withAlpha(col, 0x22));
+        drawCardIcon(context, c, x + 20, yy + 20, UiDraw.fa(col));
+        context.drawText(textRenderer, Text.literal(c.title()), x + 46, yy + 14, UiDraw.fa(TEXT), false);
         String sub;
-        String preview = "";
+        float share = -1f;
         if (c.kind() == 0) {
             int total = 0;
             int on = 0;
-            StringBuilder names = new StringBuilder();
             for (Module m : AeroClient.MODULES.all) {
-                if (m.category != c.category()) {
-                    continue;
-                }
-                total++;
-                if (m.enabled()) {
-                    on++;
-                    if (names.length() < 80) {
-                        names.append(names.length() == 0 ? "" : " · ").append(m.name);
+                if (m.category == c.category()) {
+                    total++;
+                    if (m.enabled()) {
+                        on++;
                     }
                 }
             }
-            sub = total + " modules · " + on + " on";
-            preview = names.length() == 0 ? "Nothing enabled yet" : names.toString();
+            sub = on + " of " + total + " on";
+            share = total == 0 ? 0f : on / (float) total;
         } else if (c.kind() == 1) {
             sub = "Saved and public setups";
-            preview = "Switch or share your settings";
         } else {
             sub = "Move, hide and lock";
-            preview = "Drag every HUD element";
         }
-        context.drawText(textRenderer, Text.literal(fit(sub, w - 56)), x + 44, yy + 24, UiDraw.fa(MUTED), false);
-        if (h > 62) {
-            context.drawText(textRenderer, Text.literal(fit(preview, w - 24)), x + 12, yy + h - 18, UiDraw.fa(0xFF8A90A0), false);
+        context.drawText(textRenderer, Text.literal(fit(sub, w - 58)), x + 46, yy + 25, UiDraw.fa(MUTED), false);
+        if (share >= 0f && h > 54) {
+            int bw = w - 24;
+            UiDraw.roundRect(context, x + 12, yy + h - 14, bw, 3, 1, 0x10000000);
+            UiDraw.roundRect(context, x + 12, yy + h - 14, Math.max(3, Math.round(bw * share)), 3, 1, UiDraw.withAlpha(col, 0xB0));
         }
-        context.drawText(textRenderer, Text.literal("›"), x + w - 16, yy + 13, UiDraw.fa(hover ? col : 0xFFB0B6C2), false);
     }
 
     private static void drawCardIcon(DrawContext context, CardDef c, int x, int y, int col) {
@@ -792,18 +786,20 @@ public class ClickGuiScreenLegacy extends Screen {
                 } else if (h) {
                     UiDraw.roundRect(context, x + 2, y, w - 8, rh, 10, UiDraw.HOVER);
                 }
-                drawModIcon(context, module, x + 10, y + 8);
-                int nameMax = w - 80;
-                context.drawText(textRenderer, Text.literal(fit(module.name, nameMax)), x + 28, y + 4, TEXT, false);
-                String second;
+                drawModIcon(context, module, x + 10, y + 6);
                 int key = module.style().toggleKey;
+                int chipW = 0;
                 if (key >= 0) {
-                    second = "Key " + keyLabel(key);
-                } else {
-                    second = module.description;
+                    String kl = keyLabel(key);
+                    chipW = textRenderer.getWidth(kl) + 8;
+                    int kx = x + w - 50 - chipW;
+                    UiDraw.roundRect(context, kx, y + 5, chipW, 12, 4, 0x0E000000);
+                    context.drawText(textRenderer, Text.literal(kl), kx + 4, y + 7, MUTED, false);
+                    chipW += 6;
                 }
-                context.drawText(textRenderer, Text.literal(fit(second, nameMax)), x + 28, y + 14, MUTED, false);
-                drawSwitch(context, x + w - 42, y + 5, module.enabled());
+                context.drawText(textRenderer, Text.literal(fit(module.name, w - 84 - chipW)), x + 28, y + 7,
+                        module.enabled() ? TEXT : 0xFF3F4552, false);
+                drawSwitch(context, x + w - 42, y + 3, module.enabled());
                 y += ROW_H;
             }
         } finally {

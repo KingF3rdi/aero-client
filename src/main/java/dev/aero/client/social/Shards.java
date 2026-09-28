@@ -28,6 +28,8 @@ public final class Shards {
     private static volatile long walletAt;
     private static volatile long storeAt;
     private static volatile boolean busy;
+    /** The server answered but has no shop yet (older deploy): cosmetics stay free to wear until it does. */
+    private static volatile boolean shopMissing;
     /** Last result / error line for the Store and Rewards pages. */
     public static volatile String status = "";
 
@@ -36,6 +38,10 @@ public final class Shards {
     public record Offer(String id, String name, String rarity, int base, int price, int off) {}
 
     // ---- reads -------------------------------------------------------------------------------
+
+    public static boolean shopMissing() {
+        return shopMissing;
+    }
 
     public static boolean ready() {
         return wallet != null;
@@ -182,6 +188,10 @@ public final class Shards {
                         .timeout(Duration.ofSeconds(8)).GET().build(), HttpResponse.BodyHandlers.ofString());
                 if (s.statusCode() == 200) {
                     store = JsonParser.parseString(s.body()).getAsJsonObject();
+                    storeAt = System.currentTimeMillis();
+                    shopMissing = false;
+                } else if (s.statusCode() == 404) {
+                    shopMissing = true;
                     storeAt = System.currentTimeMillis();
                 }
                 if (token != null) {

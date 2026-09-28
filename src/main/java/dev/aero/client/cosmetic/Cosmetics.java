@@ -234,7 +234,8 @@ public final class Cosmetics {
             if (item.id.startsWith("rank_")) {
                 return item.id.equals("rank_" + Shards.rank());
             }
-            return Shards.owns("cape:" + item.id);
+            // Until the server has the shop, every cape is free to wear (nothing could be bought anyway).
+            return Shards.shopMissing() || Shards.owns("cape:" + item.id);
         }
         if (item.kind == Kind.BADGE) {
             return Shards.earnedBadge(item.id);
