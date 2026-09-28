@@ -48,10 +48,11 @@ public class ConflictScreen extends Screen {
             return;
         }
         shown = true;
-        if (AeroClient.CONFIG.conflictsIgnored || AeroClient.MODULES == null) {
+        // Normally the pre-launch window already asked before Minecraft started (not on macOS).
+        if (AeroClient.CONFIG.conflictsIgnored || ModConflicts.handledBeforeStart) {
             return;
         }
-        List<ModConflicts.Conflict> found = ModConflicts.find(AeroClient.MODULES.all);
+        List<ModConflicts.Conflict> found = ModConflicts.find();
         if (!found.isEmpty()) {
             mc.setScreen(new ConflictScreen(mc.currentScreen, found));
         }

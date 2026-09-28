@@ -8,6 +8,7 @@
   "icon": "assets/aero/icon.png",
   "environment": "client",
   "entrypoints": {
+    "preLaunch": ["dev.aero.client.AeroPreLaunch"],
     "client": ["dev.aero.client.AeroClient"]
   },
   "mixins": [
