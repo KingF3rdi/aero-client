@@ -193,7 +193,7 @@ public final class DevShot {
     private static int stage = -1;
     private static ClickGuiModern gui;
     private static final String[] NAMES = {"a_home", "b_card_pvp", "c_search", "d_wardrobe", "e_store", "f_rewards",
-            "g_badges", "h_friends", "i_profiles", "j_title"};
+            "g_badges", "h_friends", "i_profiles", "j_title", "k_conflicts"};
 
     private static void guiTick(MinecraftClient mc) {
         if (++ticks < 300) {
@@ -232,6 +232,15 @@ public final class DevShot {
             case 7 -> gui.debugTab(2, 0);
             case 8 -> mc.setScreen(new dev.aero.client.ui.ProfilesScreen(gui));
             case 9 -> mc.setScreen(new net.minecraft.client.gui.screen.TitleScreen());
+            case 10 -> {
+                java.nio.file.Path p = java.nio.file.Path.of("x.jar");
+                mc.setScreen(dev.aero.client.ui.ConflictScreen.preview(mc.currentScreen, java.util.List.of(
+                        new ModConflicts.Conflict("Marlow's Crystal Optimizer", "marlowcrystal", "Optimizer", p),
+                        new ModConflicts.Conflict("Anchor Optimizer", "anchoroptimizer", "Optimizer", p),
+                        new ModConflicts.Conflict("Shield Status", "shieldstatus", "Shield Tweaks", p),
+                        new ModConflicts.Conflict("TierTagger", "tier-tagger", "TierTagger", p),
+                        new ModConflicts.Conflict("AppleSkin", "appleskin", "Saturation Overlay", p))));
+            }
             default -> {
             }
         }

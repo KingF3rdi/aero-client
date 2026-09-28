@@ -16,7 +16,9 @@ import java.util.Map;
 public final class ModConflicts {
     /** Aero module name -> Fabric mod ids that duplicate it. Unknown ids are simply not loaded, so wrong guesses are harmless. */
     private static final Map<String, List<String>> TABLE = Map.ofEntries(
-            Map.entry("TierTagger", List.of("tiertagger", "mctiers", "pvptiers", "tiers")),
+            Map.entry("TierTagger", List.of("tiertagger", "tier-tagger", "mctiers", "pvptiers", "tiers")),
+            Map.entry("Optimizer", List.of("marlowcrystal", "anchoroptimizer", "client_side_anchors", "herosanchoroptimizer",
+                    "heroselytraoptimizer", "maceoptimizer", "pearloptimizer", "totemoptimizer", "shieldoptimizer", "crossbowoptimizer")),
             Map.entry("Motion Blur", List.of("motionblur", "motion_blur")),
             Map.entry("Zoom", List.of("zoomify", "ok_zoomer", "logical_zoom", "wi_zoom")),
             Map.entry("Toggle Sprint", List.of("togglesprint", "toggle-sprint", "toggle_sprint")),
@@ -37,12 +39,14 @@ public final class ModConflicts {
     /** A loaded mod that duplicates an Aero module. {@code removed} flips once its removal is scheduled. */
     public static final class Conflict {
         public final String name;
+        public final String id;
         public final String module;
         public final Path jar;
         public boolean removed;
 
-        Conflict(String name, String module, Path jar) {
+        public Conflict(String name, String id, String module, Path jar) {
             this.name = name;
+            this.id = id;
             this.module = module;
             this.jar = jar;
         }
@@ -74,7 +78,7 @@ public final class ModConflicts {
                 }
                 final Path found = jar;
                 if (found != null && out.stream().noneMatch(o -> o.jar.equals(found))) {
-                    out.add(new Conflict(mc.getMetadata().getName(), e.getKey(), found));
+                    out.add(new Conflict(mc.getMetadata().getName(), id, e.getKey(), found));
                 }
             }
         }
