@@ -102,6 +102,88 @@ public final class ModUpdater {
         });
     }
 
+    /** The newest release when it differs from the installed one. */
+    public record Release(String tag, String url, String stamp) {}
+
+    /**
+     * Pre-launch check (blocking, short timeouts so an offline start isn't delayed): the latest release when
+     * it isn't the installed one, else null. Null for dev builds, errors and "-Daero.noUpdate".
+     */
+    public static Release latestIfNewer() {
+        Path jar = jar();
+        if (jar == null || Boolean.getBoolean("aero.noUpdate")) {
+            return null;
+        }
+        try {
+            HttpClient quick = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS)
+                    .connectTimeout(Duration.ofSeconds(3)).build();
+            HttpRequest req = HttpRequest.newBuilder(URI.create(API)).timeout(Duration.ofSeconds(5))
+                    .header("User-Agent", "AeroClient-Mod").build();
+            JsonObject rel = JsonParser.parseString(quick.send(req, HttpResponse.BodyHandlers.ofString()).body()).getAsJsonObject();
+            for (var a : rel.getAsJsonArray("assets")) {
+                JsonObject o = a.getAsJsonObject();
+                if ("aero-client.jar".equals(o.get("name").getAsString())) {
+                    String stampNow = o.get("updated_at").getAsString();
+                    Path stampFile = jar.resolveSibling(".aero-client.version");
+                    String have = Files.isRegularFile(stampFile) ? Files.readString(stampFile).trim() : "";
+                    return have.equals(stampNow) ? null
+                            : new Release(rel.get("tag_name").getAsString(), o.get("browser_download_url").getAsString(), stampNow);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return null;
+    }
+
+    /**
+     * Pre-launch install: downloads the release (progress 0..1), writes the version stamp and puts the new jar
+     * in place right away (or when the game exits if Windows keeps the old one locked). True when installed.
+     */
+    public static boolean installBlocking(Release r, java.util.function.DoubleConsumer progress) {
+        Path jar = jar();
+        if (jar == null) {
+            return false;
+        }
+        try {
+            HttpResponse<java.io.InputStream> res = HTTP.send(HttpRequest.newBuilder(URI.create(COUNTED))
+                    .timeout(Duration.ofSeconds(60)).header("User-Agent", "AeroClient-Mod").build(),
+                    HttpResponse.BodyHandlers.ofInputStream());
+            if (res.statusCode() != 200) {
+                res = HTTP.send(HttpRequest.newBuilder(URI.create(r.url())).timeout(Duration.ofSeconds(60))
+                        .header("User-Agent", "AeroClient-Mod").build(), HttpResponse.BodyHandlers.ofInputStream());
+            }
+            long total = res.headers().firstValueAsLong("content-length").orElse(-1L);
+            java.io.ByteArrayOutputStream buf = new java.io.ByteArrayOutputStream();
+            try (java.io.InputStream in = res.body()) {
+                byte[] chunk = new byte[32768];
+                int n;
+                while ((n = in.read(chunk)) > 0) {
+                    buf.write(chunk, 0, n);
+                    if (total > 0) {
+                        progress.accept(Math.min(1.0, buf.size() / (double) total));
+                    }
+                }
+            }
+            byte[] data = buf.toByteArray();
+            // A real jar is a zip: at least 10 KB and starting with "PK".
+            if (res.statusCode() != 200 || data.length < 10_000 || data[0] != 'P' || data[1] != 'K') {
+                return false;
+            }
+            Path tmp = jar.resolveSibling(jar.getFileName() + ".new");
+            Files.write(tmp, data);
+            Files.writeString(jar.resolveSibling(".aero-client.version"), r.stamp());
+            if (!swapNow(tmp, jar)) {
+                scheduleSwap(tmp, jar);
+            }
+            stamp = r.stamp();
+            state = State.READY;
+            progress.accept(1.0);
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     /** Downloads the release jar next to the running one and schedules the swap for game exit. */
     public static void install() {
         Path jar = jar();

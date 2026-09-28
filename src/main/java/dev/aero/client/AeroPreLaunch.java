@@ -28,7 +28,9 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * Aero loader step: runs before Minecraft itself starts (Fabric preLaunch). When mods are installed that do
+ * Aero loader step: runs before Minecraft itself starts (Fabric preLaunch). First the auto-updater: when
+ * GitHub has a newer Aero release, a small window downloads and installs it before the game loads. Then, when
+ * mods are installed that do
  * the same job as an Aero module, a small window lists them (name + mod id) with Open mods folder, Quit
  * game, Play anyway and "Remove them & quit" - the game only continues once the player picked something.
  * Nothing here may touch Minecraft classes (they aren't loaded yet), so it's plain Swing + Fabric Loader.
@@ -39,9 +41,38 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
 
     @Override
     public void onPreLaunch() {
+        String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
+        if (os.contains("mac") || Boolean.getBoolean("aero.noPreLaunch")) {
+            return;
+        }
+        update();
+        checkConflicts();
+    }
+
+    /** Auto-update before start: nothing is shown when Aero is current, offline or a dev build. */
+    private static void update() {
         try {
-            String os = System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT);
-            if (os.contains("mac") || Boolean.getBoolean("aero.noPreLaunch") || conflictsIgnored()) {
+            if (!configFlag("autoUpdateBeforeStart", true)) {
+                return;
+            }
+            ModUpdater.Release release = ModUpdater.latestIfNewer();
+            if (release == null) {
+                return;
+            }
+            System.setProperty("java.awt.headless", "false");
+            if (java.awt.GraphicsEnvironment.isHeadless()) {
+                return;
+            }
+            if (showWindow(done -> new UpdateCard(release, done)) == Choice.QUIT) {
+                System.exit(0);
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void checkConflicts() {
+        try {
+            if (configFlag("conflictsIgnored", false)) {
                 return;
             }
             List<ModConflicts.Conflict> conflicts = ModConflicts.find();
@@ -53,7 +84,7 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
                 return;
             }
             ModConflicts.handledBeforeStart = true;
-            Choice choice = ask(conflicts);
+            Choice choice = showWindow(done -> new Card(conflicts, done));
             if (choice == Choice.REMOVE_QUIT) {
                 conflicts.forEach(ModConflicts::remove);
             }
@@ -66,21 +97,22 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
         }
     }
 
-    /** "Don't ask again" from the Aero config, read raw (the config class may touch game classes). */
-    private static boolean conflictsIgnored() {
+    /** A boolean from the Aero config, read raw (the config class may touch game classes). */
+    private static boolean configFlag(String key, boolean fallback) {
         try {
             Path cfg = FabricLoader.getInstance().getConfigDir().resolve("aero-client.json");
             if (!Files.isRegularFile(cfg)) {
-                return false;
+                return fallback;
             }
             JsonObject o = JsonParser.parseString(Files.readString(cfg)).getAsJsonObject();
-            return o.has("conflictsIgnored") && o.get("conflictsIgnored").getAsBoolean();
+            return o.has(key) ? o.get(key).getAsBoolean() : fallback;
         } catch (Throwable t) {
-            return false;
+            return fallback;
         }
     }
 
-    private static Choice ask(List<ModConflicts.Conflict> conflicts) throws Exception {
+    /** Shows a borderless Aero window and blocks until its content reports a choice. */
+    private static Choice showWindow(java.util.function.Function<java.util.function.Consumer<Choice>, JComponent> content) throws Exception {
         CountDownLatch done = new CountDownLatch(1);
         Choice[] result = {Choice.PLAY};
         SwingUtilities.invokeAndWait(() -> {
@@ -94,11 +126,11 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
                 }
             } catch (Throwable ignored) {
             }
-            Card card = new Card(conflicts, c -> {
+            JComponent card = content.apply(c -> SwingUtilities.invokeLater(() -> {
                 result[0] = c;
                 frame.dispose();
                 done.countDown();
-            });
+            }));
             frame.setContentPane(card);
             frame.pack();
             frame.setLocationRelativeTo(null);
@@ -304,6 +336,169 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
                 FontMetrics fm = g.getFontMetrics();
                 g.drawString(labels[i], r.x + (r.width - fm.stringWidth(labels[i])) / 2,
                         r.y + (r.height - fm.getHeight()) / 2 + fm.getAscent());
+            }
+            g.dispose();
+        }
+    }
+
+    /** Update window: download progress, then "Quit & restart" / "Play now". */
+    private static final class UpdateCard extends JComponent {
+        private static final int W = 420;
+        private static final int H = 150;
+        private static final Color BG = new Color(0xF6F8FC);
+        private static final Color LINE = new Color(0xE1E5EE);
+        private static final Color TEXT = new Color(0x161922);
+        private static final Color MUTED = new Color(0x6A7182);
+        private static final Color ACCENT = new Color(0x4F8EFF);
+
+        private final ModUpdater.Release release;
+        private final java.util.function.Consumer<Choice> onChoice;
+        private final Font title;
+        private final Font body;
+        private volatile double progress;
+        private volatile int phase; // 0 downloading, 1 done, 2 failed
+        private Rectangle hover;
+        private int dragX;
+        private int dragY;
+
+        UpdateCard(ModUpdater.Release release, java.util.function.Consumer<Choice> onChoice) {
+            this.release = release;
+            this.onChoice = onChoice;
+            String face = System.getProperty("os.name", "").toLowerCase().contains("win") ? "Segoe UI" : Font.SANS_SERIF;
+            title = new Font(face, Font.BOLD, 16);
+            body = new Font(face, Font.PLAIN, 13);
+            setOpaque(false);
+            setPreferredSize(new Dimension(W, H));
+            MouseAdapter m = new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    dragX = e.getX();
+                    dragY = e.getY();
+                }
+
+                @Override
+                public void mouseDragged(MouseEvent e) {
+                    SwingUtilities.getWindowAncestor(UpdateCard.this).setLocation(e.getXOnScreen() - dragX, e.getYOnScreen() - dragY);
+                }
+
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    Rectangle h = null;
+                    if (phase == 1) {
+                        for (Rectangle r : buttons()) {
+                            if (r.contains(e.getPoint())) {
+                                h = r;
+                            }
+                        }
+                    }
+                    if (!java.util.Objects.equals(h, hover)) {
+                        hover = h;
+                        setCursor(Cursor.getPredefinedCursor(h != null ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+                        repaint();
+                    }
+                }
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (phase != 1) {
+                        return;
+                    }
+                    Rectangle[] b = buttons();
+                    if (b[0].contains(e.getPoint())) {
+                        onChoice.accept(Choice.QUIT);
+                    } else if (b[1].contains(e.getPoint())) {
+                        onChoice.accept(Choice.PLAY);
+                    }
+                }
+            };
+            addMouseListener(m);
+            addMouseMotionListener(m);
+            Thread worker = new Thread(() -> {
+                boolean ok = ModUpdater.installBlocking(release, p -> {
+                    progress = p;
+                    repaint();
+                });
+                phase = ok ? 1 : 2;
+                repaint();
+                if (!ok) {
+                    try {
+                        Thread.sleep(1600);
+                    } catch (InterruptedException ignored) {
+                    }
+                    onChoice.accept(Choice.PLAY); // failed: just start with the current version
+                }
+            }, "aero-prelaunch-update");
+            worker.setDaemon(true);
+            worker.start();
+        }
+
+        private Rectangle[] buttons() {
+            int bw = (W - 40 - 8) / 2;
+            return new Rectangle[]{new Rectangle(20, H - 50, bw, 32), new Rectangle(20 + bw + 8, H - 50, bw, 32)};
+        }
+
+        @Override
+        protected void paintComponent(Graphics g0) {
+            Graphics2D g = (Graphics2D) g0.create();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            int w = getWidth();
+            int h = getHeight();
+            g.setColor(BG);
+            g.fill(new RoundRectangle2D.Float(0, 0, w - 1, h - 1, 22, 22));
+            g.setColor(LINE);
+            g.draw(new RoundRectangle2D.Float(0.5f, 0.5f, w - 2, h - 2, 22, 22));
+            g.setColor(new Color(79, 142, 255, 40));
+            g.fillOval(20, 20, 34, 34);
+            g.setColor(ACCENT);
+            g.setFont(new Font(title.getName(), Font.BOLD, 20));
+            FontMetrics fa = g.getFontMetrics();
+            g.drawString("A", 37 - fa.stringWidth("A") / 2, 44);
+
+            String head = phase == 1 ? "Aero Client updated to " + release.tag()
+                    : phase == 2 ? "Update failed" : "Updating Aero Client to " + release.tag();
+            String sub = phase == 1 ? "Restart the game to play the new version"
+                    : phase == 2 ? "Starting with your current version" : "Downloading before the game starts...";
+            g.setColor(TEXT);
+            g.setFont(title);
+            g.drawString(head, 66, 36);
+            g.setColor(MUTED);
+            g.setFont(body);
+            g.drawString(sub, 66, 54);
+
+            if (phase == 0) {
+                int bx = 20;
+                int by = H - 40;
+                int bw = W - 40;
+                g.setColor(new Color(0xE3E7EE));
+                g.fill(new RoundRectangle2D.Float(bx, by, bw, 8, 8, 8));
+                g.setColor(ACCENT);
+                g.fill(new RoundRectangle2D.Float(bx, by, Math.max(8, (float) (bw * progress)), 8, 8, 8));
+                g.setColor(MUTED);
+                String pct = Math.round(progress * 100) + " %";
+                g.drawString(pct, W - 20 - g.getFontMetrics().stringWidth(pct), by - 8);
+            } else if (phase == 1) {
+                String[] labels = {"Quit & restart", "Play now"};
+                Rectangle[] b = buttons();
+                for (int i = 0; i < 2; i++) {
+                    Rectangle r = b[i];
+                    boolean hv = r.equals(hover);
+                    RoundRectangle2D shape = new RoundRectangle2D.Float(r.x, r.y, r.width, r.height, r.height, r.height);
+                    if (i == 0) {
+                        g.setColor(hv ? ACCENT.darker() : ACCENT);
+                        g.fill(shape);
+                        g.setColor(Color.WHITE);
+                    } else {
+                        g.setColor(hv ? Color.WHITE : new Color(0xFBFCFE));
+                        g.fill(shape);
+                        g.setColor(LINE);
+                        g.draw(shape);
+                        g.setColor(TEXT);
+                    }
+                    FontMetrics fm = g.getFontMetrics();
+                    g.drawString(labels[i], r.x + (r.width - fm.stringWidth(labels[i])) / 2,
+                            r.y + (r.height - fm.getHeight()) / 2 + fm.getAscent());
+                }
             }
             g.dispose();
         }
