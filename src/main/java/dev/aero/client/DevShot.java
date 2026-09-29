@@ -101,7 +101,7 @@ public final class DevShot {
             var mc = MinecraftClient.getInstance();
             mc.options.getInactivityFpsLimit().setValue(net.minecraft.client.option.InactivityFpsLimit.MINIMIZED); // no AFK cap while benchmarking
             mc.setScreen(null);
-        }, 200));
+        }, Integer.getInteger("aero.benchWorldTicks", 200)));
         STEPS.add(new Step("bench_menu", () -> MinecraftClient.getInstance().setScreen(dev.aero.client.ui.Menus.clickGui(null, false)),
                 Integer.getInteger("aero.benchMenuTicks", 200)));
         STEPS.add(new Step("bench_world2", () -> MinecraftClient.getInstance().setScreen(null), 200));

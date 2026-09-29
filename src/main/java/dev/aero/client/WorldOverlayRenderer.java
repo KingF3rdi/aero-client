@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.RenderLayers;
 import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.VertexRendering;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -13,7 +12,6 @@ import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShapes;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -110,8 +108,7 @@ public final class WorldOverlayRenderer {
                         {-0.25, 0.0, -0.125, 0.0, 0.7, 0.125},  // legs
                         {0.0, 0.0, -0.125, 0.25, 0.7, 0.125}};
                 for (double[] q : parts) {
-                    VertexRendering.drawOutline(matrices, buffer, VoxelShapes.cuboid(new Box(q[0], q[1], q[2], q[3], q[4], q[5])),
-                            0, 0, 0, (alpha << 24) | rgb, 3f);
+                    boxLines(matrices.peek(), buffer, q[0], q[1], q[2], q[3], q[4], q[5], (alpha << 24) | rgb, 3f);
                 }
                 matrices.pop();
             } catch (Throwable ignored) {
@@ -127,9 +124,37 @@ public final class WorldOverlayRenderer {
             int alpha = (argb >>> 24) & 0xFF;
             int color = ((alpha == 0 ? 0xFF : alpha) << 24) | (argb & 0xFFFFFF);
             var buffer = consumers.getBuffer(RenderLayers.lines());
-            VertexRendering.drawOutline(matrices, buffer, VoxelShapes.cuboid(box), 0, 0, 0, color, 2.5f);
+            boxLines(matrices.peek(), buffer, box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, color, 2.5f);
         } catch (Throwable t) {
             
         }
+    }
+
+    /**
+     * The 12 edges of a box, the same vertices VertexRendering.drawOutline emits. drawOutline wants a
+     * VoxelShape, and VoxelShapes.cuboid with off-grid (world) coordinates builds a fresh shape per box
+     * per frame - that alone was the biggest cost Aero added to a frame with Hitboxes on.
+     */
+    private static void boxLines(MatrixStack.Entry e, net.minecraft.client.render.VertexConsumer b,
+                                 double x1, double y1, double z1, double x2, double y2, double z2, int color, float width) {
+        float a = (float) x1, bb = (float) y1, c = (float) z1, d = (float) x2, f = (float) y2, g = (float) z2;
+        line(e, b, a, bb, c, d, bb, c, 1, 0, 0, color, width);
+        line(e, b, a, bb, g, d, bb, g, 1, 0, 0, color, width);
+        line(e, b, a, f, c, d, f, c, 1, 0, 0, color, width);
+        line(e, b, a, f, g, d, f, g, 1, 0, 0, color, width);
+        line(e, b, a, bb, c, a, f, c, 0, 1, 0, color, width);
+        line(e, b, d, bb, c, d, f, c, 0, 1, 0, color, width);
+        line(e, b, a, bb, g, a, f, g, 0, 1, 0, color, width);
+        line(e, b, d, bb, g, d, f, g, 0, 1, 0, color, width);
+        line(e, b, a, bb, c, a, bb, g, 0, 0, 1, color, width);
+        line(e, b, d, bb, c, d, bb, g, 0, 0, 1, color, width);
+        line(e, b, a, f, c, a, f, g, 0, 0, 1, color, width);
+        line(e, b, d, f, c, d, f, g, 0, 0, 1, color, width);
+    }
+
+    private static void line(MatrixStack.Entry e, net.minecraft.client.render.VertexConsumer b, float x1, float y1, float z1,
+                             float x2, float y2, float z2, float nx, float ny, float nz, int color, float width) {
+        b.vertex(e, x1, y1, z1).color(color).normal(e, nx, ny, nz).lineWidth(width);
+        b.vertex(e, x2, y2, z2).color(color).normal(e, nx, ny, nz).lineWidth(width);
     }
 }

@@ -62,6 +62,74 @@ public final class UiDraw {
         }
     }
 
+    /**
+     * All corner shapes in one small texture: per radius r a 2r x 2r block (four mirrored quadrants),
+     * fill coverage in the top half, edge coverage in the bottom half. A corner is then ONE textured
+     * quad. Drawing it as per-pixel fill() calls meant thousands of GUI elements a frame, and since
+     * 1.21.6 every added element is intersection-tested against the ones before it (GuiRenderState),
+     * which took the menu from ~700 to ~11 FPS.
+     */
+    private static final net.minecraft.util.Identifier ATLAS = net.minecraft.util.Identifier.of("aero", "ui_corners");
+    private static final int ATLAS_W = MAX_R * (MAX_R + 1);
+    private static final int ATLAS_H = MAX_R * 4;
+    private static int atlasState; // 0 not built yet, 1 ready, -1 failed (per-pixel fallback)
+
+    private static boolean atlas() {
+        if (atlasState == 0) {
+            atlasState = -1;
+            try {
+                var img = new net.minecraft.client.texture.NativeImage(ATLAS_W, ATLAS_H, true);
+                for (int r = 1; r <= MAX_R; r++) {
+                    int ox = r * (r - 1);
+                    for (int py = 0; py < 2 * r; py++) {
+                        int iy = py < r ? py : 2 * r - 1 - py;
+                        for (int px = 0; px < 2 * r; px++) {
+                            int ix = px < r ? px : 2 * r - 1 - px;
+                            img.setColorArgb(ox + px, py, ((FILL_COV[r][iy * r + ix] & 0xFF) << 24) | 0xFFFFFF);
+                            img.setColorArgb(ox + px, 2 * MAX_R + py, ((EDGE_COV[r][iy * r + ix] & 0xFF) << 24) | 0xFFFFFF);
+                        }
+                    }
+                }
+                net.minecraft.client.MinecraftClient.getInstance().getTextureManager()
+                        .registerTexture(ATLAS, new net.minecraft.client.texture.NativeImageBackedTexture(() -> "aero ui corners", img));
+                atlasState = 1;
+            } catch (Throwable ignored) {
+            }
+        }
+        return atlasState == 1;
+    }
+
+    private static float[] cornerUv(int r, boolean edge) {
+        float ox = r * (r - 1);
+        float oy = edge ? 2 * MAX_R : 0;
+        return new float[]{ox / ATLAS_W, oy / ATLAS_H, (ox + 2 * r) / ATLAS_W, (oy + 2 * r) / ATLAS_H};
+    }
+
+    /** One GUI element for the whole shape (see RoundRectState); false = atlas missing, draw it piece by piece. */
+    private static boolean single(DrawContext c, int x, int y, int w, int h, int r, int color, boolean border) {
+        if (!atlas()) {
+            return false;
+        }
+        var tex = net.minecraft.client.MinecraftClient.getInstance().getTextureManager().getTexture(ATLAS);
+        float au = (MAX_R * (MAX_R - 1) + MAX_R - 0.5f) / ATLAS_W;
+        float av = (MAX_R - 0.5f) / ATLAS_H;
+        c.state.addSimpleElement(RoundRectState.of(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
+                net.minecraft.client.texture.TextureSetup.of(tex.getGlTextureView(), tex.getSampler()),
+                new org.joml.Matrix3x2f(c.getMatrices()), x, y, w, h, r, color, border, au, av,
+                border ? EDGE_UV[r] : FILL_UV[r], c.scissorStack.peekLast()));
+        return true;
+    }
+
+    private static final float[][] FILL_UV = new float[MAX_R + 1][];
+    private static final float[][] EDGE_UV = new float[MAX_R + 1][];
+
+    static {
+        for (int r = 1; r <= MAX_R; r++) {
+            FILL_UV[r] = cornerUv(r, false);
+            EDGE_UV[r] = cornerUv(r, true);
+        }
+    }
+
     private UiDraw() {}
 
     public static boolean menuOpen;
@@ -105,6 +173,12 @@ public final class UiDraw {
         if (r <= 0 || cov == null) {
             return;
         }
+        if (atlas()) {
+            int u = r * (r - 1) + (flipX ? r : 0);
+            int v = (cov == EDGE_COV[r] ? 2 * MAX_R : 0) + (flipY ? r : 0);
+            c.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, ATLAS, x, y, u, v, r, r, ATLAS_W, ATLAS_H, color);
+            return;
+        }
         for (int iy = 0; iy < r; iy++) {
             int row = iy * r;
             int ix = 0;
@@ -143,6 +217,9 @@ public final class UiDraw {
             c.fill(x, y, x + w, y + h, color);
             return;
         }
+        if (single(c, x, y, w, h, r, color, false)) {
+            return;
+        }
         c.fill(x + r, y, x + w - r, y + h, color);
         c.fill(x, y + r, x + r, y + h - r, color);
         c.fill(x + w - r, y + r, x + w, y + h - r, color);
@@ -164,6 +241,9 @@ public final class UiDraw {
             c.fill(x, y + h - 1, x + w, y + h, color);
             c.fill(x, y, x + 1, y + h, color);
             c.fill(x + w - 1, y, x + w, y + h, color);
+            return;
+        }
+        if (single(c, x, y, w, h, r, color, true)) {
             return;
         }
         c.fill(x + r, y, x + w - r, y + 1, color);

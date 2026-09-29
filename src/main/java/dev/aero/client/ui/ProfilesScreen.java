@@ -179,10 +179,6 @@ public class ProfilesScreen extends Screen {
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         s = scale();
-        try {
-            applyBlur(context);
-        } catch (Throwable ignored) {
-        }
         context.fill(0, 0, width, height, 0x40E8EDF5);
         int mx = (int) (mouseX / s);
         int my = (int) (mouseY / s);

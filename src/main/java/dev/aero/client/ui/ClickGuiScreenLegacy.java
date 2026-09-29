@@ -453,11 +453,7 @@ public class ClickGuiScreenLegacy extends Screen {
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
         UiDraw.menuOpen = true;
         try {
-            layoutPanel();
-            try {
-                applyBlur(context);
-            } catch (Throwable ignored) {
-            }
+            layoutPanel(); // the world blur comes from Screen.renderBackground; a second applyBlur throws every frame
             context.fillGradient(0, 0, width, height, 0x38F2F5FA, 0x5CDCE3EE);
             if (AeroClient.MODULES == null) {
                 return;
