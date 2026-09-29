@@ -224,6 +224,8 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
     // ---- blade and swept back around the vertical axis, so flapping is a real back-and-forth beat.
 
     private int side;
+    /** Per-wing depth step: bars that overlap in one plane z-fought (flickered) while the wing moved. */
+    private int zStep;
 
     /** Draws the wing styles that have their own silhouette; false for the classic feather styles. */
     private boolean shapedWings(int c, String id) {
@@ -239,8 +241,9 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             thrusters(c);
         }
         for (side = -1; side <= 1; side += 2) {
+            zStep = 0;
             float sweep = switch (id) {
-                case "butterfly" -> 10 + (0.5f + 0.5f * (float) Math.sin(t * 5.2)) * 40;
+                case "butterfly" -> 12 + (0.5f + 0.5f * (float) Math.sin(t * 3.2)) * 30;
                 case "bat" -> 20 + (float) Math.sin(t * 4.2) * (12 + speed * 10);
                 case "mech" -> 30 + beat * 3 + speed * 12;
                 case "crystal" -> 26 + beat * 4;
@@ -276,7 +279,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             return;
         }
         float ang = (float) Math.toDegrees(Math.atan2(y1 - y0, x1 - x0));
-        box((x0 + x1) / 2f, (y0 + y1) / 2f, 0, 0, 0, ang, 0, 0, 0, len + thick * 0.5f, thick, depth, col, lt);
+        box((x0 + x1) / 2f, (y0 + y1) / 2f, zStep++ * 0.04f, 0, 0, ang, 0, 0, 0, len + thick * 0.5f, thick, depth, col, lt);
     }
 
     /** Bat/dragon wing: arm to an elbow, fingers fanning out, scalloped membrane between the fingers. */
@@ -343,7 +346,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
     private void thrusters(int c) {
         for (int s = -1; s <= 1; s += 2) {
             box(s * 1.8f, 6f, 2.9f, 0, 0, 0, 0, 0, 0, 2f, 4f, 1.8f, 0xFF3A3F4A, light);
-            float len = 2f + (float) Math.abs(Math.sin(t * 17 + s)) * 1.6f + speed * 2f;
+            float len = 2f + (float) Math.abs(Math.sin(t * 6 + s)) * 1.2f + speed * 2f;
             box(s * 1.8f, 8f + len / 2f, 2.9f, 0, 0, 0, 0, 0, 0, 1.2f, len, 1.2f, CubeDraw.mix(c, 0xFFFFB040, 0.6f), FB);
             box(s * 1.8f, 8.3f, 2.9f, 0, 0, 0, 0, 0, 0, 1.5f, 0.8f, 1.5f, 0xFFFFF4D0, FB);
         }
@@ -358,7 +361,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             m.push();
             m.translate(side * (float) Math.sin(a) * d / 16f, (-(float) Math.cos(a) * d - bob) / 16f, 0);
             m.multiply(new Quaternionf().rotateZ(side * a).rotateY((float) Math.toRadians(45 + t * 40 + i * 20)));
-            int col = CubeDraw.mix(c, 0xFFFFFFFF, 0.3f + 0.3f * (0.5f + 0.5f * (float) Math.sin(t * 2.2 + i)));
+            int col = CubeDraw.mix(c, 0xFFFFFFFF, 0.3f + 0.15f * (0.5f + 0.5f * (float) Math.sin(t * 1.2 + i)));
             cubeHere(1.7f, len, 1.7f, col, FB);
             m.pop();
         }
@@ -368,7 +371,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
         int deep = CubeDraw.mix(0xFFD8321E, c, 0.45f);
         for (int i = 0; i < 7; i++) {
             float a = (float) Math.toRadians(10 + i * 14);
-            float len = 17 - i * 1.6f + (float) Math.sin(t * 9 + i * 1.9f) * 1.3f;
+            float len = 17 - i * 1.6f + (float) Math.sin(t * 3 + i * 1.9f) * 0.8f;
             float su = (float) Math.sin(a);
             float sv = (float) Math.cos(a);
             bar(0, 0, su * len * 0.62f, sv * len * 0.62f, 2.4f, 0.8f, i % 2 == 0 ? deep : CubeDraw.shade(deep, 1.15f), FB);

@@ -550,7 +550,7 @@ public class ClickGuiScreenLegacy extends Screen {
         int chipW = shardChipW();
         int chipX = x1 - 16 - 20 - 8 - chipW;
         boolean chipH = inside(mx, my, chipX, y0 + 10, chipW, 22);
-        UiDraw.roundRect(context, chipX, y0 + 10, chipW, 22, 11, chipH ? 0xFFFFFFFF : 0xB4FFFFFF);
+        UiDraw.roundRect(context, chipX, y0 + 10, chipW, 22, 11, chipH ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
         UiDraw.roundBorder(context, chipX, y0 + 10, chipW, 22, 11, 0x14000000);
         Shards.drawGem(context, chipX + 7, y0 + 15, 12);
         context.drawText(textRenderer, Text.literal(Shards.balanceLabel()), chipX + 22, y0 + 17, TEXT, false);
@@ -661,7 +661,7 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         int yy = hover ? y - 2 : y;
         UiDraw.roundRect(context, x + 1, yy + 3, w - 2, h, 14, hover ? 0x14000000 : 0x0A000000);
-        UiDraw.roundRect(context, x, yy, w, h, 14, open ? 0xE8FFFFFF : hover ? 0xFAFFFFFF : 0xC4FFFFFF);
+        UiDraw.roundRect(context, x, yy, w, h, 14, open ? 0xE8FFFFFF : hover ? 0xFAFFFFFF : UiDraw.surface(0xFFFFFF));
         UiDraw.roundBorder(context, x, yy, w, h, 14, hover ? UiDraw.withAlpha(col, 0x90) : 0x12000000);
         if (open) {
             return;

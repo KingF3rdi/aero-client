@@ -30,6 +30,13 @@ public final class UiDraw {
         return (a << 24) | (rgb & 0xFFFFFF);
     }
 
+    /** Idle background fill at the Menu background opacity (Interface Color); hover and selected states stay solid. */
+    public static int surface(int rgb) {
+        var c = dev.aero.client.AeroClient.CONFIG;
+        float o = c == null ? 0.5f : Math.max(0.1f, Math.min(1f, c.menuOpacity / 100f));
+        return withAlpha(rgb, Math.round(255 * o));
+    }
+
     public static int accent() {
         var c = dev.aero.client.AeroClient.CONFIG;
         return c == null ? 0xFF4F8EFF : (c.uiAccent | 0xFF000000);
@@ -307,7 +314,7 @@ public final class UiDraw {
         int r = Math.max(12, radius);
         shadow(c, x, y, w, h, r);
         // Frosted white body (the screen blurs the world behind it), cool tint pooling at the bottom.
-        roundRect(c, x, y, w, h, r, 0xDCF6F8FC);
+        roundRect(c, x, y, w, h, r, surface(0xF6F8FC));
         int in = (int) Math.ceil(r * 0.4);
         if (w > in * 2 + 4 && h > in * 2 + 4) {
             int mid = y + h / 2;
@@ -319,7 +326,7 @@ public final class UiDraw {
     }
 
     public static void innerCard(DrawContext c, int x, int y, int w, int h) {
-        roundRect(c, x, y, w, h, 14, 0x8CFFFFFF);
+        roundRect(c, x, y, w, h, 14, surface(0xFFFFFF));
         roundBorder(c, x, y, w, h, 14, 0x12000000);
     }
 

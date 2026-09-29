@@ -100,7 +100,8 @@ public final class Modules {
                 () -> true, v -> { })
                 .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v)
                 .setting("Style vanilla UI (hotbar, inventories, buttons)", () -> c.vanillaUi, v -> c.vanillaUi = v)
-                .setting("Smooth menu font", () -> c.smoothFont, v -> c.smoothFont = v));
+                .setting("Smooth menu font", () -> c.smoothFont, v -> c.smoothFont = v)
+                .settingF("Menu background opacity %", () -> (double) c.menuOpacity, v -> c.menuOpacity = (float) v, 10, 100));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
                 () -> c.fullbright, v -> c.fullbright = v)
                 .setting("Mode", () -> c.fullbrightMode, v -> c.fullbrightMode = v, "Gamma", "Night vision")

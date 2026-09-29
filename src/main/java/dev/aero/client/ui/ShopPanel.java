@@ -146,7 +146,7 @@ public final class ShopPanel {
         // Featured
         int fw = w * 40 / 100;
         boolean fh = in(mx, my, x, y, fw, h);
-        UiDraw.roundRect(ctx, x, y, fw, h, 16, fh ? 0xFFFFFFFF : 0xD0FFFFFF);
+        UiDraw.roundRect(ctx, x, y, fw, h, 16, fh ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
         UiDraw.roundBorder(ctx, x, y, fw, h, 16, UiDraw.withAlpha(rarityColor(f.rarity()), fh ? 0xAA : 0x55));
         ctx.fillGradient(x + 8, y + 6, x + fw - 8, y + h / 2, UiDraw.withAlpha(rarityColor(f.rarity()), 0x22), 0x00FFFFFF);
         ctx.drawText(tr, Text.literal("FEATURED THIS WEEK"), x + 12, y + 10, rarityColor(f.rarity()), false);
@@ -179,6 +179,10 @@ public final class ShopPanel {
             ry += 44;
         }
         ctx.drawText(tr, Text.literal("New"), rx + 4, ry + 4, TEXT, false);
+        int[] lb = linkButton(rx, rw, ry);
+        boolean lh = in(mx, my, lb[0], lb[1], lb[2], lb[3]);
+        UiDraw.roundRect(ctx, lb[0], lb[1], lb[2], lb[3], lb[3] / 2, lh ? UiDraw.accent() : UiDraw.withAlpha(UiDraw.accent(), 0x26));
+        ctx.drawText(tr, Text.literal(LINK_LABEL), lb[0] + (lb[2] - tr.getWidth(LINK_LABEL)) / 2, lb[1] + 3, lh ? 0xFFFFFFFF : UiDraw.accent(), false);
         ry += 16;
         List<Shards.Offer> newest = Shards.list("newest");
         int tiles = Math.max(1, newest.size());
@@ -188,7 +192,7 @@ public final class ShopPanel {
             Shards.Offer o = newest.get(i);
             int tx = rx + i * (tw + 6);
             boolean hv = in(mx, my, tx, ry, tw, th);
-            UiDraw.roundRect(ctx, tx, ry, tw, th, 10, hv ? 0xFFFFFFFF : 0xB4FFFFFF);
+            UiDraw.roundRect(ctx, tx, ry, tw, th, 10, hv ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
             UiDraw.roundBorder(ctx, tx, ry, tw, th, 10, hv ? UiDraw.withAlpha(rarityColor(o.rarity()), 0x99) : 0x10000000);
             Cosmetics.Item it = itemFor(o.id());
             if (it != null && th > 30) {
@@ -203,7 +207,7 @@ public final class ShopPanel {
 
     private void drawOfferRow(DrawContext ctx, TextRenderer tr, int mx, int my, Shards.Offer o, int x, int y, int w, int h, float t, boolean sale) {
         boolean hv = in(mx, my, x, y, w, h);
-        UiDraw.roundRect(ctx, x, y, w, h, 12, hv ? 0xFFFFFFFF : 0xB4FFFFFF);
+        UiDraw.roundRect(ctx, x, y, w, h, 12, hv ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
         UiDraw.roundBorder(ctx, x, y, w, h, 12, hv ? UiDraw.withAlpha(rarityColor(o.rarity()), 0x99) : 0x10000000);
         Cosmetics.Item it = itemFor(o.id());
         if (it != null) {
@@ -243,6 +247,11 @@ public final class ShopPanel {
             }
             ry += 44;
         }
+        int[] lb = linkButton(rx, rw, ry);
+        if (in(mx, my, lb[0], lb[1], lb[2], lb[3])) {
+            Shards.linkWebsite();
+            return true;
+        }
         ry += 16;
         List<Shards.Offer> newest = Shards.list("newest");
         int tiles = Math.max(1, newest.size());
@@ -254,6 +263,16 @@ public final class ShopPanel {
             }
         }
         return true;
+    }
+
+    private static final String LINK_LABEL = "Connect website ↗";
+
+    /**
+     * "Connect website": right end of the "New" row, opens the website store logged in to this account. Fixed width:
+     * clicks are handled outside the menu-font scope, where the label would measure differently.
+     */
+    private static int[] linkButton(int rx, int rw, int rowY) {
+        return new int[]{rx + rw - 110, rowY + 1, 110, 14};
     }
 
     private void buy(String catalogId) {
@@ -281,7 +300,7 @@ public final class ShopPanel {
         }
         int colW = (w - 16) / 3;
         // Streak
-        UiDraw.roundRect(ctx, x, y, colW, h, 14, 0xD0FFFFFF);
+        UiDraw.roundRect(ctx, x, y, colW, h, 14, UiDraw.surface(0xFFFFFF));
         UiDraw.roundBorder(ctx, x, y, colW, h, 14, 0x10000000);
         ctx.drawText(tr, Text.literal("Login streak"), x + 12, y + 10, TEXT, false);
         int streak = wlt.get("streak").getAsInt();
@@ -320,7 +339,7 @@ public final class ShopPanel {
 
         // Playtime + milestones
         int px = x + colW + 8;
-        UiDraw.roundRect(ctx, px, y, colW, h, 14, 0xD0FFFFFF);
+        UiDraw.roundRect(ctx, px, y, colW, h, 14, UiDraw.surface(0xFFFFFF));
         UiDraw.roundBorder(ctx, px, y, colW, h, 14, 0x10000000);
         ctx.drawText(tr, Text.literal("Playtime"), px + 12, y + 10, TEXT, false);
         long playMs = wlt.get("playMs").getAsLong();
@@ -361,7 +380,7 @@ public final class ShopPanel {
         // Ledger
         int lx = px + colW + 8;
         int lw = x + w - lx;
-        UiDraw.roundRect(ctx, lx, y, lw, h, 14, 0xD0FFFFFF);
+        UiDraw.roundRect(ctx, lx, y, lw, h, 14, UiDraw.surface(0xFFFFFF));
         UiDraw.roundBorder(ctx, lx, y, lw, h, 14, 0x10000000);
         ctx.drawText(tr, Text.literal("Where your shards went"), lx + 12, y + 10, TEXT, false);
         var ledger = wlt.getAsJsonArray("ledger");

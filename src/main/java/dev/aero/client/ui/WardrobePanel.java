@@ -454,7 +454,7 @@ public final class WardrobePanel {
                 boolean sel = eq.equals(item.id());
                 boolean owned = Cosmetics.owns(item);
                 boolean hover = in(mx, my, x, y, cwd, ch) && my >= gy && my < gy + gh && pendingBuy == null;
-                UiDraw.roundRect(ctx, x, y, cwd, ch, 12, sel ? UiDraw.withAlpha(UiDraw.accent(), 0x22) : hover ? 0xFFFFFFFF : 0xB4FFFFFF);
+                UiDraw.roundRect(ctx, x, y, cwd, ch, 12, sel ? UiDraw.withAlpha(UiDraw.accent(), 0x22) : hover ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
                 UiDraw.roundBorder(ctx, x, y, cwd, ch, 12, sel ? UiDraw.withAlpha(UiDraw.accent(), 0xAA)
                         : hover ? UiDraw.withAlpha(item.rarity().color, 0x99) : 0x10000000);
                 int vi = Cosmetics.variantIndex(kind, item.id());

@@ -244,6 +244,35 @@ public final class Shards {
         post("/api/store/buy", b.toString(), done, r -> r.get("price").getAsInt() == 0 ? "Unlocked for free" : "Bought for " + r.get("price").getAsInt() + " shards");
     }
 
+    /** Opens the website store logged in to this account (one-time code), so Shards can be spent there too. */
+    public static void linkWebsite() {
+        String token = AeroApi.authToken();
+        if (token == null) {
+            status = "Not connected to the Aero server yet";
+            return;
+        }
+        String base = AeroApi.base();
+        status = "Opening the store…";
+        Thread t = new Thread(() -> {
+            try {
+                HttpResponse<String> r = HTTP.send(HttpRequest.newBuilder(URI.create(base + "/api/link")).timeout(Duration.ofSeconds(8))
+                        .header("authorization", "Bearer " + token).POST(HttpRequest.BodyPublishers.noBody()).build(), HttpResponse.BodyHandlers.ofString());
+                if (r.statusCode() != 200) {
+                    status = error(r.body());
+                    return;
+                }
+                JsonObject res = JsonParser.parseString(r.body()).getAsJsonObject();
+                URI url = URI.create(res.get("url").getAsString());
+                status = "Store opened in your browser. On another device, enter code " + res.get("code").getAsString();
+                net.minecraft.client.MinecraftClient.getInstance().execute(() -> net.minecraft.util.Util.getOperatingSystem().open(url));
+            } catch (Exception e) {
+                status = "Aero server not reachable";
+            }
+        }, "aero-link-website");
+        t.setDaemon(true);
+        t.start();
+    }
+
     private static void post(String path, String body, Consumer<Boolean> done, java.util.function.Function<JsonObject, String> okText) {
         String token = AeroApi.authToken();
         if (token == null) {
