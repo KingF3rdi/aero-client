@@ -35,7 +35,7 @@ public abstract class VanillaSliderMixin {
         int hx = x + (int) Math.round((bw - 8) * Math.max(0, Math.min(1, value)));
         UiDraw.roundRect(context, hx, y + 1, 8, bh - 2, 4, w.active ? 0xFFF6F3FB : 0xFF7A748A);
         var tr = MinecraftClient.getInstance().textRenderer;
-        context.drawCenteredTextWithShadow(tr, w.getMessage(), x + bw / 2, y + (bh - 8) / 2, w.active ? 0xFFF6F3FB : 0xFF7A748A);
+        dev.aero.client.ui.UiFont.centered(context, tr, w.getMessage(), x + bw / 2, y + (bh - 8) / 2, w.active ? 0xFFF6F3FB : 0xFF7A748A);
         ci.cancel();
     }
 }

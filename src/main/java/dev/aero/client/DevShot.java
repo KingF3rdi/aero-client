@@ -33,7 +33,13 @@ public final class DevShot {
 
     public static void register() {
         if (System.getProperty("aero.world") != null) {
-            buildWorldSteps();
+            if (System.getProperty("aero.bench") != null) {
+                buildBenchSteps();
+            } else if (System.getProperty("aero.trails") != null) {
+                buildTrailSteps();
+            } else {
+                buildWorldSteps();
+            }
             ClientTickEvents.END_CLIENT_TICK.register(DevShot::worldTick);
         } else if (System.getProperty("aero.shot") != null) {
             ClientTickEvents.END_CLIENT_TICK.register(DevShot::guiTick);
@@ -65,6 +71,55 @@ public final class DevShot {
     }
 
     // ---- world mode -------------------------------------------------------------------------
+
+    private static boolean WALK;
+    private static double flyY;
+
+    /** -Daero.trails=1: walk forward in third person with each trail (and a few wings) equipped. */
+    private static void buildTrailSteps() {
+        String[] trails = {"rainbow", "steps", "helix", "sakura", "stars", "spark"};
+        String[] wings = {"phoenix", "mech", "crystal", "butterfly", "seraph", "neon"};
+        for (int i = 0; i < trails.length; i++) {
+            String tr = trails[i];
+            String wi = wings[i];
+            STEPS.add(new Step("trail_" + tr + "_" + wi, () -> {
+                var mc = MinecraftClient.getInstance();
+                WALK = true;
+                mc.options.hudHidden = true;
+                Cosmetics.equip(Cosmetics.Kind.CAPE, "none");
+                Cosmetics.equip(Cosmetics.Kind.PET, "none");
+                Cosmetics.equip(Cosmetics.Kind.TRAIL, tr);
+                Cosmetics.equip(Cosmetics.Kind.WINGS, wi);
+                mc.options.setPerspective(Perspective.THIRD_PERSON_BACK);
+            }, 50));
+        }
+    }
+
+    /** -Daero.bench=1: FPS in a world with no menu, then with the client menu open (logged to devshot.log). */
+    private static void buildBenchSteps() {
+        STEPS.add(new Step("bench_world", () -> {
+            var mc = MinecraftClient.getInstance();
+            mc.options.getInactivityFpsLimit().setValue(net.minecraft.client.option.InactivityFpsLimit.MINIMIZED); // no AFK cap while benchmarking
+            mc.setScreen(null);
+        }, 200));
+        STEPS.add(new Step("bench_menu", () -> MinecraftClient.getInstance().setScreen(dev.aero.client.ui.Menus.clickGui(null, false)),
+                Integer.getInteger("aero.benchMenuTicks", 200)));
+        STEPS.add(new Step("bench_world2", () -> MinecraftClient.getInstance().setScreen(null), 200));
+    }
+
+    private static void walk(MinecraftClient mc) {
+        var p = mc.player;
+        p.setYaw(-60f);
+        p.setPitch(20f);
+        double nx = p.getX() + Math.sin(Math.toRadians(60)) * 0.22;
+        double nz = p.getZ() + Math.cos(Math.toRadians(60)) * 0.22;
+        if (flyY == 0) { // above the trees, so the third-person camera never clips into leaves
+            flyY = mc.world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING, (int) Math.floor(nx), (int) Math.floor(nz)) + 14;
+        }
+        p.getAbilities().flying = true;
+        p.setVelocity(0, 0, 0);
+        p.setPosition(nx, flyY, nz);
+    }
 
     private static void buildWorldSteps() {
         STEPS.add(new Step("fp_default", () -> {
@@ -168,6 +223,9 @@ public final class DevShot {
             wait = STEPS.get(0).waitTicks();
             return;
         }
+        if (WALK && mc.player != null) {
+            walk(mc);
+        }
         if (HURT && mc.player != null) {
             mc.player.hurtTime = 8;
             mc.player.maxHurtTime = 10;
@@ -177,6 +235,9 @@ public final class DevShot {
         }
         Step cur = STEPS.get(index);
         log(mc, "shot " + cur.name() + " armorBegin=" + DamageTintState.armorBegin + " equipHits=" + DamageTintState.equipHits + " equipHurt=" + DamageTintState.equipHurtHits);
+        if (cur.name().startsWith("bench")) {
+            log(mc, "BENCH " + cur.name() + " fps=" + mc.getCurrentFps());
+        }
         shot(mc, cur.name());
         index++;
         if (index >= STEPS.size()) {
@@ -192,7 +253,8 @@ public final class DevShot {
 
     private static int stage = -1;
     private static ClickGuiModern gui;
-    private static final String[] NAMES = {"a_home", "b_card_pvp", "c_search", "d_wardrobe", "e_store", "f_rewards",
+    private static final String[] NAMES = {"a_home", "b_card_pvp", "c_search", "d_wardrobe", "d2_wings", "w_bat", "w_butterfly", "w_mech", "w_crystal",
+            "w_neon", "w_phoenix", "w_seraph", "w_phantom", "d3_trails", "e_store", "f_rewards",
             "g_badges", "h_friends", "i_profiles", "j_title", "k_conflicts"};
 
     private static void guiTick(MinecraftClient mc) {
@@ -222,17 +284,31 @@ public final class DevShot {
             mc.scheduleStop();
             return;
         }
-        switch (stage) {
-            case 1 -> gui.debugSelectByName("Totem Counter");
-            case 2 -> gui.debugSearch("totem");
-            case 3 -> gui.debugTab(1, 0);
-            case 4 -> gui.debugTab(1, 101);
-            case 5 -> gui.debugTab(1, 102);
-            case 6 -> gui.debugTab(1, 103);
-            case 7 -> gui.debugTab(2, 0);
-            case 8 -> mc.setScreen(new dev.aero.client.ui.ProfilesScreen(gui));
-            case 9 -> mc.setScreen(new net.minecraft.client.gui.screen.TitleScreen());
-            case 10 -> {
+        String step = NAMES[stage];
+        if (step.startsWith("w_")) {
+            Cosmetics.equip(Cosmetics.Kind.WINGS, step.substring(2));
+            gui.debugTab(1, 1);
+            return;
+        }
+        switch (step) {
+            case "b_card_pvp" -> gui.debugSelectByName("Totem Counter");
+            case "c_search" -> gui.debugSearch("totem");
+            case "d_wardrobe" -> gui.debugTab(1, 0);
+            case "d2_wings" -> {
+                Cosmetics.equip(Cosmetics.Kind.WINGS, System.getProperty("aero.wings", "dragon"));
+                gui.debugTab(1, 1);
+            }
+            case "d3_trails" -> {
+                Cosmetics.equip(Cosmetics.Kind.TRAIL, "rainbow");
+                gui.debugTab(1, 3);
+            }
+            case "e_store" -> gui.debugTab(1, 101);
+            case "f_rewards" -> gui.debugTab(1, 102);
+            case "g_badges" -> gui.debugTab(1, 103);
+            case "h_friends" -> gui.debugTab(2, 0);
+            case "i_profiles" -> mc.setScreen(new dev.aero.client.ui.ProfilesScreen(gui));
+            case "j_title" -> mc.setScreen(new net.minecraft.client.gui.screen.TitleScreen());
+            case "k_conflicts" -> {
                 java.nio.file.Path p = java.nio.file.Path.of("x.jar");
                 mc.setScreen(dev.aero.client.ui.ConflictScreen.preview(mc.currentScreen, java.util.List.of(
                         new ModConflicts.Conflict("Marlow's Crystal Optimizer", "marlowcrystal", "Optimizer", p),

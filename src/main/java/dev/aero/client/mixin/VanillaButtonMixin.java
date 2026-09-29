@@ -34,7 +34,7 @@ public abstract class VanillaButtonMixin {
         UiDraw.roundBorder(context, x, y, bw, bh, r, hover ? UiDraw.withAlpha(UiDraw.accent(), 0xCC) : 0x30FFFFFF);
         var tr = MinecraftClient.getInstance().textRenderer;
         int col = w.active ? 0xFFF6F3FB : 0xFF7A748A;
-        context.drawCenteredTextWithShadow(tr, w.getMessage(), x + bw / 2, y + (bh - 8) / 2, col);
+        dev.aero.client.ui.UiFont.centered(context, tr, w.getMessage(), x + bw / 2, y + (bh - 8) / 2, col);
         ci.cancel();
     }
 }

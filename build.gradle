@@ -55,4 +55,6 @@ dependencies {
 tasks.register("prodClient", net.fabricmc.loom.task.prod.ClientProductionRunTask) {
     mods.from(configurations.prodMods)
     mods.from(tasks.named("remapJar"))
+    runDir = layout.projectDirectory.dir("run-prod") // own folder: a dev client in run/ locks its world files
+    doNotTrackState("the run folder holds live game files")
 }

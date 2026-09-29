@@ -96,19 +96,128 @@ public final class CosmeticIcons {
         }
     }
 
+    /** Line of pixels from (x0,y0) to (x1,y1). */
+    private static void line(DrawContext c, float x0, float y0, float x1, float y1, int th, int col) {
+        float len = (float) Math.hypot(x1 - x0, y1 - y0);
+        for (float k = 0; k <= len; k += 1f) {
+            float f = len == 0 ? 0 : k / len;
+            px(c, x0 + (x1 - x0) * f - th / 2f, y0 + (y1 - y0) * f - th / 2f, th, col);
+        }
+    }
+
+    /** Filled ellipse, darker toward the rim. */
+    private static void ellipse(DrawContext c, float cx, float cy, float rx, float ry, int col, int edge) {
+        for (int y = (int) -ry; y <= ry; y++) {
+            float hw = rx * (float) Math.sqrt(Math.max(0, 1 - (y / ry) * (y / ry)));
+            float f = Math.abs(y) / ry;
+            c.fill(Math.round(cx - hw), Math.round(cy + y), Math.round(cx + hw), Math.round(cy + y + 1), CubeDraw.mix(col, edge, f * f * 0.8f));
+        }
+    }
+
+    private static final float[][] NEON = {{0, 2}, {5, 8}, {12, 11}, {19, 10}, {21, 6}, {17, 3}, {20, -1}, {15, -3},
+            {16, -7}, {10, -6}, {6, -8}, {3, -4}, {0, -2}};
+
     private static void wings(DrawContext c, String id, int col, int cx, int cy, float t) {
         float flap = (float) Math.sin(t * 2.4) * 5f;
         int ox = cx;
         int oy = cy + 6;
         for (int s = -1; s <= 1; s += 2) {
             switch (id) {
-                case "dragon" -> {
-                    for (int i = 0; i < 9; i++) {
-                        float th = s * (14 + i * 9.5f + flap);
-                        ray(c, ox + s * 3, oy, th, 13 + (float) Math.sin(i * 0.55) * 6, 2, CubeDraw.shade(col, i % 2 == 0 ? 1f : 0.8f));
+                case "dragon", "bat" -> {
+                    float k = "bat".equals(id) ? 0.8f : 1.1f;
+                    float ex = ox + s * 6 * k;
+                    float ey = oy - 8 * k + flap * 0.4f;
+                    int bone = CubeDraw.shade(col, 0.5f);
+                    for (int i = 0; i <= 16; i++) {
+                        float a = (float) Math.toRadians(25 + i * 8);
+                        float len = (15 - 3 * (float) Math.abs(Math.sin(i * Math.PI / 4))) * k;
+                        line(c, ex, ey, ex + s * (float) Math.sin(a) * len, ey - (float) Math.cos(a) * len, 2, i % 8 < 4 ? col : CubeDraw.shade(col, 0.88f));
                     }
-                    for (int i = 0; i < 3; i++) {
-                        ray(c, ox + s * 3, oy, s * (20 + i * 32 + flap), 22 - i * 2, 2, 0xFF4A2A22);
+                    for (int i = 0; i <= 4; i++) {
+                        float a = (float) Math.toRadians(25 + i * 32);
+                        line(c, ex, ey, ex + s * (float) Math.sin(a) * 16 * k, ey - (float) Math.cos(a) * 16 * k, 1, bone);
+                    }
+                    line(c, ox + s * 2, oy, ex, ey, 2, bone);
+                }
+                case "butterfly" -> {
+                    float open = 0.7f + 0.3f * (float) Math.sin(t * 5.2);
+                    int edge = CubeDraw.shade(col, 0.35f);
+                    ellipse(c, ox + s * 12 * open, oy - 8, 10 * open, 9, col, edge);
+                    ellipse(c, ox + s * 9 * open, oy + 6, 6 * open, 7, CubeDraw.shade(col, 0.85f), edge);
+                    px(c, ox + s * 17 * open - 1, oy - 12, 3, 0xFFFFFFFF);
+                }
+                case "mech" -> {
+                    float[][] p = {{50, 17, 4}, {82, 20, 4}, {112, 15, 3}};
+                    for (int i = 0; i < p.length; i++) {
+                        ray(c, ox + s * 3 - 1, oy, s * (p[i][0] + flap * 0.3f), p[i][1], (int) p[i][2], i % 2 == 0 ? 0xFF4A505C : 0xFF626A78);
+                        ray(c, ox + s * 3, oy + 1, s * (p[i][0] + flap * 0.3f), p[i][1] - 3, 1, col);
+                    }
+                    c.fill(ox - 4, oy + 4, ox - 1, oy + 9, 0xFF3A3F4A);
+                    c.fill(ox + 1, oy + 4, ox + 4, oy + 9, 0xFF3A3F4A);
+                    int fl = 3 + (int) (Math.abs(Math.sin(t * 17)) * 3);
+                    c.fill(ox - 3, oy + 9, ox - 2, oy + 9 + fl, 0xFFFFB040);
+                    c.fill(ox + 2, oy + 9, ox + 3, oy + 9 + fl, 0xFFFFB040);
+                }
+                case "crystal" -> {
+                    for (int i = 0; i < 6; i++) {
+                        double a = Math.toRadians(18 + i * 23);
+                        float d = 12 + (i % 2) * 4;
+                        float bx = ox + s * (float) Math.sin(a) * d;
+                        float by = oy - 4 - (float) Math.cos(a) * d + (float) Math.sin(t * 2 + i) * 1.2f;
+                        int cc = CubeDraw.mix(col, 0xFFFFFFFF, 0.15f + 0.25f * (0.5f + 0.5f * (float) Math.sin(t * 2.2 + i)));
+                        for (int r = -4; r <= 4; r++) {
+                            int hw = (4 - Math.abs(r)) / 2;
+                            c.fill(Math.round(bx) - hw, Math.round(by) + r, Math.round(bx) + hw + 1, Math.round(by) + r + 1, cc);
+                        }
+                    }
+                }
+                case "phoenix" -> {
+                    for (int i = 0; i < 7; i++) {
+                        float a = (float) Math.toRadians(10 + i * 14 + flap);
+                        float len = 21 - i * 1.8f + (float) Math.sin(t * 9 + i * 1.9f) * 1.5f;
+                        float sx = s * (float) Math.sin(a);
+                        float sy = -(float) Math.cos(a);
+                        line(c, ox + s * 3, oy, ox + s * 3 + sx * len * 0.62f, oy + sy * len * 0.62f, 3, CubeDraw.mix(0xFFD8321E, col, 0.45f));
+                        line(c, ox + s * 3 + sx * len * 0.58f, oy + sy * len * 0.58f, ox + s * 3 + sx * len, oy + sy * len, 2, 0xFFFFC84A);
+                    }
+                }
+                case "seraph" -> {
+                    float[][] fans = {{-4, 32, 4, 12, -5}, {58, 98, 5, 15, 0}, {118, 160, 4, 11, 5}};
+                    for (float[] f : fans) {
+                        for (int i = 0; i < f[2]; i++) {
+                            float a = (float) Math.toRadians(f[0] + (f[1] - f[0]) * i / (f[2] - 1) + flap * 0.5f);
+                            float bx = ox + s * 3;
+                            float by = oy + f[4];
+                            float ex = bx + s * (float) Math.sin(a) * f[3];
+                            float ey = by - (float) Math.cos(a) * f[3];
+                            line(c, bx, by, ex, ey, 2, col);
+                            px(c, ex - 1, ey - 1, 2, 0xFFFFD86B);
+                        }
+                    }
+                }
+                case "neon" -> {
+                    for (int i = 0; i < NEON.length - 1; i++) {
+                        int hue = java.awt.Color.HSBtoRGB((float) ((t * 0.25 + i * 0.06) % 1.0), 0.75f, 1f);
+                        line(c, ox + s * (2 + NEON[i][0] * 1.1f), oy - NEON[i][1] * 1.1f,
+                                ox + s * (2 + NEON[i + 1][0] * 1.1f), oy - NEON[i + 1][1] * 1.1f, 1, CubeDraw.mix(col, hue, 0.55f));
+                    }
+                }
+                case "phantom" -> {
+                    for (int k = 0; k < 5; k++) {
+                        float x = ox + s * 3;
+                        float y = oy - k;
+                        float a = 35 + k * 19 + flap;
+                        float[] seg = {7, 6, 5};
+                        for (int j = 0; j < 3; j++) {
+                            a += (float) Math.sin(t * 3 + k * 0.8f + j * 1.2f) * 9f * j;
+                            float r = (float) Math.toRadians(a);
+                            float nx = x + s * (float) Math.sin(r) * seg[j];
+                            float ny = y - (float) Math.cos(r) * seg[j];
+                            line(c, x, y, nx, ny, 3 - j, CubeDraw.shade(col, 0.95f - j * 0.17f));
+                            x = nx;
+                            y = ny;
+                        }
+                        px(c, x - 1, y - 1, 2, 0xFF7FE8FF);
                     }
                 }
                 case "fairy" -> {
@@ -190,6 +299,40 @@ public final class CosmeticIcons {
     }
 
     static void trail(DrawContext c, String id, int col, int x, int cy, int w, float t) {
+        switch (id) {
+            case "steps" -> {
+                for (int k = 0; k < 6; k++) {
+                    float f = ((k + t * 1.2f) % 6) / 6f;
+                    int fx = Math.round(x + w - 14 - f * (w - 28));
+                    int fy = cy + (k % 2 == 0 ? -4 : 2);
+                    c.fill(fx, fy, fx + 5, fy + 3, alpha(col, 1f - f));
+                }
+                return;
+            }
+            case "stars" -> {
+                for (int k = 0; k < 7; k++) {
+                    float fx = x + 10 + ((k * 37) % Math.max(1, w - 20));
+                    float fy = cy - 10 + (k * 13) % 20;
+                    int r = 1 + Math.round(1.5f * (0.5f + 0.5f * (float) Math.sin(t * 6 + k * 2.1f)));
+                    int cc = k % 3 == 0 ? 0xFFFFFFFF : col;
+                    c.fill(Math.round(fx) - r, Math.round(fy), Math.round(fx) + r + 1, Math.round(fy) + 1, cc);
+                    c.fill(Math.round(fx), Math.round(fy) - r, Math.round(fx) + 1, Math.round(fy) + r + 1, cc);
+                }
+                return;
+            }
+            case "sakura" -> {
+                for (int k = 0; k < 8; k++) {
+                    float f = ((t * 0.35f + k * 0.125f) % 1f);
+                    float fx = x + 12 + ((k * 29) % Math.max(1, w - 24)) + (float) Math.sin(t * 2.5 + k) * 4;
+                    float fy = cy - 14 + f * 28;
+                    int cc = alpha(k % 2 == 0 ? col : CubeDraw.mix(col, 0xFFFFFFFF, 0.45f), 1f - f * 0.7f);
+                    c.fill(Math.round(fx), Math.round(fy), Math.round(fx) + 3, Math.round(fy) + 2, cc);
+                }
+                return;
+            }
+            default -> {
+            }
+        }
         int n = 26;
         for (int i = 0; i < n; i++) {
             float f = i / (float) n;
@@ -204,6 +347,16 @@ public final class CosmeticIcons {
                 case "magma" -> px(c, px, cy + f * 9 + wave * 0.4f, size + 1, alpha(CubeDraw.shade(col, 0.7f + (i % 4) * 0.2f), a));
                 case "spirit" -> px(c, px, cy + wave * 1.6f - f * 6, size + 1, alpha(col, a * 0.8f));
                 case "plasma" -> px(c, px, cy + wave * 1.4f, size, cc);
+                case "rainbow" -> {
+                    for (int b = 0; b < 4; b++) {
+                        px(c, px, cy - 4 + b * 2, 2, alpha(java.awt.Color.HSBtoRGB((f + b * 0.13f + t * 0.2f) % 1f, 0.7f, 1f), a));
+                    }
+                }
+                case "helix" -> {
+                    float h = (float) Math.sin(f * 14 + t * 4) * 5;
+                    px(c, px, cy + h, size, cc);
+                    px(c, px, cy - h, size, alpha(CubeDraw.mix(col, 0xFFFFFFFF, 0.45f), a));
+                }
                 default -> px(c, px, cy + wave * 0.8f, size, cc);
             }
         }

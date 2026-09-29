@@ -17,8 +17,7 @@ import net.minecraft.util.ActionResult;
 public final class CosmeticEffects {
     private CosmeticEffects() {}
 
-    private static double lastX, lastZ;
-    private static boolean havePos;
+    private static final java.util.Map<Integer, FxWorld.Walker> WALKERS = new java.util.HashMap<>();
     private static Entity lastAttacked;
     private static long lastAttackedAt;
 
@@ -45,21 +44,45 @@ public final class CosmeticEffects {
         try {
             ClientPlayerEntity player = client.player;
             if (player == null || client.world == null) {
-                havePos = false;
+                WALKERS.clear();
                 return;
             }
-            double dx = player.getX() - lastX;
-            double dz = player.getZ() - lastZ;
-            double moved = havePos ? Math.sqrt(dx * dx + dz * dz) : 0;
-            lastX = player.getX();
-            lastZ = player.getZ();
-            havePos = true;
-            if (moved < 0.02) {
-                return;
+            if (WALKERS.size() > 128) {
+                WALKERS.clear();
             }
-            String id = Cosmetics.equipped(Cosmetics.Kind.TRAIL);
-            if (!"none".equals(id)) {
-                FxWorld.trail(id, Cosmetics.equippedColor(Cosmetics.Kind.TRAIL), player.getX(), player.getY(), player.getZ());
+            boolean others = AeroClient.CONFIG == null || AeroClient.CONFIG.showOthersCosmetics;
+            for (var p : client.world.getPlayers()) {
+                String id;
+                int color;
+                if (p == player) {
+                    id = Cosmetics.equipped(Cosmetics.Kind.TRAIL);
+                    color = Cosmetics.equippedColor(Cosmetics.Kind.TRAIL);
+                } else {
+                    // Other Aero players' trails, only nearby ones.
+                    if (!others || p.squaredDistanceTo(player) > 48 * 48 || !dev.aero.client.social.ClientUsers.hasCosmetics(p.getUuid())) {
+                        continue;
+                    }
+                    id = dev.aero.client.social.ClientUsers.cosmeticOf(p.getUuid(), "trail");
+                    Cosmetics.Item item = Cosmetics.named(Cosmetics.Kind.TRAIL, id);
+                    if (item == null) {
+                        continue;
+                    }
+                    color = item.color();
+                }
+                if ("none".equals(id) || p.isInvisible() || p.isSpectator()) {
+                    continue;
+                }
+                FxWorld.Walker w = WALKERS.computeIfAbsent(p.getId(), k -> new FxWorld.Walker());
+                double dx = p.getX() - w.x;
+                double dz = p.getZ() - w.z;
+                boolean had = w.have;
+                w.x = p.getX();
+                w.z = p.getZ();
+                w.have = true;
+                double moved = Math.sqrt(dx * dx + dz * dz);
+                if (had && moved >= 0.02 && moved < 4) { // not standing still, not a teleport
+                    FxWorld.trail(id, color, w, p.getX(), p.getY(), p.getZ(), dx, dz);
+                }
             }
         } catch (Throwable ignored) {
         }

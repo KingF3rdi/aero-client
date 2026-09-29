@@ -82,28 +82,40 @@ public final class Cosmetics {
         cape("rank_staff", "Staff Aura", 0xFF3B82F6, Rarity.LEGENDARY, 2);
         cape("rank_media", "Media Aura", 0xFFEC4899, Rarity.LEGENDARY, 2);
         cape("rank_partner", "Partner Aura", 0xFF10B981, Rarity.LEGENDARY, 2);
-        wings("none", "None", 0xFF2A2A32);
-        wings("angel", "Angel", 0xFFF6F2FC);
-        wings("dragon", "Dragon", 0xFFB03828);
-        wings("fairy", "Fairy", 0xFFFF9BD0);
-        wings("aurora", "Aurora", 0xFF4FC8D8);
-        wings("aegis", "Aegis", 0xFFB8BCC8);
-        wings("phantom", "Phantom", 0xFF5A6A9A);
-        wings("feather", "Feather", 0xFFE8E0D0);
+        wings("none", "None", 0xFF2A2A32, Rarity.COMMON, 0);
+        wings("feather", "Feather", 0xFFE8E0D0, Rarity.COMMON, 2);
+        wings("angel", "Angel", 0xFFF6F2FC, Rarity.UNCOMMON, 2);
+        wings("fairy", "Fairy", 0xFFFF9BD0, Rarity.UNCOMMON, 2);
+        wings("aurora", "Aurora", 0xFF4FC8D8, Rarity.RARE, 2);
+        wings("aegis", "Aegis", 0xFFB8BCC8, Rarity.RARE, 2);
+        wings("bat", "Bat", 0xFF3A2E40, Rarity.COMMON, 3);
+        wings("butterfly", "Butterfly", 0xFF4FA8FF, Rarity.UNCOMMON, 3);
+        wings("phantom", "Phantom", 0xFF5A6A9A, Rarity.RARE, 3);
+        wings("mech", "Mech", 0xFF4FE8FF, Rarity.RARE, 3);
+        wings("crystal", "Crystal", 0xFF9FD8F5, Rarity.RARE, 3);
+        wings("neon", "Neon", 0xFFB060FF, Rarity.RARE, 3);
+        wings("dragon", "Dragon", 0xFFB03828, Rarity.LEGENDARY, 3);
+        wings("phoenix", "Phoenix", 0xFFFF7A2A, Rarity.LEGENDARY, 3);
+        wings("seraph", "Seraph", 0xFFF8F6FF, Rarity.LEGENDARY, 3);
         head("none", "None", 0xFF2A2A32);
         head("halo", "Halo", 0xFFFFD86B);
         head("horns", "Horns", 0xFFB04050);
         head("crown", "Crown", 0xFFFFC94D);
         head("cat", "Cat ears", 0xFFD8A070);
-        trail("none", "None", 0xFF2A2A32);
-        trail("spark", "Spark", 0xFF4F8EFF);
-        trail("heart", "Heart", 0xFFFF7BAA);
-        trail("snow", "Snow", 0xFFE8F0F8);
-        trail("void", "Void", 0xFF9B5BFF);
-        trail("gold", "Gold", 0xFFFFC94D);
-        trail("magma", "Magma", 0xFFFF6A2A);
-        trail("plasma", "Plasma", 0xFFD060FF);
-        trail("spirit", "Spirit", 0xFFB8E8F0);
+        trail("none", "None", 0xFF2A2A32, Rarity.COMMON, 0);
+        trail("spark", "Spark", 0xFF4F8EFF, Rarity.COMMON, 2);
+        trail("heart", "Heart", 0xFFFF7BAA, Rarity.COMMON, 2);
+        trail("snow", "Snow", 0xFFE8F0F8, Rarity.COMMON, 2);
+        trail("gold", "Gold", 0xFFFFC94D, Rarity.UNCOMMON, 2);
+        trail("magma", "Magma", 0xFFFF6A2A, Rarity.UNCOMMON, 2);
+        trail("void", "Void", 0xFF9B5BFF, Rarity.RARE, 2);
+        trail("plasma", "Plasma", 0xFFD060FF, Rarity.RARE, 2);
+        trail("spirit", "Spirit", 0xFFB8E8F0, Rarity.RARE, 2);
+        trail("steps", "Footsteps", 0xFF8CE0FF, Rarity.COMMON, 3);
+        trail("sakura", "Sakura", 0xFFF9A8D4, Rarity.UNCOMMON, 3);
+        trail("helix", "Helix", 0xFF4F8EFF, Rarity.RARE, 3);
+        trail("stars", "Stars", 0xFFFFE08A, Rarity.RARE, 3);
+        trail("rainbow", "Rainbow", 0xFFFF6B9B, Rarity.LEGENDARY, 3);
         pet("none", "None", 0xFF2A2A32);
         pet("axolotl", "Axolotl", 0xFFF4A0B8);
         pet("bee", "Bee", 0xFFFFD040);
@@ -142,9 +154,9 @@ public final class Cosmetics {
 
     private Cosmetics() {}
 
-    /** Wings, trails, kill and mace effects are locked for now: shown, but not equippable. */
+    /** Kill and mace effects are locked for now: shown, but not equippable. */
     public static boolean locked(Kind kind) {
-        return kind == Kind.WINGS || kind == Kind.TRAIL || kind == Kind.KILL_EFFECT || kind == Kind.MACE;
+        return kind == Kind.KILL_EFFECT || kind == Kind.MACE;
     }
 
     public static List<Item> of(Kind kind, String query) {
@@ -422,9 +434,9 @@ public final class Cosmetics {
     }
 
     private static void cape(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.CAPE, color, rarity, added)); }
-    private static void wings(String id, String name, int color) { ALL.add(new Item(id, name, Kind.WINGS, color)); }
+    private static void wings(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.WINGS, color, rarity, added)); }
     private static void head(String id, String name, int color) { ALL.add(new Item(id, name, Kind.HEAD, color)); }
-    private static void trail(String id, String name, int color) { ALL.add(new Item(id, name, Kind.TRAIL, color)); }
+    private static void trail(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.TRAIL, color, rarity, added)); }
     private static void pet(String id, String name, int color) { ALL.add(new Item(id, name, Kind.PET, color)); }
     private static void emote(String id, String name, int color) { ALL.add(new Item(id, name, Kind.EMOTE, color)); }
     private static void badge(String id, String name, int color, Rarity rarity) { ALL.add(new Item(id, name, Kind.BADGE, color, rarity, 1)); }

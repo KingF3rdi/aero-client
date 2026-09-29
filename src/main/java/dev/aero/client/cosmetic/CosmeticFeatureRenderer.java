@@ -20,6 +20,10 @@ import org.joml.Quaternionf;
 public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityRenderState, PlayerEntityModel> {
     private static final int FB = CubeDraw.FULLBRIGHT;
 
+    /** One cube of the frame's batch; all of a player's cubes go to the GPU as a single command. */
+    private record Cube(MatrixStack.Entry e, float a, float b, float c, int col, int light) {}
+
+    private java.util.List<Cube> batch;
     private MatrixStack m;
     private OrderedRenderCommandQueue q;
     private RenderLayer layer;
@@ -68,12 +72,15 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
     public void render(MatrixStack matrices, OrderedRenderCommandQueue queue, int light, PlayerEntityRenderState state,
                        float yaw, float pitch) {
         MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.world == null || state.invisible) {
+        boolean menu = state.id == CosmeticPreview.MENU_ID; // wardrobe preview on the title screen
+        if (state.invisible || (!menu && (mc.player == null || mc.world == null))) {
             return;
         }
-        boolean self = state.id == mc.player.getId();
+        boolean self = menu || state.id == mc.player.getId();
         java.util.UUID who = null;
-        if (self) {
+        if (menu) {
+            who = mc.getGameProfile().id();
+        } else if (self) {
             who = mc.player.getUuid();
         } else {
             var other = mc.world.getEntityById(state.id);
@@ -91,7 +98,8 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
         this.light = light;
         this.layer = RenderLayers.entityCutoutNoCull(CubeDraw.WHITE);
         this.t = (System.currentTimeMillis() % 100000L) / 1000f;
-        this.speed = (float) Math.min(1.0, mc.player.getVelocity().horizontalLength() * 5.0);
+        this.speed = menu ? 0f : (float) Math.min(1.0, mc.player.getVelocity().horizontalLength() * 5.0);
+        this.batch = new java.util.ArrayList<>(96);
         PlayerEntityModel model = getContextModel();
 
         int cape = colorOf(Cosmetics.Kind.CAPE);
@@ -123,6 +131,16 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
         if (pet != 0) {
             pet(pet, idOf(Cosmetics.Kind.PET));
         }
+
+        if (!batch.isEmpty()) {
+            java.util.List<Cube> cubes = batch;
+            q.submitCustom(m, layer, (e, vc) -> {
+                for (Cube c : cubes) {
+                    CubeDraw.cube(c.e(), vc, c.a(), c.b(), c.c(), c.col(), c.light());
+                }
+            });
+        }
+        batch = null;
     }
 
     // ---- cape ---------------------------------------------------------------------------------
@@ -163,20 +181,12 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
     }
 
     private void wings(int c, String id) {
+        if (shapedWings(c, id)) {
+            return;
+        }
         float flap = (float) Math.sin(t * 2.4) * (7f + speed * 10f);
         for (int side = -1; side <= 1; side += 2) {
             switch (id) {
-                case "dragon" -> {
-                    int bone = 0xFF4A2A22;
-                    for (int i = 0; i < 9; i++) {
-                        float th = 18 + i * 9.5f + flap;
-                        float len = 15 + (float) Math.sin(i * 0.55) * 6f;
-                        feather(side, 2.5f, 2, 3f + i * 0.12f, th, len, 3.2f, CubeDraw.shade(c, i % 2 == 0 ? 1f : 0.82f), light);
-                    }
-                    for (int i = 0; i < 3; i++) {
-                        feather(side, 2.5f, 2, 3.9f, 24 + i * 32 + flap, 22 - i * 2, 1.4f, bone, light);
-                    }
-                }
                 case "fairy" -> {
                     fairyWing(side, 9, -3, 6, 9.5f, 24 + flap, c);
                     fairyWing(side, 7, 8, 4, 6.5f, 62 + flap, CubeDraw.shade(c, 0.85f));
@@ -209,6 +219,224 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             }
         }
     }
+
+    // ---- shaped wings: drawn flat in a "wing plane" (u = outward, v = up, in pixels) hinged at the shoulder
+    // ---- blade and swept back around the vertical axis, so flapping is a real back-and-forth beat.
+
+    private int side;
+
+    /** Draws the wing styles that have their own silhouette; false for the classic feather styles. */
+    private boolean shapedWings(int c, String id) {
+        switch (id) {
+            case "dragon", "bat", "butterfly", "mech", "crystal", "phoenix", "seraph", "neon", "phantom" -> {
+            }
+            default -> {
+                return false;
+            }
+        }
+        float beat = (float) Math.sin(t * 2.4);
+        if ("mech".equals(id)) {
+            thrusters(c);
+        }
+        for (side = -1; side <= 1; side += 2) {
+            float sweep = switch (id) {
+                case "butterfly" -> 10 + (0.5f + 0.5f * (float) Math.sin(t * 5.2)) * 40;
+                case "bat" -> 20 + (float) Math.sin(t * 4.2) * (12 + speed * 10);
+                case "mech" -> 30 + beat * 3 + speed * 12;
+                case "crystal" -> 26 + beat * 4;
+                default -> 22 + beat * (8 + speed * 12);
+            };
+            m.push();
+            m.translate(side * 1.5f / 16f, 2.5f / 16f, 3f / 16f);
+            m.multiply(new Quaternionf().rotateY((float) Math.toRadians(-side * sweep)));
+            switch (id) {
+                case "dragon" -> membrane(c, 5, 6, new float[][]{{19, 8}, {21, 0}, {17, -7}, {10, -11}, {1, -4}}, 1.8f, 0.45f);
+                case "bat" -> membrane(c, 4, 4, new float[][]{{13, 5}, {15, -1}, {12, -6}, {7, -8}, {1, -3}}, 1.3f, 0.55f);
+                case "butterfly" -> butterfly(c);
+                case "mech" -> mech(c);
+                case "crystal" -> crystal(c);
+                case "phoenix" -> phoenix(c);
+                case "seraph" -> seraph(c);
+                case "neon" -> neon(c);
+                default -> phantom(c);
+            }
+            m.pop();
+        }
+        return true;
+    }
+
+    /** A straight bar from (u0,v0) to (u1,v1) in the wing plane. */
+    private void bar(float u0, float v0, float u1, float v1, float thick, float depth, int col, int lt) {
+        float x0 = side * u0;
+        float y0 = -v0;
+        float x1 = side * u1;
+        float y1 = -v1;
+        float len = (float) Math.hypot(x1 - x0, y1 - y0);
+        if (len < 0.05f) {
+            return;
+        }
+        float ang = (float) Math.toDegrees(Math.atan2(y1 - y0, x1 - x0));
+        box((x0 + x1) / 2f, (y0 + y1) / 2f, 0, 0, 0, ang, 0, 0, 0, len + thick * 0.5f, thick, depth, col, lt);
+    }
+
+    /** Bat/dragon wing: arm to an elbow, fingers fanning out, scalloped membrane between the fingers. */
+    private void membrane(int c, float eu, float ev, float[][] tips, float boneW, float boneShade) {
+        int bone = CubeDraw.shade(c, boneShade);
+        bar(0, 0, eu, ev, boneW * 1.3f, boneW * 1.3f, bone, light);
+        bar(eu, ev, eu + 0.8f, ev + 2.4f, 0.9f, 0.9f, 0xFFE8E0D0, light); // claw
+        int n = 4;
+        for (int i = 0; i < tips.length - 1; i++) {
+            float[] a = tips[i];
+            float[] b = tips[i + 1];
+            int col = CubeDraw.shade(c, i % 2 == 0 ? 1f : 0.88f);
+            float gap = (float) Math.hypot(a[0] - b[0], a[1] - b[1]) / (n + 1);
+            for (int k = 1; k <= n; k++) {
+                float f = k / (float) (n + 1);
+                float scallop = 1f - 0.2f * (float) Math.sin(Math.PI * f);
+                float pu = eu + (a[0] + (b[0] - a[0]) * f - eu) * scallop;
+                float pv = ev + (a[1] + (b[1] - a[1]) * f - ev) * scallop;
+                bar(eu, ev, pu, pv, Math.max(1.3f, gap * 1.2f), 0.4f, col, light);
+            }
+            bar(eu, ev, a[0], a[1], boneW * 0.7f, boneW * 0.7f, bone, light); // finger
+        }
+        float[] last = tips[tips.length - 1];
+        for (int k = 1; k <= 2; k++) { // fill between the body and the arm
+            float f = k / 3f;
+            bar(eu, ev, last[0] * f, last[1] * f, 2.4f, 0.4f, c, light);
+        }
+    }
+
+    private void butterfly(int c) {
+        int edge = CubeDraw.shade(c, 0.35f);
+        lobe(9, 5, 8.5f, 7f, c, edge);
+        lobe(7, -5, 5.2f, 6f, CubeDraw.shade(c, 0.85f), edge);
+        bar(0, 0, 15, 9, 0.6f, 0.9f, edge, light); // veins
+        bar(0, 0, 10, -9, 0.6f, 0.9f, edge, light);
+        box(side * 13.5f, -8f, 0, 0, 0, 0, 0, 0, 0, 1.8f, 1.8f, 0.9f, 0xFFFFFFFF, FB); // spots
+        box(side * 10.5f, -10.5f, 0, 0, 0, 0, 0, 0, 0, 1.2f, 1.2f, 0.9f, 0xFFFFFFFF, FB);
+    }
+
+    /** Filled ellipse made of horizontal rows, lighter at the center, dark at the rim. */
+    private void lobe(float cu, float cv, float rx, float ry, int c, int edge) {
+        for (float y = -ry + 0.8f; y <= ry - 0.4f; y += 1.5f) {
+            float hw = rx * (float) Math.sqrt(Math.max(0, 1 - (y / ry) * (y / ry)));
+            float f = Math.abs(y) / ry;
+            bar(cu - hw, cv + y, cu + hw, cv + y, 1.7f, 0.6f, CubeDraw.mix(c, edge, f * f * 0.8f), light);
+        }
+    }
+
+    private void mech(int c) {
+        int plate = 0xFF4A505C;
+        int plate2 = 0xFF626A78;
+        float[][] p = {{0.5f, 2, 11, 7, 3.2f}, {0.5f, 0, 13, 1.5f, 2.8f}, {0.5f, -2, 10, -5, 2.4f}};
+        for (int i = 0; i < p.length; i++) {
+            float[] r = p[i];
+            bar(r[0], r[1], r[2], r[3], r[4], 1.2f, i % 2 == 0 ? plate : plate2, light);
+            float glow = 0.95f + 0.25f * (float) Math.sin(t * 3 + i);
+            bar(r[0] + 1.5f, r[1], r[0] + (r[2] - r[0]) * 0.92f, r[1] + (r[3] - r[1]) * 0.92f, 0.5f, 1.5f,
+                    CubeDraw.shade(c, glow), FB);
+        }
+        box(0, 0, 0, 0, 0, 0, 0, 0, 0, 2.4f, 2.4f, 2.4f, plate2, light); // hinge
+    }
+
+    /** Twin thrusters on the back with a flickering flame (body space, drawn once). */
+    private void thrusters(int c) {
+        for (int s = -1; s <= 1; s += 2) {
+            box(s * 1.8f, 6f, 2.9f, 0, 0, 0, 0, 0, 0, 2f, 4f, 1.8f, 0xFF3A3F4A, light);
+            float len = 2f + (float) Math.abs(Math.sin(t * 17 + s)) * 1.6f + speed * 2f;
+            box(s * 1.8f, 8f + len / 2f, 2.9f, 0, 0, 0, 0, 0, 0, 1.2f, len, 1.2f, CubeDraw.mix(c, 0xFFFFB040, 0.6f), FB);
+            box(s * 1.8f, 8.3f, 2.9f, 0, 0, 0, 0, 0, 0, 1.5f, 0.8f, 1.5f, 0xFFFFF4D0, FB);
+        }
+    }
+
+    private void crystal(int c) {
+        for (int i = 0; i < 6; i++) {
+            float a = (float) Math.toRadians(22 + i * 20);
+            float d = 6.5f + i * 1.5f;
+            float bob = (float) Math.sin(t * 2 + i * 1.1f) * 0.8f;
+            float len = 5.2f - Math.abs(i - 2.5f) * 0.55f;
+            m.push();
+            m.translate(side * (float) Math.sin(a) * d / 16f, (-(float) Math.cos(a) * d - bob) / 16f, 0);
+            m.multiply(new Quaternionf().rotateZ(side * a).rotateY((float) Math.toRadians(45 + t * 40 + i * 20)));
+            int col = CubeDraw.mix(c, 0xFFFFFFFF, 0.3f + 0.3f * (0.5f + 0.5f * (float) Math.sin(t * 2.2 + i)));
+            cubeHere(1.7f, len, 1.7f, col, FB);
+            m.pop();
+        }
+    }
+
+    private void phoenix(int c) {
+        int deep = CubeDraw.mix(0xFFD8321E, c, 0.45f);
+        for (int i = 0; i < 7; i++) {
+            float a = (float) Math.toRadians(10 + i * 14);
+            float len = 17 - i * 1.6f + (float) Math.sin(t * 9 + i * 1.9f) * 1.3f;
+            float su = (float) Math.sin(a);
+            float sv = (float) Math.cos(a);
+            bar(0, 0, su * len * 0.62f, sv * len * 0.62f, 2.4f, 0.8f, i % 2 == 0 ? deep : CubeDraw.shade(deep, 1.15f), FB);
+            bar(su * len * 0.58f, sv * len * 0.58f, su * len, sv * len, 1.8f, 0.8f, 0xFFFFC84A, FB);
+        }
+        for (int k = 0; k < 3; k++) { // embers drifting up off the wing
+            float ph = (float) ((t * 0.7 + k * 0.33 + (side + 1) * 0.15) % 1.0);
+            float a = (float) Math.toRadians(20 + k * 30);
+            float u = (float) Math.sin(a) * 14f;
+            float v = (float) Math.cos(a) * 14f + ph * 7f;
+            float sz = 1.3f * (1f - ph);
+            box(side * u, -v, 0, 0, 0, 0, 0, 0, 0, sz, sz, sz, 0xFFFFE08A, FB);
+        }
+    }
+
+    private void seraph(int c) {
+        fan(0, 3, -4, 32, 4, 11, c);
+        fan(0, 0, 58, 98, 5, 13, c);
+        fan(0, -3, 118, 160, 4, 10, c);
+    }
+
+    /** A small fan of feathers with glowing gold tips (seraph). */
+    private void fan(float ru, float rv, float from, float to, int n, float len, int c) {
+        for (int i = 0; i < n; i++) {
+            float a = (float) Math.toRadians(from + (to - from) * i / (n - 1f));
+            float l = len - Math.abs(i - (n - 1) / 2f) * 1.2f;
+            float su = (float) Math.sin(a);
+            float sv = (float) Math.cos(a);
+            bar(ru, rv, ru + su * l * 0.8f, rv + sv * l * 0.8f, 2.2f, 0.7f, CubeDraw.shade(c, i % 2 == 0 ? 1f : 0.9f), light);
+            bar(ru + su * l * 0.75f, rv + sv * l * 0.75f, ru + su * l, rv + sv * l, 1.4f, 0.8f, 0xFFFFD86B, FB);
+        }
+    }
+
+    private static final float[][] NEON = {{0, 2}, {5, 8}, {12, 11}, {19, 10}, {21, 6}, {17, 3}, {20, -1}, {15, -3},
+            {16, -7}, {10, -6}, {6, -8}, {3, -4}, {0, -2}};
+
+    /** Glowing outline of a wing, colors running along it. */
+    private void neon(int c) {
+        for (int i = 0; i < NEON.length - 1; i++) {
+            int hue = java.awt.Color.HSBtoRGB((float) ((t * 0.25 + i * 0.06) % 1.0), 0.75f, 1f);
+            bar(NEON[i][0], NEON[i][1], NEON[i + 1][0], NEON[i + 1][1], 0.8f, 0.8f, CubeDraw.mix(c, hue, 0.55f), FB);
+        }
+        int dim = CubeDraw.shade(c, 0.8f);
+        bar(0, 0, 17, 3, 0.5f, 0.5f, dim, FB);
+        bar(0, 0, 15, -3, 0.5f, 0.5f, dim, FB);
+    }
+
+    /** Tattered strips that ripple like cloth, with glowing tips. */
+    private void phantom(int c) {
+        float[] seg = {5.5f, 4.5f, 3.8f};
+        float[] w = {2.6f, 1.9f, 1.2f};
+        for (int k = 0; k < 5; k++) {
+            float u = 0;
+            float v = 1 - k * 0.6f;
+            float a = 35 + k * 19;
+            for (int j = 0; j < seg.length; j++) {
+                a += (float) Math.sin(t * 3 + k * 0.8f + j * 1.2f) * 9f * j;
+                float r = (float) Math.toRadians(a);
+                float nu = u + (float) Math.sin(r) * seg[j];
+                float nv = v + (float) Math.cos(r) * seg[j];
+                bar(u, v, nu, nv, w[j], 0.6f, CubeDraw.shade(c, 0.95f - j * 0.17f), light);
+                u = nu;
+                v = nv;
+            }
+            box(side * u, -v, 0, 0, 0, 0, 0, 0, 0, 0.9f, 0.9f, 0.9f, 0xFF7FE8FF, FB);
+        }
+    }
+
 
     private void fairyWing(int side, float cx, float cy, float rx, float ry, float tilt, int c) {
         int n = 12;
@@ -356,10 +584,12 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
                     .rotateX((float) Math.toRadians(rotX)).rotateZ((float) Math.toRadians(rotZ)));
         }
         m.translate(ox / 16f, oy / 16f, oz / 16f);
-        float a = w / 32f;
-        float b = h / 32f;
-        float cc = d / 32f;
-        q.submitCustom(m, layer, (e, vc) -> CubeDraw.cube(e, vc, a, b, cc, argb, lt));
+        cubeHere(w, h, d, argb, lt);
         m.pop();
+    }
+
+    /** Box of w x h x d pixels centered on the current matrix origin. */
+    private void cubeHere(float w, float h, float d, int argb, int lt) {
+        batch.add(new Cube(m.peek().copy(), w / 32f, h / 32f, d / 32f, argb, lt));
     }
 }

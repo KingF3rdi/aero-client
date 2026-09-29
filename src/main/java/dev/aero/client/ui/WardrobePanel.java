@@ -73,6 +73,7 @@ public final class WardrobePanel {
 
     public void debugTab(int t) {
         tab = t;
+        yaw = t <= 1 ? 35f : 200f;
     }
 
     /** Store / Badges page asked to buy something: show its wardrobe tab with the buy dialog open. */
@@ -275,12 +276,12 @@ public final class WardrobePanel {
         ctx.drawText(tr, Text.literal(l2), btnX(1) + (BTN_W - tr.getWidth(l2)) / 2, btnY() + 3, others ? TEXT : MUTED, false);
 
         if (modelKind(kind)) {
-            var player = MinecraftClient.getInstance().player;
             ctx.enableScissor(px1, py1, px2, py2);
             try {
                 float scale = (py2 - py1) * 0.34f * zoom;
-                CosmeticPreview.show(ctx, px1, py1, px2, py2, scale, yaw, player);
-                if (item != null && Cosmetics.locked(kind)) {
+                CosmeticPreview.showSelf(ctx, px1, py1, px2, py2, scale, yaw);
+                // Trails, kill and mace effects happen in the world, so the preview shows them as an animation.
+                if (item != null && (Cosmetics.locked(kind) || kind == Cosmetics.Kind.TRAIL)) {
                     int feet = py1 + (py2 - py1) * 82 / 100;
                     switch (kind) {
                         case TRAIL -> CosmeticIcons.trail(ctx, item.id(), color, px1, feet, midX - px1 - 14, t);
@@ -292,17 +293,6 @@ public final class WardrobePanel {
                 }
             } finally {
                 ctx.disableScissor();
-            }
-            if (player == null) {
-                var capeTex = kind == Cosmetics.Kind.CAPE && item != null ? dev.aero.client.cosmetic.CapeTextures.get(item.id()) : null;
-                if (capeTex != null) {
-                    int sc = Math.max(1, (py2 - py1 - 20) / 16);
-                    ctx.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, capeTex.id(), midX - 5 * sc, (py1 + py2) / 2 - 8 * sc,
-                            1f, 1f, 10 * sc, 16 * sc, 10, 16, capeTex.w(), capeTex.h());
-                } else {
-                    String s = "Join a world to see the preview";
-                    ctx.drawText(tr, Text.literal(s), midX - tr.getWidth(s) / 2, (py1 + py2) / 2, MUTED, false);
-                }
             }
             arrow(ctx, tr, mx, my, px1 + 4, (py1 + py2) / 2 - 11, "‹");
             arrow(ctx, tr, mx, my, px2 - 26, (py1 + py2) / 2 - 11, "›");
@@ -573,17 +563,12 @@ public final class WardrobePanel {
         Cosmetics.Item item = pendingBuy;
         int pvW = 120;
         UiDraw.roundRect(ctx, r[0] + 10, r[1] + 10, pvW, r[3] - 20, 12, 0x99FFFFFF);
-        var player = MinecraftClient.getInstance().player;
-        if (player != null) {
-            ctx.enableScissor(r[0] + 10, r[1] + 10, r[0] + 10 + pvW, r[1] + r[3] - 10);
-            try {
-                CosmeticPreview.show(ctx, r[0] + 10, r[1] + 10, r[0] + 10 + pvW, r[1] + r[3] - 10, (r[3] - 20) * 0.34f,
-                        (item.kind() == Cosmetics.Kind.CAPE ? 20f : 200f) + (float) Math.sin(System.currentTimeMillis() / 900.0) * 25f, player);
-            } finally {
-                ctx.disableScissor();
-            }
-        } else {
-            CosmeticIcons.draw(ctx, item.kind(), item, item.color(), r[0] + 10, r[1] + 20, pvW, r[3] - 40, 0f);
+        ctx.enableScissor(r[0] + 10, r[1] + 10, r[0] + 10 + pvW, r[1] + r[3] - 10);
+        try {
+            CosmeticPreview.showSelf(ctx, r[0] + 10, r[1] + 10, r[0] + 10 + pvW, r[1] + r[3] - 10, (r[3] - 20) * 0.34f,
+                    (item.kind() == Cosmetics.Kind.CAPE ? 20f : 200f) + (float) Math.sin(System.currentTimeMillis() / 900.0) * 25f);
+        } finally {
+            ctx.disableScissor();
         }
         int tx = r[0] + pvW + 22;
         int tw = r[2] - pvW - 32;

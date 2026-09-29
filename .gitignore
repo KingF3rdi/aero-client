@@ -6,3 +6,4 @@ run/
 *.iml
 out/
 .claude/
+run-prod/
