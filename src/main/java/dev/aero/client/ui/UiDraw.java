@@ -33,7 +33,7 @@ public final class UiDraw {
     /** Idle background fill at the Menu background opacity (Interface Color); hover and selected states stay solid. */
     public static int surface(int rgb) {
         var c = dev.aero.client.AeroClient.CONFIG;
-        float o = c == null ? 0.5f : Math.max(0.1f, Math.min(1f, c.menuOpacity / 100f));
+        float o = c == null ? 0.3f : Math.max(0.1f, Math.min(1f, c.menuGlass / 100f));
         return withAlpha(rgb, Math.round(255 * o));
     }
 
@@ -270,9 +270,10 @@ public final class UiDraw {
 
     /** Soft drop shadow under a light panel: a few widening low-alpha layers, offset down. */
     public static void shadow(DrawContext c, int x, int y, int w, int h, int radius) {
-        for (int i = 4; i >= 1; i--) {
-            int g = i * 2;
-            roundRect(c, x - g, y - g + 3, w + g * 2, h + g * 2, radius + g, (6 + (4 - i) * 3) << 24);
+        // Rings outside the panel only: panels are see-through, so filled (and offset) shadow layers showed
+        // through the body as extra rounded corners just inside the edge.
+        for (int g = 1; g <= 6; g++) {
+            roundBorder(c, x - g, y - g, w + g * 2, h + g * 2, radius + g, (16 - g * 2) << 24);
         }
     }
 
@@ -313,16 +314,10 @@ public final class UiDraw {
     public static void glass(DrawContext c, int x, int y, int w, int h, int fill, int radius) {
         int r = Math.max(12, radius);
         shadow(c, x, y, w, h, r);
-        // Frosted white body (the screen blurs the world behind it), cool tint pooling at the bottom.
+        // Frosted white body (the screen blurs the world behind it). No inset gradient: on a see-through
+        // body its square corners were visible inside the rounded panel.
         roundRect(c, x, y, w, h, r, surface(0xF6F8FC));
-        int in = (int) Math.ceil(r * 0.4);
-        if (w > in * 2 + 4 && h > in * 2 + 4) {
-            int mid = y + h / 2;
-            c.fillGradient(x + in, y + in, x + w - in, mid, fa(0x40FFFFFF), fa(0x00FFFFFF));
-            c.fillGradient(x + in, mid, x + w - in, y + h - in, fa(0x00FFFFFF), fa(withAlpha(accent(), 0x10)));
-        }
         roundBorder(c, x, y, w, h, r, 0xE6FFFFFF);
-        roundBorder(c, x - 1, y - 1, w + 2, h + 2, r + 1, 0x14000000);
     }
 
     public static void innerCard(DrawContext c, int x, int y, int w, int h) {
@@ -356,8 +351,9 @@ public final class UiDraw {
     }
 
     public static void pill(DrawContext c, int x, int y, int w, int h, boolean on) {
-        roundRect(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x2E) : 0x9CFFFFFF);
-        roundBorder(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x80) : 0x14000000);
+        // Selected = accent tint only; a colored outline on top read as a stray blue frame.
+        roundRect(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x3C) : 0x9CFFFFFF);
+        roundBorder(c, x, y, w, h, h / 2, 0x14000000);
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {
