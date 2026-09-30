@@ -376,8 +376,8 @@ public class ClientConfig {
     public boolean shareProfile = true;
     public boolean vanillaUi = true;
     public boolean smoothFont = true;
-    /** Menu panels and cards, % opaque (the rest shows the blurred game). */
-    public float menuOpacity = 50f;
+    /** Menu panels and cards, % opaque (the rest shows the blurred game). Renamed from menuOpacity so the lower default reaches existing configs. */
+    public float menuGlass = 30f;
     public int totemColGood = 0xFF55FF55;
     public int totemColWarn = 0xFFFFA030;
     public int totemColBad = 0xFFFF5555;
@@ -504,7 +504,8 @@ public class ClientConfig {
     public boolean shulkerTooltipsEmptySlots = true;
     public boolean shulkerTooltipsHideList = true;
     public boolean conflictsIgnored = false;
-    public boolean customLoadingScreen = true;
+    /** Off = vanilla loading screen. Renamed from customLoadingScreen (was on by default) so existing configs get vanilla back. */
+    public boolean aeroLoadingScreen = false;
     public boolean skyChanger = false;
     public String skyPreset = "Sunset";
     public int skyChangerColor = 0xFF7FB2FF;

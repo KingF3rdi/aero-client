@@ -102,6 +102,18 @@ public final class Cosmetics {
         head("horns", "Horns", 0xFFB04050);
         head("crown", "Crown", 0xFFFFC94D);
         head("cat", "Cat ears", 0xFFD8A070);
+        head("kasa", "Rice hat", 0xFFE6DCC2, Rarity.RARE, 4);
+        head("tophat", "Top hat", 0xFF24242C, Rarity.UNCOMMON, 4);
+        head("wizard", "Wizard hat", 0xFF5B4BC8, Rarity.RARE, 4);
+        head("cowboy", "Cowboy hat", 0xFF9A6A3C, Rarity.UNCOMMON, 4);
+        head("santa", "Santa hat", 0xFFD8323C, Rarity.UNCOMMON, 4);
+        head("party", "Party hat", 0xFFFF6B9B, Rarity.COMMON, 4);
+        head("beanie", "Beanie", 0xFF3E7BD6, Rarity.COMMON, 4);
+        head("cap", "Cap", 0xFFE0453A, Rarity.COMMON, 4);
+        head("headphones", "Headphones", 0xFF4F8EFF, Rarity.RARE, 4);
+        head("flower", "Flower crown", 0xFFFF9BC8, Rarity.UNCOMMON, 4);
+        head("bunny", "Bunny ears", 0xFFF6F3FB, Rarity.COMMON, 4);
+        head("shades", "Shades", 0xFF16181E, Rarity.COMMON, 4);
         trail("none", "None", 0xFF2A2A32, Rarity.COMMON, 0);
         trail("spark", "Spark", 0xFF4F8EFF, Rarity.COMMON, 2);
         trail("heart", "Heart", 0xFFFF7BAA, Rarity.COMMON, 2);
@@ -116,6 +128,8 @@ public final class Cosmetics {
         trail("helix", "Helix", 0xFF4F8EFF, Rarity.RARE, 3);
         trail("stars", "Stars", 0xFFFFE08A, Rarity.RARE, 3);
         trail("rainbow", "Rainbow", 0xFFFF6B9B, Rarity.LEGENDARY, 3);
+        trail("aura", "Aura", 0xFF7FE8FF, Rarity.RARE, 4);
+        trail("rings", "Jump rings", 0xFF4F8EFF, Rarity.UNCOMMON, 4);
         pet("none", "None", 0xFF2A2A32);
         pet("axolotl", "Axolotl", 0xFFF4A0B8);
         pet("bee", "Bee", 0xFFFFD040);
@@ -436,6 +450,7 @@ public final class Cosmetics {
     private static void cape(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.CAPE, color, rarity, added)); }
     private static void wings(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.WINGS, color, rarity, added)); }
     private static void head(String id, String name, int color) { ALL.add(new Item(id, name, Kind.HEAD, color)); }
+    private static void head(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.HEAD, color, rarity, added)); }
     private static void trail(String id, String name, int color, Rarity rarity, int added) { ALL.add(new Item(id, name, Kind.TRAIL, color, rarity, added)); }
     private static void pet(String id, String name, int color) { ALL.add(new Item(id, name, Kind.PET, color)); }
     private static void emote(String id, String name, int color) { ALL.add(new Item(id, name, Kind.EMOTE, color)); }

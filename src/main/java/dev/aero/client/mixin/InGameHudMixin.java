@@ -140,7 +140,8 @@ public class InGameHudMixin {
     private void aero$effectTimers(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         var c = AeroClient.CONFIG;
         var mc = net.minecraft.client.MinecraftClient.getInstance();
-        if (c == null || !c.potionHud || !c.potionVanillaTimers || mc.player == null
+        // One timer per effect: when the Potion HUD list shows its own timers, the vanilla icons get none.
+        if (c == null || !c.potionHud || !c.potionVanillaTimers || c.potionTimer || mc.player == null
                 || (mc.currentScreen != null && mc.currentScreen.showsStatusEffects())) {
             return;
         }

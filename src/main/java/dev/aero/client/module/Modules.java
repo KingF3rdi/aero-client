@@ -101,7 +101,7 @@ public final class Modules {
                 .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v)
                 .setting("Style vanilla UI (hotbar, inventories, buttons)", () -> c.vanillaUi, v -> c.vanillaUi = v)
                 .setting("Smooth menu font", () -> c.smoothFont, v -> c.smoothFont = v)
-                .settingF("Menu background opacity %", () -> (double) c.menuOpacity, v -> c.menuOpacity = (float) v, 10, 100));
+                .settingF("Menu background opacity %", () -> (double) c.menuGlass, v -> c.menuGlass = (float) v, 10, 100));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
                 () -> c.fullbright, v -> c.fullbright = v)
                 .setting("Mode", () -> c.fullbrightMode, v -> c.fullbrightMode = v, "Gamma", "Night vision")
@@ -254,7 +254,7 @@ public final class Modules {
                 .setting("Always show stars", () -> c.skyStars, v -> c.skyStars = v)
                 .setting("Fog matches sky", () -> c.skyFogMatch, v -> c.skyFogMatch = v));
         add(new Module("Loading Screen", "Aero-styled startup loading screen (applies on next launch)", Category.RENDER,
-                () -> c.customLoadingScreen, v -> c.customLoadingScreen = v));
+                () -> c.aeroLoadingScreen, v -> c.aeroLoadingScreen = v));
         add(new Module("Shulker Tooltips", "Hover a shulker box to see its contents as a grid", Category.PLAYER,
                 () -> c.shulkerTooltips, v -> c.shulkerTooltips = v)
                 .setting("Only while holding Shift", () -> c.shulkerTooltipsShift, v -> c.shulkerTooltipsShift = v)

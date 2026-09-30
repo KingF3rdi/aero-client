@@ -80,7 +80,15 @@ public final class CosmeticEffects {
                 w.z = p.getZ();
                 w.have = true;
                 double moved = Math.sqrt(dx * dx + dz * dz);
-                if (had && moved >= 0.02 && moved < 4) { // not standing still, not a teleport
+                if ("aura".equals(id)) {
+                    FxWorld.aura(color, w, p.getX(), p.getY(), p.getZ());
+                } else if ("rings".equals(id)) {
+                    boolean ground = p.isOnGround();
+                    if (w.ground && !ground && p.getVelocity().y > 0.1) {
+                        FxWorld.ring(color, p.getX(), p.getY(), p.getZ());
+                    }
+                    w.ground = ground;
+                } else if (had && moved >= 0.02 && moved < 4) { // not standing still, not a teleport
                     FxWorld.trail(id, color, w, p.getX(), p.getY(), p.getZ(), dx, dz);
                 }
             }

@@ -23,6 +23,34 @@ public final class CubeDraw {
         face(e, vc, col, light, 0, 0, -1, a, -b, -c, -a, -b, -c, -a, b, -c, a, b, -c);
     }
 
+    /**
+     * Smooth cone: apex at the origin, base ring of radius r at y = +h (model space, where +y is down),
+     * so hats are round instead of stepped boxes. Shaded from `top` at the apex to `rim`; `under` closes it.
+     */
+    public static void cone(MatrixStack.Entry e, VertexConsumer vc, float r, float h, int segments, int top, int rim, int under, int light) {
+        top |= 0xFF000000;
+        rim |= 0xFF000000;
+        under |= 0xFF000000;
+        float len = (float) Math.sqrt(r * r + h * h);
+        float nh = h / len; // horizontal part of the side normal
+        float nv = -r / len; // vertical part (pointing up)
+        for (int i = 0; i < segments; i++) {
+            double a0 = i * Math.PI * 2 / segments;
+            double a1 = (i + 1) * Math.PI * 2 / segments;
+            float c0 = (float) Math.cos(a0), s0 = (float) Math.sin(a0);
+            float c1 = (float) Math.cos(a1), s1 = (float) Math.sin(a1);
+            float cm = (float) Math.cos((a0 + a1) / 2), sm = (float) Math.sin((a0 + a1) / 2);
+            vertex(e, vc, 0, 0, 0, 0.5f, 0, top, light, cm * nh, nv, sm * nh);
+            vertex(e, vc, 0, 0, 0, 0.5f, 0, top, light, cm * nh, nv, sm * nh);
+            vertex(e, vc, c1 * r, h, s1 * r, 1, 1, rim, light, c1 * nh, nv, s1 * nh);
+            vertex(e, vc, c0 * r, h, s0 * r, 0, 1, rim, light, c0 * nh, nv, s0 * nh);
+            vertex(e, vc, 0, h, 0, 0.5f, 0.5f, under, light, 0, 1, 0);
+            vertex(e, vc, 0, h, 0, 0.5f, 0.5f, under, light, 0, 1, 0);
+            vertex(e, vc, c0 * r, h, s0 * r, 0, 1, under, light, 0, 1, 0);
+            vertex(e, vc, c1 * r, h, s1 * r, 1, 1, under, light, 0, 1, 0);
+        }
+    }
+
     private static void face(MatrixStack.Entry e, VertexConsumer vc, int col, int light, float nx, float ny, float nz,
                              float x1, float y1, float z1, float x2, float y2, float z2,
                              float x3, float y3, float z3, float x4, float y4, float z4) {

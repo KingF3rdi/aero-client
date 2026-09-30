@@ -255,8 +255,106 @@ public final class CosmeticIcons {
         c.fill(cx - 1, cy - 1, cx + 1, cy + 1, alpha(col, 0.5f));
     }
 
+    /** Filled triangle (cone seen from the side): apex at (cx, top), `half` wide at the base, shaded top to base. */
+    private static void tri(DrawContext c, float cx, int top, float half, int h, int colTop, int colBase) {
+        for (int r = 0; r < h; r++) {
+            float f = (r + 1) / (float) h;
+            c.fill(Math.round(cx - half * f), top + r, Math.round(cx + half * f) + 1, top + r + 1, CubeDraw.mix(colTop, colBase, f));
+        }
+    }
+
     private static void head(DrawContext c, String id, int col, int cx, int cy, float t) {
         switch (id) {
+            case "kasa" -> {
+                tri(c, cx, cy - 7, 18, 12, CubeDraw.shade(col, 1.12f), CubeDraw.shade(col, 0.9f));
+                c.fill(cx - 18, cy + 5, cx + 19, cy + 7, CubeDraw.shade(col, 0.6f));
+                for (int s = -1; s <= 1; s += 2) {
+                    c.fill(cx + s * 14, cy + 7, cx + s * 14 + 1, cy + 12, 0xFF7FC8E8);
+                    c.fill(cx + s * 14 - 1, cy + 12, cx + s * 14 + 2, cy + 15, 0xFF4FA0D0);
+                }
+            }
+            case "tophat" -> {
+                c.fill(cx - 8, cy - 11, cx + 8, cy + 6, col);
+                c.fill(cx - 8, cy + 1, cx + 8, cy + 5, 0xFFB0303A);
+                c.fill(cx - 14, cy + 6, cx + 14, cy + 9, col);
+            }
+            case "wizard" -> {
+                tri(c, cx + 2, cy - 14, 9, 20, CubeDraw.shade(col, 1.25f), col);
+                c.fill(cx - 15, cy + 6, cx + 15, cy + 9, CubeDraw.shade(col, 0.8f));
+                c.fill(cx - 8, cy + 3, cx + 9, cy + 6, 0xFFE8B84A);
+                px(c, cx + 1, cy - 4, 2, 0xFFFFE08A);
+                px(c, cx - 3, cy + 0, 2, 0xFFFFE08A);
+            }
+            case "party" -> {
+                tri(c, cx, cy - 11, 8, 20, CubeDraw.shade(col, 1.35f), col);
+                c.fill(cx - 9, cy + 9, cx + 10, cy + 11, 0xFFFFE08A);
+                c.fill(cx - 2, cy - 14, cx + 2, cy - 10, 0xFFFFFFFF);
+            }
+            case "santa" -> {
+                for (int r = 0; r < 16; r++) { // cone leaning to the right
+                    float f = (r + 1) / 16f;
+                    float mid = cx + (1 - f) * 9;
+                    c.fill(Math.round(mid - 10 * f), cy - 10 + r, Math.round(mid + 10 * f), cy - 9 + r, CubeDraw.mix(CubeDraw.shade(col, 1.15f), col, f));
+                }
+                c.fill(cx - 12, cy + 6, cx + 12, cy + 11, 0xFFF6F3FB);
+                c.fill(cx + 8, cy - 13, cx + 12, cy - 9, 0xFFFFFFFF);
+            }
+            case "cowboy" -> {
+                c.fill(cx - 8, cy - 7, cx + 8, cy + 4, col);
+                c.fill(cx - 5, cy - 9, cx + 5, cy - 7, CubeDraw.shade(col, 0.85f));
+                c.fill(cx - 8, cy + 1, cx + 8, cy + 3, CubeDraw.shade(col, 0.6f));
+                c.fill(cx - 13, cy + 4, cx + 13, cy + 7, col);
+                for (int s = -1; s <= 1; s += 2) {
+                    c.fill(cx + s * 15 - 2, cy + 2, cx + s * 15 + 2, cy + 5, col);
+                    c.fill(cx + s * 17 - 1, cy, cx + s * 17 + 1, cy + 3, col);
+                }
+            }
+            case "beanie" -> {
+                ellipse(c, cx, cy + 1, 11, 9, col, CubeDraw.shade(col, 0.85f));
+                c.fill(cx - 12, cy + 5, cx + 12, cy + 11, CubeDraw.shade(col, 0.75f));
+                c.fill(cx - 2, cy - 12, cx + 2, cy - 8, 0xFFF6F3FB);
+            }
+            case "cap" -> {
+                for (int y = -9; y <= 0; y++) { // dome: upper half of an ellipse
+                    int hw = Math.round(11 * (float) Math.sqrt(1 - (y / 9f) * (y / 9f)));
+                    c.fill(cx - 3 - hw, cy + 3 + y, cx - 3 + hw, cy + 4 + y, col);
+                }
+                c.fill(cx - 14, cy + 3, cx + 8, cy + 5, CubeDraw.shade(col, 0.85f));
+                c.fill(cx + 6, cy + 3, cx + 17, cy + 6, CubeDraw.shade(col, 0.7f));
+                c.fill(cx - 5, cy - 3, cx - 1, cy + 1, 0xFFF6F3FB);
+            }
+            case "headphones" -> {
+                for (int i = 0; i <= 20; i++) {
+                    double a = Math.PI + i * Math.PI / 20;
+                    px(c, cx + (float) Math.cos(a) * 12 - 1, cy + 2 + (float) Math.sin(a) * 12, 2, 0xFF2A2D36);
+                }
+                for (int s = -1; s <= 1; s += 2) {
+                    c.fill(cx + s * 12 - 3, cy + 1, cx + s * 12 + 3, cy + 12, 0xFF2A2D36);
+                    c.fill(cx + s * 14 - 1, cy + 4, cx + s * 14 + 1, cy + 9, CubeDraw.shade(col, 0.85f + 0.3f * (float) Math.sin(t * 3)));
+                }
+            }
+            case "flower" -> {
+                int[] petals = {0xFFFF9BC8, 0xFFFFE08A, 0xFFF6F3FB, 0xFFC8A8FF};
+                for (int i = 0; i < 12; i++) {
+                    double a = i * Math.PI * 2 / 12;
+                    float x = cx + (float) Math.cos(a) * 13 - 2;
+                    float y = cy + 2 + (float) Math.sin(a) * 5 - 2;
+                    px(c, x, y, i % 2 == 0 ? 5 : 3, i % 2 == 0 ? petals[(i / 2) % 4] : 0xFF4CB86A);
+                }
+            }
+            case "bunny" -> {
+                for (int s = -1; s <= 1; s += 2) {
+                    ellipse(c, cx + s * 6, cy - 1, 3.5f, 12, col, CubeDraw.shade(col, 0.8f));
+                    ellipse(c, cx + s * 6, cy, 1.5f, 8, 0xFFF4A0B8, 0xFFF4A0B8);
+                }
+            }
+            case "shades" -> {
+                for (int s = -1; s <= 1; s += 2) {
+                    c.fill(cx + s * 8 - 6, cy - 3, cx + s * 8 + 6, cy + 5, col);
+                    c.fill(cx + s * 8 - 4, cy - 2, cx + s * 8 - 1, cy - 1, 0xFFF6F3FB);
+                }
+                c.fill(cx - 2, cy - 2, cx + 2, cy, col);
+            }
             case "halo" -> {
                 int y = cy - 2 + (int) (Math.sin(t * 2) * 2);
                 for (int i = 0; i < 24; i++) {
@@ -300,6 +398,27 @@ public final class CosmeticIcons {
 
     static void trail(DrawContext c, String id, int col, int x, int cy, int w, float t) {
         switch (id) {
+            case "aura" -> {
+                int mx = x + w / 2;
+                for (int i = 0; i < 14; i++) {
+                    double a = t * 3.2 - i * 0.22;
+                    float f = 1f - i / 14f;
+                    px(c, mx + (float) Math.cos(a) * 16 - 1, cy + 3 + (float) Math.sin(a) * 5 - 1, 3, alpha(col, f));
+                    px(c, mx - (float) Math.cos(a) * 16 - 1, cy + 3 - (float) Math.sin(a) * 5 - 1, 3, alpha(CubeDraw.shade(col, 1.3f), f));
+                }
+                return;
+            }
+            case "rings" -> {
+                int mx = x + w / 2;
+                for (int ringNo = 0; ringNo < 2; ringNo++) {
+                    float f = (t * 0.8f + ringNo * 0.5f) % 1f;
+                    for (int i = 0; i < 20; i++) {
+                        double a = i * Math.PI * 2 / 20;
+                        px(c, mx + (float) Math.cos(a) * (4 + f * 16) - 1, cy + 4 + (float) Math.sin(a) * (1.5f + f * 5) - 1, 2, alpha(col, 1f - f));
+                    }
+                }
+                return;
+            }
             case "steps" -> {
                 for (int k = 0; k < 6; k++) {
                     float f = ((k + t * 1.2f) % 6) / 6f;

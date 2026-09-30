@@ -24,6 +24,11 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
     private record Cube(MatrixStack.Entry e, float a, float b, float c, int col, int light) {}
 
     private java.util.List<Cube> batch;
+
+    /** A smooth cone (hats) in the same batch; see CubeDraw.cone. */
+    private record Cone(MatrixStack.Entry e, float r, float h, int top, int rim, int under, int light) {}
+
+    private java.util.List<Cone> cones;
     private MatrixStack m;
     private OrderedRenderCommandQueue q;
     private RenderLayer layer;
@@ -100,6 +105,7 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
         this.t = (System.currentTimeMillis() % 100000L) / 1000f;
         this.speed = menu ? 0f : (float) Math.min(1.0, mc.player.getVelocity().horizontalLength() * 5.0);
         this.batch = new java.util.ArrayList<>(96);
+        this.cones = new java.util.ArrayList<>(2);
         PlayerEntityModel model = getContextModel();
 
         int cape = colorOf(Cosmetics.Kind.CAPE);
@@ -132,15 +138,20 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
             pet(pet, idOf(Cosmetics.Kind.PET));
         }
 
-        if (!batch.isEmpty()) {
+        if (!batch.isEmpty() || !cones.isEmpty()) {
             java.util.List<Cube> cubes = batch;
+            java.util.List<Cone> round = cones;
             q.submitCustom(m, layer, (e, vc) -> {
                 for (Cube c : cubes) {
                     CubeDraw.cube(c.e(), vc, c.a(), c.b(), c.c(), c.col(), c.light());
                 }
+                for (Cone c : round) {
+                    CubeDraw.cone(c.e(), vc, c.r(), c.h(), 24, c.top(), c.rim(), c.under(), c.light());
+                }
             });
         }
         batch = null;
+        cones = null;
     }
 
     // ---- cape ---------------------------------------------------------------------------------
@@ -495,8 +506,122 @@ public final class CosmeticFeatureRenderer extends FeatureRenderer<PlayerEntityR
                     box(s * 3f, -8.6f, -0.35f, 0, 0, rot, 0, -1.2f, 0, 1.6f, 1.8f, 1.1f, 0xFFF4A0B8, light);
                 }
             }
+            case "kasa" -> { // smooth conical straw hat with two tassels
+                cone(0, -12.6f, 0, 0, 0, 8.6f, 4.8f, CubeDraw.shade(c, 1.12f), c, CubeDraw.shade(c, 0.55f), light);
+                box(0, -12.7f, 0, 0, 0, 0, 0, 0, 0, 1.1f, 0.7f, 1.1f, CubeDraw.shade(c, 0.7f), light);
+                for (int s = -1; s <= 1; s += 2) {
+                    float sway = (float) Math.sin(t * 2.2 + s) * (5f + speed * 14f);
+                    box(s * 6.4f, -8.4f, 1.5f, sway, 0, s * sway * 0.4f, 0, 1.8f, 0, 0.4f, 3.6f, 0.4f, 0xFF7FC8E8, light);
+                    box(s * 6.4f, -8.4f, 1.5f, sway, 0, s * sway * 0.4f, 0, 3.9f, 0, 0.9f, 1.3f, 0.9f, 0xFF4FA0D0, light);
+                }
+            }
+            case "tophat" -> {
+                box(0, -8.5f, 0, 0, 0, 0, 0, 0, 0, 11.4f, 0.9f, 11.4f, c, light);
+                box(0, -12.2f, 0, 0, 0, 0, 0, 0, 0, 7.2f, 6.6f, 7.2f, c, light);
+                box(0, -9.7f, 0, 0, 0, 0, 0, 0, 0, 7.5f, 1.4f, 7.5f, 0xFFB0303A, light);
+            }
+            case "wizard" -> {
+                cone(0, -9.6f, 0, 0, 0, 8f, 1.2f, c, CubeDraw.shade(c, 0.85f), CubeDraw.shade(c, 0.5f), light);
+                cone(0, -19.4f, 1.6f, 9, 0, 4.4f, 10.4f, CubeDraw.shade(c, 1.25f), c, CubeDraw.shade(c, 0.5f), light);
+                box(0, -9.7f, 0, 0, 0, 0, 0, 0, 0, 8.6f, 1.1f, 8.6f, 0xFFE8B84A, light);
+                for (int i = 0; i < 3; i++) {
+                    float tw = 0.7f + 0.3f * (float) Math.sin(t * 3 + i * 2.1f);
+                    box(-1.6f + i * 1.6f, -12.4f - i * 2.1f, -3.4f + i * 0.9f, 0, 0, 45, 0, 0, 0, 0.9f * tw, 0.9f * tw, 0.4f, 0xFFFFE08A, FB);
+                }
+            }
+            case "party" -> {
+                cone(1.2f, -15.6f, 0, 0, 9, 3.3f, 7.8f, CubeDraw.shade(c, 1.35f), c, CubeDraw.shade(c, 0.6f), light);
+                box(1.2f, -15.9f, 0, 0, 0, 9, 0, 0, 0, 1.6f, 1.6f, 1.6f, 0xFFFFFFFF, FB);
+                box(0, -8.2f, 0, 0, 0, 0, 0, 0, 0, 6.8f, 0.7f, 6.8f, 0xFFFFE08A, light);
+            }
+            case "santa" -> {
+                box(0, -8.6f, 0, 0, 0, 0, 0, 0, 0, 9.2f, 2f, 9.2f, 0xFFF6F3FB, light);
+                float flop = 24f + (float) Math.sin(t * 2) * 3f + speed * 8f;
+                m.push();
+                m.translate(0, -9.4f / 16f, 0);
+                m.multiply(new Quaternionf().rotateZ((float) Math.toRadians(flop)));
+                m.translate(0, -7.4f / 16f, 0);
+                coneHere(4.4f, 7.6f, CubeDraw.shade(c, 1.15f), c, CubeDraw.shade(c, 0.6f), light);
+                cubeHere(2.2f, 2.2f, 2.2f, 0xFFFFFFFF, light);
+                m.pop();
+            }
+            case "cowboy" -> {
+                int dark = CubeDraw.shade(c, 0.6f);
+                box(0, -8.5f, 0, 0, 0, 0, 0, 0, 0, 8.2f, 0.8f, 12f, c, light);
+                for (int s = -1; s <= 1; s += 2) {
+                    box(s * 4f, -8.5f, 0, 0, 0, s * -26, s * 1.9f, 0, 0, 4f, 0.8f, 12f, c, light);
+                }
+                box(0, -10.6f, 0, 0, 0, 0, 0, 0, 0, 7.2f, 3.6f, 7.8f, c, light);
+                box(0, -12.2f, 0, 0, 0, 0, 0, 0, 0, 5f, 0.9f, 7.8f, CubeDraw.shade(c, 0.85f), light);
+                box(0, -9.4f, 0, 0, 0, 0, 0, 0, 0, 7.5f, 1f, 8.1f, dark, light);
+            }
+            case "beanie" -> {
+                box(0, -8.3f, 0, 0, 0, 0, 0, 0, 0, 8.8f, 3.2f, 8.8f, c, light);
+                box(0, -6.5f, 0, 0, 0, 0, 0, 0, 0, 9.3f, 1.8f, 9.3f, CubeDraw.shade(c, 0.75f), light);
+                box(0, -10.9f, 0, 0, 0, 0, 0, 0, 0, 2.4f, 2.4f, 2.4f, 0xFFF6F3FB, light);
+            }
+            case "cap" -> {
+                box(0, -8.4f, 0, 0, 0, 0, 0, 0, 0, 8.8f, 2.6f, 8.8f, c, light);
+                box(0, -7.4f, -6.2f, 8, 0, 0, 0, 0, 0, 7.6f, 0.7f, 4.4f, CubeDraw.shade(c, 0.75f), light);
+                box(0, -9.9f, 0, 0, 0, 0, 0, 0, 0, 1.1f, 0.6f, 1.1f, CubeDraw.shade(c, 0.75f), light);
+                box(0, -8.5f, -4.45f, 0, 0, 0, 0, 0, 0, 2.2f, 1.4f, 0.3f, 0xFFF6F3FB, FB);
+            }
+            case "headphones" -> {
+                int shell = 0xFF2A2D36;
+                box(0, -8.8f, 0, 0, 0, 0, 0, 0, 0, 9.8f, 1.1f, 1.9f, shell, light);
+                float pulse = 0.85f + 0.3f * (float) Math.sin(t * 3);
+                for (int s = -1; s <= 1; s += 2) {
+                    box(s * 4.75f, -6.6f, 0, 0, 0, 0, 0, 0, 0, 1.1f, 3.6f, 1.9f, shell, light);
+                    box(s * 5.2f, -3.9f, 0, 0, 0, 0, 0, 0, 0, 1.9f, 4.4f, 4.4f, shell, light);
+                    box(s * 6.25f, -3.9f, 0, 0, 0, 0, 0, 0, 0, 0.4f, 2.6f, 2.6f, CubeDraw.shade(c, pulse), FB);
+                }
+            }
+            case "flower" -> {
+                int[] petals = {0xFFFF9BC8, 0xFFFFE08A, 0xFFF6F3FB, 0xFFC8A8FF};
+                for (int k = 0; k < 12; k++) {
+                    double a = k * Math.PI * 2 / 12;
+                    float x = (float) Math.cos(a) * 4.7f;
+                    float z = (float) Math.sin(a) * 4.7f;
+                    if (k % 2 == 0) {
+                        box(x, -8.5f, z, 0, (float) -Math.toDegrees(a), 0, 0, 0, 0, 1.9f, 1.9f, 1.9f, petals[(k / 2) % 4], light);
+                        box(x * 1.06f, -8.5f, z * 1.06f, 0, (float) -Math.toDegrees(a), 0, 0, 0, 0, 0.8f, 0.8f, 1f, 0xFFFFC94D, light);
+                    } else {
+                        box(x, -8.2f, z, 0, (float) -Math.toDegrees(a), 0, 0, 0, 0, 1.4f, 0.9f, 2.4f, 0xFF4CB86A, light);
+                    }
+                }
+            }
+            case "bunny" -> {
+                for (int s = -1; s <= 1; s += 2) {
+                    float rot = s * (9f + (float) Math.sin(t * 1.8 + s) * 4f + speed * 10f);
+                    box(s * 2.2f, -8f, 0.5f, -speed * 14f, 0, rot, 0, -3.4f, 0, 2f, 6.8f, 1.1f, c, light);
+                    box(s * 2.2f, -8f, 0.2f, -speed * 14f, 0, rot, 0, -3.2f, 0, 1f, 5.2f, 1.05f, 0xFFF4A0B8, light);
+                }
+            }
+            case "shades" -> {
+                for (int s = -1; s <= 1; s += 2) {
+                    box(s * 2.1f, -4f, -4.35f, 0, 0, 0, 0, 0, 0, 3.4f, 2.1f, 0.5f, c, light);
+                    box(s * 2.7f, -4.5f, -4.62f, 0, 0, 0, 0, 0, 0, 0.9f, 0.5f, 0.1f, 0xFFF6F3FB, FB);
+                    box(s * 4.2f, -4.4f, -2.1f, 0, 0, 0, 0, 0, 0, 0.5f, 0.6f, 4.6f, c, light);
+                }
+                box(0, -4.5f, -4.35f, 0, 0, 0, 0, 0, 0, 1.2f, 0.6f, 0.5f, c, light);
+            }
             default -> box(0, -10, 0, 0, 0, 0, 0, 0, 0, 4, 2, 4, c, light);
         }
+    }
+
+    /** Cone with its apex at (px, py, pz) pixels, tilted by rotX/rotZ degrees; r and h in pixels. */
+    private void cone(float px, float py, float pz, float rotX, float rotZ, float r, float h, int top, int rim, int under, int lt) {
+        m.push();
+        m.translate(px / 16f, py / 16f, pz / 16f);
+        if (rotX != 0 || rotZ != 0) {
+            m.multiply(new Quaternionf().rotateX((float) Math.toRadians(rotX)).rotateZ((float) Math.toRadians(rotZ)));
+        }
+        coneHere(r, h, top, rim, under, lt);
+        m.pop();
+    }
+
+    private void coneHere(float r, float h, int top, int rim, int under, int lt) {
+        cones.add(new Cone(m.peek().copy(), r / 16f, h / 16f, top, rim, under, lt));
     }
 
     // ---- pets ---------------------------------------------------------------------------------

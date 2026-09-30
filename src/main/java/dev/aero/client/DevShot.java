@@ -35,6 +35,8 @@ public final class DevShot {
         if (System.getProperty("aero.world") != null) {
             if (System.getProperty("aero.bench") != null) {
                 buildBenchSteps();
+            } else if (System.getProperty("aero.hats") != null) {
+                buildHatSteps();
             } else if (System.getProperty("aero.trails") != null) {
                 buildTrailSteps();
             } else {
@@ -92,6 +94,26 @@ public final class DevShot {
                 Cosmetics.equip(Cosmetics.Kind.WINGS, wi);
                 mc.options.setPerspective(Perspective.THIRD_PERSON_BACK);
             }, 50));
+        }
+    }
+
+    /** -Daero.hats=1: third-person shots of hats with the aura and jump-ring trails. */
+    private static void buildHatSteps() {
+        String[][] looks = {{"kasa", "aura"}, {"tophat", "rings"}, {"santa", "aura"}, {"cowboy", "rings"}};
+        for (String[] look : looks) {
+            STEPS.add(new Step("hat_" + look[0] + "_" + look[1], () -> {
+                var mc = MinecraftClient.getInstance();
+                mc.options.hudHidden = true;
+                Cosmetics.equip(Cosmetics.Kind.CAPE, "none");
+                Cosmetics.equip(Cosmetics.Kind.WINGS, "none");
+                Cosmetics.equip(Cosmetics.Kind.PET, "none");
+                Cosmetics.equip(Cosmetics.Kind.HEAD, look[0]);
+                Cosmetics.equip(Cosmetics.Kind.TRAIL, look[1]);
+                mc.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+                if (mc.player.isOnGround()) {
+                    mc.player.jump();
+                }
+            }, 14));
         }
     }
 
@@ -254,7 +276,7 @@ public final class DevShot {
     private static int stage = -1;
     private static ClickGuiModern gui;
     private static final String[] NAMES = {"a_home", "b_card_pvp", "c_search", "d_wardrobe", "d2_wings", "w_bat", "w_butterfly", "w_mech", "w_crystal",
-            "w_neon", "w_phoenix", "w_seraph", "w_phantom", "d3_trails", "e_store", "f_rewards",
+            "w_neon", "w_phoenix", "w_seraph", "w_phantom", "x_kasa", "x_wizard", "x_tophat", "x_santa", "x_headphones", "d3_trails", "e_store", "f_rewards",
             "g_badges", "h_friends", "i_profiles", "j_title", "k_conflicts"};
 
     private static void guiTick(MinecraftClient mc) {
@@ -285,6 +307,12 @@ public final class DevShot {
             return;
         }
         String step = NAMES[stage];
+        if (step.startsWith("x_")) { // hats
+            Cosmetics.equip(Cosmetics.Kind.WINGS, "none");
+            Cosmetics.equip(Cosmetics.Kind.HEAD, step.substring(2));
+            gui.debugTab(1, 2);
+            return;
+        }
         if (step.startsWith("w_")) {
             Cosmetics.equip(Cosmetics.Kind.WINGS, step.substring(2));
             gui.debugTab(1, 1);

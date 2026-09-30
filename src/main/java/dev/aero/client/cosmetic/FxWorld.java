@@ -34,7 +34,7 @@ public final class FxWorld {
     /** Per-player trail state (footstep rhythm, helix/rainbow phase). */
     public static final class Walker {
         double x, z, acc;
-        boolean have, left;
+        boolean have, left, ground;
         float phase;
     }
 
@@ -93,6 +93,23 @@ public final class FxWorld {
     // ---- emitters -------------------------------------------------------------------------
 
     /** One trail step for a player who moved (dx, dz) since the last tick and now stands at (x, y, z). */
+    /** Aura: two lights circling the feet, also while standing still (called every tick). */
+    public static void aura(int color, Walker wk, double x, double y, double z) {
+        for (int i = 0; i < 2; i++) {
+            P p = add(650, x, y + 0.06, z, 0, 0.12, 0, 0, 0.1f, 0.02f, i == 0 ? color : CubeDraw.shade(color, 1.3f));
+            swirl(p, 0.62, 0, 3.2, wk.phase + i * Math.PI);
+        }
+        wk.phase += 0.42f;
+    }
+
+    /** Jump rings: a ring that spreads out over the ground where the player took off. */
+    public static void ring(int color, double x, double y, double z) {
+        for (int i = 0; i < 26; i++) {
+            P p = add(620, x, y + 0.05, z, 0, 0, 0, 0, 0.11f, 0.01f, i % 2 == 0 ? color : CubeDraw.shade(color, 1.3f));
+            swirl(p, 0.25, 2.3, 0, i * Math.PI * 2 / 26);
+        }
+    }
+
     public static void trail(String id, int color, Walker wk, double x, double y, double z, double dx, double dz) {
         var r = rnd();
         double dist = Math.sqrt(dx * dx + dz * dz);

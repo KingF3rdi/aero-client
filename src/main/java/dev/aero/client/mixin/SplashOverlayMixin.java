@@ -26,7 +26,7 @@ public abstract class SplashOverlayMixin {
     @Shadow private float progress;
 
     private static boolean aero$on() {
-        return AeroClient.CONFIG == null || AeroClient.CONFIG.customLoadingScreen;
+        return AeroClient.CONFIG != null && AeroClient.CONFIG.aeroLoadingScreen;
     }
 
     @Redirect(method = "render(Lnet/minecraft/client/gui/DrawContext;IIF)V",
