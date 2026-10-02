@@ -17,8 +17,8 @@ import java.util.List;
 
 /**
  * Title-screen card when mods are loaded that do the same job as an Aero module you have on: lists them
- * (name + mod id), with Open mods folder / Quit game / Play anyway, and an offer to move the jars out
- * to mods/aero-removed when the game closes.
+ * (name + mod id), with Open mods folder / Quit game / Play anyway, and an offer to disable them
+ * (renamed to .jar.disabled, the way launchers switch a mod off).
  */
 public class ConflictScreen extends Screen {
     private static final int TEXT = UiDraw.TEXT;
@@ -74,8 +74,8 @@ public class ConflictScreen extends Screen {
         return Math.max(4, Math.round(height / s) / 2 - h() / 2);
     }
 
-    private boolean allRemoved() {
-        return conflicts.stream().allMatch(c -> c.removed);
+    private boolean allDisabled() {
+        return conflicts.stream().allMatch(c -> c.disabled);
     }
 
     private int btnW() {
@@ -110,19 +110,19 @@ public class ConflictScreen extends Screen {
         for (var c : conflicts) {
             UiDraw.roundRect(context, x + 12, ry, W - 24, ROW - 4, 7, 0x0C000000);
             int idW = textRenderer.getWidth(c.id);
-            context.drawText(textRenderer, Text.literal(fit(c.name, W - 48 - idW)), x + 20, ry + 5, c.removed ? MUTED : TEXT, false);
+            context.drawText(textRenderer, Text.literal(fit(c.name, W - 48 - idW)), x + 20, ry + 5, c.disabled ? MUTED : TEXT, false);
             context.drawText(textRenderer, Text.literal(c.id), x + W - 20 - idW, ry + 5, MUTED, false);
-            if (c.removed) {
+            if (c.disabled) {
                 context.fill(x + 20, ry + 9, x + 20 + textRenderer.getWidth(fit(c.name, W - 48 - idW)), ry + 10, MUTED);
             }
             ry += ROW;
         }
 
         int fy = ry + 4;
-        context.drawText(textRenderer, Text.literal("Remove them from your mods folder, then restart."), x + 14, fy, MUTED, false);
-        String move = allRemoved() ? "✓ Moved to mods/aero-removed when the game closes" : "Move them out for me when the game closes";
-        boolean moveH = !allRemoved() && inside(mx, my, x + 14, fy + 11, textRenderer.getWidth(move), 10);
-        context.drawText(textRenderer, Text.literal(move), x + 14, fy + 12, allRemoved() ? 0xFF16A34A : UiDraw.accent(), false);
+        context.drawText(textRenderer, Text.literal("Disable or remove them, then restart."), x + 14, fy, MUTED, false);
+        String move = allDisabled() ? "✓ Disabled, takes effect after a restart" : "Disable them for me";
+        boolean moveH = !allDisabled() && inside(mx, my, x + 14, fy + 11, textRenderer.getWidth(move), 10);
+        context.drawText(textRenderer, Text.literal(move), x + 14, fy + 12, allDisabled() ? 0xFF16A34A : UiDraw.accent(), false);
         if (moveH) {
             context.fill(x + 14, fy + 21, x + 14 + textRenderer.getWidth(move), fy + 22, UiDraw.accent());
         }
@@ -167,9 +167,9 @@ public class ConflictScreen extends Screen {
         int x = px();
         int y = py();
         int fy = y + 46 + conflicts.size() * ROW + 4;
-        String move = "Move them out for me when the game closes";
-        if (!allRemoved() && inside(mx, my, x + 14, fy + 11, textRenderer.getWidth(move), 10)) {
-            conflicts.forEach(ModConflicts::remove);
+        String move = "Disable them for me";
+        if (!allDisabled() && inside(mx, my, x + 14, fy + 11, textRenderer.getWidth(move), 10)) {
+            conflicts.forEach(ModConflicts::disable);
             return true;
         }
         int by = y + h() - 30;

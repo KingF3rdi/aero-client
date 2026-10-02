@@ -32,12 +32,12 @@ import java.util.concurrent.CountDownLatch;
  * GitHub has a newer Aero release, a small window downloads and installs it before the game loads. Then, when
  * mods are installed that do
  * the same job as an Aero module, a small window lists them (name + mod id) with Open mods folder, Quit
- * game, Play anyway and "Remove them & quit" - the game only continues once the player picked something.
+ * game, Play anyway and "Disable them & quit" - the game only continues once the player picked something.
  * Nothing here may touch Minecraft classes (they aren't loaded yet), so it's plain Swing + Fabric Loader.
  * macOS is skipped (AWT and GLFW both want the main thread there); the in-game ConflictScreen covers it.
  */
 public final class AeroPreLaunch implements PreLaunchEntrypoint {
-    private enum Choice { PLAY, QUIT, REMOVE_QUIT }
+    private enum Choice { PLAY, QUIT, DISABLE_QUIT }
 
     @Override
     public void onPreLaunch() {
@@ -85,8 +85,8 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
             }
             ModConflicts.handledBeforeStart = true;
             Choice choice = showWindow(done -> new Card(conflicts, done));
-            if (choice == Choice.REMOVE_QUIT) {
-                conflicts.forEach(ModConflicts::remove);
+            if (choice == Choice.DISABLE_QUIT) {
+                conflicts.forEach(ModConflicts::disable);
             }
             if (choice != Choice.PLAY) {
                 System.exit(0);
@@ -214,7 +214,7 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
                     } else if (b[2].contains(e.getPoint())) {
                         onChoice.accept(Choice.PLAY);
                     } else if (link().contains(e.getPoint())) {
-                        onChoice.accept(Choice.REMOVE_QUIT);
+                        onChoice.accept(Choice.DISABLE_QUIT);
                     }
                 }
 
@@ -247,7 +247,7 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
 
         private Rectangle link() {
             FontMetrics fm = getFontMetrics(small);
-            String s = "Remove them for me & quit";
+            String s = "Disable them for me & quit";
             return new Rectangle(22, 78 + listH() + 26, fm.stringWidth(s), fm.getHeight());
         }
 
@@ -307,10 +307,10 @@ public final class AeroPreLaunch implements PreLaunchEntrypoint {
             g.setFont(small);
             g.setColor(MUTED);
             int fy = 78 + listH() + 12;
-            g.drawString("Remove them from your mods folder, then start the game again.", 22, fy + 8);
+            g.drawString("Disable or remove them, then start the game again.", 22, fy + 8);
             Rectangle lk = link();
             g.setColor(ACCENT);
-            g.drawString("Remove them for me & quit", lk.x, lk.y + g.getFontMetrics().getAscent());
+            g.drawString("Disable them for me & quit", lk.x, lk.y + g.getFontMetrics().getAscent());
             if (lk.equals(hover)) {
                 g.fillRect(lk.x, lk.y + g.getFontMetrics().getAscent() + 2, lk.width, 1);
             }

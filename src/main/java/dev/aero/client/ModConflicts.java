@@ -11,7 +11,7 @@ import java.util.Map;
 
 /**
  * Other mods that do the same job as an Aero module. They are listed on the title screen (see ConflictScreen);
- * disabling one moves its jar into mods/aero-removed once the game has exited, so it can always be put back.
+ * disabling one renames its jar to .jar.disabled in place (as launchers do), so it can be switched back on any time.
  */
 public final class ModConflicts {
     /**
@@ -61,13 +61,13 @@ public final class ModConflicts {
     /** Set once the pre-launch window has dealt with conflicts, so the in-game card doesn't ask again. */
     public static volatile boolean handledBeforeStart;
 
-    /** A loaded mod that duplicates an Aero module. {@code removed} flips once its removal is scheduled. */
+    /** A loaded mod that duplicates an Aero module. {@code disabled} flips once disabling it is done or scheduled. */
     public static final class Conflict {
         public final String name;
         public final String id;
         public final String module;
         public final Path jar;
-        public boolean removed;
+        public boolean disabled;
 
         public Conflict(String name, String id, String module, Path jar) {
             this.name = name;
@@ -111,21 +111,23 @@ public final class ModConflicts {
         return out;
     }
 
-    /** Moves the jar to mods/aero-removed as soon as the game has exited (the running jar is locked until then). */
-    public static void remove(Conflict c) {
-        if (c.removed) {
+    /**
+     * Disables the mod the way launchers do: x.jar becomes x.jar.disabled in the same folder, so it stays in the
+     * mods list and can be switched back on. Done right away if possible, else once the game has exited (Windows
+     * locks the jars of a running game).
+     */
+    public static void disable(Conflict c) {
+        if (c.disabled) {
             return;
         }
         try {
-            Path dir = c.jar.toAbsolutePath().getParent().resolve("aero-removed");
-            Files.createDirectories(dir);
-            Path target = dir.resolve(c.jar.getFileName());
+            Path target = c.jar.resolveSibling(c.jar.getFileName() + ".disabled");
             try {
                 Files.move(c.jar, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             } catch (Throwable locked) {
-                ModUpdater.scheduleSwap(c.jar, target); // still locked: move it once the game has exited
+                ModUpdater.scheduleSwap(c.jar, target); // still locked: rename it once the game has exited
             }
-            c.removed = true;
+            c.disabled = true;
         } catch (Throwable ignored) {
         }
     }
