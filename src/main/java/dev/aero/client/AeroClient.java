@@ -189,7 +189,7 @@ public class AeroClient implements ClientModInitializer {
     private static void tick(MinecraftClient client) {
         try {
             Screen screen = client.currentScreen;
-            if (isVanillaPause(screen) && !Menus.isClickGui(screen) && !Menus.isPauseOverlay(screen)) {
+            if (isVanillaPause(screen) && (CONFIG == null || CONFIG.aeroPauseMenu) && !Menus.isClickGui(screen) && !Menus.isPauseOverlay(screen)) {
                 client.setScreen(new PauseMenuScreen());
             }
             if (client.currentScreen == null && client.options != null) {

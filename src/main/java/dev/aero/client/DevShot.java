@@ -452,8 +452,30 @@ public final class DevShot {
             "w_neon", "w_phoenix", "w_seraph", "w_phantom", "x_kasa", "x_wizard", "x_tophat", "x_santa", "x_headphones", "d3_trails", "e_store", "f_rewards",
             "g_badges", "h_friends", "i_profiles", "j_title", "k_conflicts"};
 
+    private static void packsTick(MinecraftClient mc) {
+        if (ticks == 300) {
+            mc.setScreen(new net.minecraft.client.gui.screen.option.OptionsScreen(new TitleScreen(), mc.options));
+        } else if (ticks == 330) {
+            for (var child : mc.currentScreen.children()) {
+                if (child instanceof net.minecraft.client.gui.widget.ButtonWidget b && b.getMessage().getString().startsWith("Resource Packs")) {
+                    b.onPress(null);
+                    log(mc, "pressed Resource Packs");
+                }
+            }
+        } else if (ticks == 400) {
+            log(mc, "packs screen=" + (mc.currentScreen == null ? "null" : mc.currentScreen.getClass().getName()));
+            shot(mc, "l_packs");
+        } else if (ticks == 440) {
+            mc.scheduleStop();
+        }
+    }
+
     private static void guiTick(MinecraftClient mc) {
         if (++ticks < 300) {
+            return;
+        }
+        if (System.getProperty("aero.packs") != null) { // Options -> Resource Packs, as a player clicks it
+            packsTick(mc);
             return;
         }
         if (stage == -1) {

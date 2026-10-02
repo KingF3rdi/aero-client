@@ -203,7 +203,7 @@ public class ClickGuiScreenLegacy extends Screen {
     private static int lastYouTab;
 
     private void layoutPanel() {
-        s = Math.max(0.5f, Math.min(3f, Math.min(width * 0.8f / PW, height * 0.78f / PH)));
+        s = Math.max(0.4f, Math.min(3f, Math.min(width * 0.66f / PW, height * 0.64f / PH)));
         int vw = Math.round(width / s);
         int vh = Math.round(height / s);
         pw = PW;
