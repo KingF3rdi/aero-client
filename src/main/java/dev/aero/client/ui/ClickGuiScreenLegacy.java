@@ -136,6 +136,10 @@ public class ClickGuiScreenLegacy extends Screen {
         }
     }
 
+    public void debugWardrobeYaw(float y) {
+        wardrobe.debugYaw(y);
+    }
+
     public void debugPublishCape(String fileName) {
         wardrobe.publishName = fileName;
         wardrobe.submitPublish();
@@ -486,7 +490,7 @@ public class ClickGuiScreenLegacy extends Screen {
         if (ModUpdater.state() == ModUpdater.State.IDLE) {
             ModUpdater.check();
         }
-        if (y0 >= 24) {
+        if (y0 >= 24 && ModUpdater.state() != ModUpdater.State.DEV) { // a dev build has nothing to update
             String ul = ModUpdater.label();
             int uw = textRenderer.getWidth(ul) + 16;
             int ux = x1 - uw - 6;

@@ -33,7 +33,9 @@ public final class DevShot {
 
     public static void register() {
         if (System.getProperty("aero.world") != null) {
-            if (System.getProperty("aero.bench") != null) {
+            if (System.getProperty("aero.rec") != null) {
+                buildRecSteps();
+            } else if (System.getProperty("aero.bench") != null) {
                 buildBenchSteps();
             } else if (System.getProperty("aero.hats") != null) {
                 buildHatSteps();
@@ -95,6 +97,170 @@ public final class DevShot {
                 mc.options.setPerspective(Perspective.THIRD_PERSON_BACK);
             }, 50));
         }
+    }
+
+    // ---- website preview recording (-Daero.world=1 -Daero.rec=1) ----------------------------------
+    // "rec_*" steps save one frame per tick to run/rec/<step>/ (encoded to video afterwards), "still_*" one picture.
+
+    private static int recFrame;
+    private static float recYaw;
+
+    private static void recSetup(MinecraftClient mc) {
+        var c = AeroClient.CONFIG;
+        var p = mc.player;
+        c.timeChanger = true;
+        c.timePreset = "Sunset";
+        c.hitboxes = false;
+        mc.options.hudHidden = false;
+        mc.options.getInactivityFpsLimit().setValue(net.minecraft.client.option.InactivityFpsLimit.MINIMIZED); // no AFK frame cap
+        c.ownNametag = false;
+        // clear a meadow around the demo spawn (it is inside a forest); the trees further out stay as a backdrop
+        int x = (int) Math.floor(p.getX());
+        int z = (int) Math.floor(p.getZ());
+        int top = mc.world.getTopY(net.minecraft.world.Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        p.getAbilities().flying = false;
+        p.setPosition(x + 0.5, top, z + 0.5);
+        var net = p.networkHandler;
+        net.sendChatCommand("fill " + (x - 14) + " " + top + " " + (z - 14) + " " + (x + 14) + " " + (top + 14) + " " + (z + 14) + " air");
+        net.sendChatCommand("fill " + (x - 14) + " " + (top - 1) + " " + (z - 14) + " " + (x + 14) + " " + (top - 1) + " " + (z + 14) + " grass_block");
+        boolean spot = true;
+        log(mc, "rec spot " + spot + " at " + x + "," + top + "," + z);
+    }
+
+    private static void buildRecSteps() {
+        STEPS.add(new Step("prep", () -> recSetup(MinecraftClient.getInstance()), 40));
+        STEPS.add(new Step("rec_hud", () -> {
+            var mc = MinecraftClient.getInstance();
+            var c = AeroClient.CONFIG;
+            c.fpsHud = false; // saving a frame every tick drags the counter down to a number that isn't real
+            c.cpsHud = false;
+            c.keystrokes = true;
+            c.armorHud = true;
+            c.potionHud = true;
+            c.coordsHud = false;
+            c.fpsX = 4;
+            c.fpsY = 4;
+            c.keystrokesX = 4;
+            c.keystrokesY = 4;
+            c.potionX = 4;
+            c.potionY = 68;
+            mc.inGameHud.getChatHud().clear(false); // the meadow /fill messages
+            var p = mc.player;
+            p.getInventory().setStack(0, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_SWORD));
+            p.getInventory().setStack(1, new net.minecraft.item.ItemStack(net.minecraft.item.Items.END_CRYSTAL, 64));
+            p.getInventory().setStack(2, new net.minecraft.item.ItemStack(net.minecraft.item.Items.OBSIDIAN, 64));
+            p.getInventory().setStack(3, new net.minecraft.item.ItemStack(net.minecraft.item.Items.GOLDEN_APPLE, 32));
+            p.getInventory().setStack(4, new net.minecraft.item.ItemStack(net.minecraft.item.Items.ENDER_PEARL, 16));
+            p.getInventory().setStack(8, new net.minecraft.item.ItemStack(net.minecraft.item.Items.MACE));
+            p.equipStack(net.minecraft.entity.EquipmentSlot.HEAD, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_HELMET));
+            p.equipStack(net.minecraft.entity.EquipmentSlot.CHEST, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_CHESTPLATE));
+            p.equipStack(net.minecraft.entity.EquipmentSlot.LEGS, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_LEGGINGS));
+            p.equipStack(net.minecraft.entity.EquipmentSlot.FEET, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_BOOTS));
+            p.equipStack(net.minecraft.entity.EquipmentSlot.OFFHAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING));
+            p.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(net.minecraft.entity.effect.StatusEffects.SPEED, 20 * 90, 1));
+            p.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(net.minecraft.entity.effect.StatusEffects.STRENGTH, 20 * 45, 1));
+            p.getInventory().setSelectedSlot(0);
+            mc.options.setPerspective(Perspective.FIRST_PERSON);
+            recYaw = p.getYaw();
+            p.setPitch(8f);
+        }, 120));
+        STEPS.add(new Step("rec_world", () -> {
+            var mc = MinecraftClient.getInstance();
+            var c = AeroClient.CONFIG;
+            c.fpsHud = false;
+            c.cpsHud = false;
+            c.keystrokes = false;
+            c.armorHud = false;
+            c.potionHud = false;
+            mc.options.hudHidden = true;
+            var p = mc.player;
+            for (var slot : new net.minecraft.entity.EquipmentSlot[]{net.minecraft.entity.EquipmentSlot.HEAD, net.minecraft.entity.EquipmentSlot.CHEST,
+                    net.minecraft.entity.EquipmentSlot.LEGS, net.minecraft.entity.EquipmentSlot.FEET}) {
+                p.equipStack(slot, net.minecraft.item.ItemStack.EMPTY);
+            }
+            Cosmetics.equip(Cosmetics.Kind.HEAD, "kasa");
+            Cosmetics.equip(Cosmetics.Kind.WINGS, "seraph");
+            Cosmetics.equip(Cosmetics.Kind.CAPE, "none");
+            Cosmetics.equip(Cosmetics.Kind.TRAIL, "aura");
+            Cosmetics.equip(Cosmetics.Kind.PET, "fox");
+            mc.options.setPerspective(Perspective.THIRD_PERSON_FRONT);
+            recYaw = p.getYaw();
+            p.setPitch(12f);
+        }, 140));
+        STEPS.add(new Step("rec_menu", () -> {
+            var mc = MinecraftClient.getInstance();
+            mc.options.hudHidden = false;
+            mc.options.setPerspective(Perspective.FIRST_PERSON);
+            gui = new ClickGuiModern(null, false);
+            mc.setScreen(gui);
+            gui.debugSelectByName("Totem Counter");
+        }, 130));
+        STEPS.add(new Step("rec_wardrobe", () -> {
+            Cosmetics.equip(Cosmetics.Kind.WINGS, "none");
+            Cosmetics.equip(Cosmetics.Kind.PET, "none");
+            Cosmetics.equip(Cosmetics.Kind.HEAD, "kasa");
+            gui.debugTab(1, 2);
+        }, 140));
+        STEPS.add(new Step("still_store", () -> gui.debugTab(1, 101), 30));
+        STEPS.add(new Step("still_pause", () -> MinecraftClient.getInstance().setScreen(new dev.aero.client.ui.PauseMenuScreen()), 30));
+    }
+
+    private static final String[] REC_MENU = {"Totem Counter", "Keystrokes", "Fullbright", "Freelook", "Chat", "Optimizer"};
+    private static final String[] REC_HATS = {"kasa", "wizard", "tophat", "headphones", "santa", "cowboy", "flower"};
+
+    /** Per tick while a rec_ step runs: animate the scene, then save the frame. */
+    private static void recTick(MinecraftClient mc, String step) {
+        var p = mc.player;
+        switch (step) {
+            case "rec_hud" -> {
+                recYaw += 0.45f;
+                p.setYaw(recYaw);
+                p.setHeadYaw(recYaw);
+            }
+            case "rec_world" -> {
+                recYaw += 1.6f; // the player turns, so the front camera circles around the cosmetics
+                p.setYaw(recYaw);
+                p.setBodyYaw(recYaw);
+                p.setHeadYaw(recYaw);
+                if (recFrame == 70) {
+                    Cosmetics.equip(Cosmetics.Kind.HEAD, "wizard");
+                    Cosmetics.equip(Cosmetics.Kind.WINGS, "dragon");
+                    Cosmetics.equip(Cosmetics.Kind.TRAIL, "rings");
+                }
+                if (recFrame >= 70 && recFrame % 18 == 0 && p.isOnGround()) {
+                    p.jump();
+                }
+            }
+            case "rec_menu" -> {
+                if (recFrame > 0 && recFrame % 22 == 0) {
+                    gui.debugSelectByName(REC_MENU[(recFrame / 22) % REC_MENU.length]);
+                }
+            }
+            case "rec_wardrobe" -> {
+                gui.debugWardrobeYaw(200f + recFrame * 2.6f);
+                if (recFrame > 0 && recFrame % 20 == 0) {
+                    Cosmetics.equip(Cosmetics.Kind.HEAD, REC_HATS[(recFrame / 20) % REC_HATS.length]);
+                }
+            }
+            default -> {
+            }
+        }
+        try {
+            Path dir = mc.runDirectory.toPath().resolve("rec").resolve(step);
+            Files.createDirectories(dir);
+            Path out = dir.resolve(String.format("%04d.png", recFrame));
+            ScreenshotRecorder.takeScreenshot(mc.getFramebuffer(), img -> {
+                try {
+                    img.writeTo(out);
+                } catch (Exception ignored) {
+                } finally {
+                    img.close();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        recFrame++;
     }
 
     /** -Daero.hats=1: third-person shots of hats with the aura and jump-ring trails. */
@@ -215,6 +381,9 @@ public final class DevShot {
             log(mc, "tick " + ticks + " screen=" + (mc.currentScreen == null ? "null" : mc.currentScreen.getClass().getSimpleName())
                     + " player=" + (mc.player != null) + " started=" + worldStarted + " ready=" + worldReady + " idx=" + index);
         }
+        if (ticks == 20 && System.getProperty("aero.rec") != null) {
+            mc.getWindow().setWindowedSize(1600, 900); // website previews
+        }
         if (!worldStarted) {
             if (ticks >= 300 && mc.currentScreen instanceof TitleScreen) {
                 worldStarted = true;
@@ -252,9 +421,13 @@ public final class DevShot {
             mc.player.hurtTime = 8;
             mc.player.maxHurtTime = 10;
         }
+        if (STEPS.get(index).name().startsWith("rec_")) {
+            recTick(mc, STEPS.get(index).name());
+        }
         if (--wait > 0) {
             return;
         }
+        recFrame = 0;
         Step cur = STEPS.get(index);
         log(mc, "shot " + cur.name() + " armorBegin=" + DamageTintState.armorBegin + " equipHits=" + DamageTintState.equipHits + " equipHurt=" + DamageTintState.equipHurtHits);
         if (cur.name().startsWith("bench")) {

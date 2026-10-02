@@ -71,6 +71,10 @@ public final class WardrobePanel {
         return mx >= x && mx < x + w && my >= y && my < y + h;
     }
 
+    public void debugYaw(float y) {
+        yaw = y;
+    }
+
     public void debugTab(int t) {
         tab = t;
         yaw = t <= 1 ? 35f : 200f;
