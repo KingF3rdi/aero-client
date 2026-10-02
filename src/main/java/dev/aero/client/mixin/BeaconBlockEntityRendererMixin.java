@@ -15,9 +15,8 @@ public class BeaconBlockEntityRendererMixin {
         }
     }
 
-    @Inject(method = {"renderBeam(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;FFIII)V",
-            "renderBeam(Lnet/minecraft/client/util/math/MatrixStack;Lnet/minecraft/client/render/VertexConsumerProvider;FJZIII)V"},
-            at = @At("HEAD"), cancellable = true, require = 0)
+    // 1.21.11: beams go through the render command queue (both static renderBeam overloads, all void).
+    @Inject(method = "renderBeam", at = @At("HEAD"), cancellable = true, require = 0)
     private static void aero$noBeaconStatic(CallbackInfo ci) {
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.noBeacons) {
             ci.cancel();

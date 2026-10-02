@@ -33,4 +33,12 @@ public class SkyRenderingMixin {
             state.starBrightness = 1f;
         }
     }
+
+    /** Hide Stars / Hide Sky: stars moved from WorldRenderer to SkyRendering in 1.21.x. */
+    @Inject(method = "renderStars", at = @At("HEAD"), cancellable = true, require = 0)
+    private void aero$hideStars(CallbackInfo ci) {
+        if (AeroClient.CONFIG != null && (AeroClient.CONFIG.hideSky || AeroClient.CONFIG.hideStars)) {
+            ci.cancel();
+        }
+    }
 }

@@ -6,10 +6,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(targets = {
-        "net.minecraft.client.gui.screen.ingame.InventoryScreen",
-        "net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen"
-}, priority = 2000)
+// Only InventoryScreen declares drawEntity; the creative screen calls that same static method.
+@Mixin(targets = "net.minecraft.client.gui.screen.ingame.InventoryScreen", priority = 2000)
 public class InventoryScreenMixin {
     // InventoryScreen actually declares two overloads named drawEntity: the public 10-arg one that
     // draws the GUI preview widget (what we want to cancel), and a private

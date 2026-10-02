@@ -29,19 +29,14 @@ public class ChatHudMixin {
         return Text.literal(Visuals.clockPrefix()).append(message);
     }
 
-    @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;fill(IIIII)V"), index = 4, require = 0)
-    private int aero$noChatFill(int color) {
+    /** 1.21.11 draws the chat background through ChatHud.Backend; its black fills are the background. */
+    @ModifyArg(method = "render(Lnet/minecraft/client/gui/hud/ChatHud$Backend;IIZ)V",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/hud/ChatHud$Backend;fill(IIIII)V"), index = 4, require = 0)
+    private int aero$noChatBg(int color) {
         if (AeroClient.CONFIG != null && AeroClient.CONFIG.noChatBg && ((color & 0x00FFFFFF) == 0)) {
             return 0;
         }
         return color;
-    }
-
-    @Inject(method = {"drawBackground", "renderBackground", "drawChatBackground"}, at = @At("HEAD"), cancellable = true, require = 0)
-    private void aero$noChatBg(CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.noChatBg) {
-            ci.cancel();
-        }
     }
 
     @Inject(method = "addMessage(Lnet/minecraft/text/Text;Lnet/minecraft/network/message/MessageSignatureData;Lnet/minecraft/client/gui/hud/MessageIndicator;)V",
