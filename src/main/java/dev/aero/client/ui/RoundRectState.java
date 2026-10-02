@@ -14,15 +14,15 @@ import org.jspecify.annotations.Nullable;
  * because the GUI intersection-tests every new element against the ones already added.
  */
 record RoundRectState(RenderPipeline pipeline, TextureSetup textureSetup, Matrix3x2f pose,
-                      int x, int y, int w, int h, int r, int color, boolean border,
+                      int x, int y, int w, int h, int r, int color, int color2, boolean border,
                       float au, float av, float[] corner,
                       @Nullable ScreenRect scissorArea, @Nullable ScreenRect bounds) implements SimpleGuiElementRenderState {
 
     /** corner = {u0, v0, u1, v1} of the top-left-oriented 2r x 2r block, already normalized. */
     static RoundRectState of(RenderPipeline pipeline, TextureSetup tex, Matrix3x2f pose, int x, int y, int w, int h, int r,
-                             int color, boolean border, float au, float av, float[] corner, @Nullable ScreenRect scissor) {
+                             int color, int color2, boolean border, float au, float av, float[] corner, @Nullable ScreenRect scissor) {
         ScreenRect rect = new ScreenRect(x, y, w, h).transformEachVertex(pose);
-        return new RoundRectState(pipeline, tex, pose, x, y, w, h, r, color, border, au, av, corner, scissor,
+        return new RoundRectState(pipeline, tex, pose, x, y, w, h, r, color, color2, border, au, av, corner, scissor,
                 scissor != null ? scissor.intersection(rect) : rect);
     }
 
@@ -59,9 +59,26 @@ record RoundRectState(RenderPipeline pipeline, TextureSetup textureSetup, Matrix
     }
 
     private void quad(VertexConsumer v, int x1, int y1, int x2, int y2, float u1, float v1, float u2, float v2) {
-        v.vertex(pose, x1, y1).texture(u1, v1).color(color);
-        v.vertex(pose, x1, y2).texture(u1, v2).color(color);
-        v.vertex(pose, x2, y2).texture(u2, v2).color(color);
-        v.vertex(pose, x2, y1).texture(u2, v1).color(color);
+        int c1 = at(y1);
+        int c2 = at(y2);
+        v.vertex(pose, x1, y1).texture(u1, v1).color(c1);
+        v.vertex(pose, x1, y2).texture(u1, v2).color(c2);
+        v.vertex(pose, x2, y2).texture(u2, v2).color(c2);
+        v.vertex(pose, x2, y1).texture(u2, v1).color(c1);
+    }
+
+    /** Vertical gradient: color at the top edge, color2 at the bottom. */
+    private int at(int yy) {
+        if (color == color2) {
+            return color;
+        }
+        float t = (yy - y) / (float) h;
+        int out = 0;
+        for (int sh = 0; sh < 32; sh += 8) {
+            int a = (color >>> sh) & 0xFF;
+            int b = (color2 >>> sh) & 0xFF;
+            out |= Math.round(a + (b - a) * t) << sh;
+        }
+        return out;
     }
 }

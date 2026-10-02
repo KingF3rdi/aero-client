@@ -32,7 +32,7 @@ import java.util.Locale;
 public class ClickGuiScreenLegacy extends Screen {
     private static final int TEXT = UiDraw.TEXT;
     private static final int MUTED = UiDraw.MUTED;
-    private static final int CARD = 0xB0FFFFFF;
+    private static final int CARD = 0x26000000;
 
     /** Logical panel size; the matrix scale maps it onto any window size. */
     private static final int PW = 720;
@@ -80,6 +80,11 @@ public class ClickGuiScreenLegacy extends Screen {
     private int topTab;
     private int youTab;
     private int openCard = -1;
+    /** Client tab: the open category shows a module's settings instead of the module list. */
+    private boolean moduleView;
+    /** Client tab: the Search card is open in the center panel. */
+    private boolean searchView;
+    /** Carousel slide: which category the center panel showed before, and when it changed. */
     private int cosTab;
     private int friendSel = -1;
     private String friendDraft = "";
@@ -110,8 +115,10 @@ public class ClickGuiScreenLegacy extends Screen {
                         openCard = i;
                     }
                 }
+                searchView = false;
                 rebuild();
                 selected = m;
+                moduleView = true;
             }
         }
     }
@@ -122,8 +129,20 @@ public class ClickGuiScreenLegacy extends Screen {
         wardrobe.openBuy(dev.aero.client.cosmetic.Cosmetics.named(dev.aero.client.cosmetic.Cosmetics.Kind.CAPE, capeId));
     }
 
+    public void debugHome() {
+        topTab = 0;
+        openCard = -1;
+        moduleView = false;
+        searchView = false;
+        search = "";
+        rebuild();
+    }
+
     public void debugSearch(String q) {
         topTab = 0;
+        searchView = true;
+        openCard = -1;
+        moduleView = false;
         search = q;
         rebuild();
     }
@@ -297,7 +316,7 @@ public class ClickGuiScreenLegacy extends Screen {
         super.init();
         topTab = lastTopTab;
         youTab = lastYouTab;
-        openCard = lastOpenCard >= 0 && CARDS.get(lastOpenCard).kind() == 0 ? lastOpenCard : 0;
+        openCard = lastOpenCard >= 0 && CARDS.get(lastOpenCard).kind() == 0 ? lastOpenCard : -1;
         rebuild();
         selected = lastSelected != null && visible.contains(lastSelected) ? lastSelected
                 : !visible.isEmpty() ? visible.get(0) : null;
@@ -453,6 +472,10 @@ public class ClickGuiScreenLegacy extends Screen {
     }
 
     private void renderScaled(DrawContext context, int mx, int my) {
+        if (topTab == 0) {
+            drawHome(context, mx, my);
+            return;
+        }
         UiDraw.glass(context, ox, oy, pw, ph, 0, 22);
         drawTop(context, mx, my);
         if (topTab == 1) {
@@ -502,16 +525,17 @@ public class ClickGuiScreenLegacy extends Screen {
 
         // Segmented tab control
         String[] tabs = {"Client", "You", "Friends"};
-        UiDraw.roundRect(context, tabX(0) - 3, y0 + 9, 3 * 74 + 2, 24, 12, 0x14000000);
+        UiDraw.roundRect(context, tabX(0) - 3, y0 + 9, 3 * 74 + 2, 24, 12, 0x12FFFFFF);
         for (int i = 0; i < 3; i++) {
             int tx = tabX(i);
             boolean on = topTab == i;
             boolean h = inside(mx, my, tx, y0 + 12, 70, 18);
             if (on) {
                 UiDraw.roundRect(context, tx, y0 + 13, 70, 18, 9, 0x10000000);
-                UiDraw.roundRect(context, tx, y0 + 12, 70, 18, 9, 0xFFFFFFFF);
+                UiDraw.roundRect(context, tx, y0 + 12, 70, 18, 9, 0x2EFFFFFF);
+                UiDraw.roundBorder(context, tx, y0 + 12, 70, 18, 9, UiDraw.SELECT_RIM);
             } else if (h) {
-                UiDraw.roundRect(context, tx, y0 + 12, 70, 18, 9, 0x66FFFFFF);
+                UiDraw.roundRect(context, tx, y0 + 12, 70, 18, 9, UiDraw.HOVER);
             }
             int tw = textRenderer.getWidth(tabs[i]);
             context.drawText(textRenderer, Text.literal(tabs[i]), tx + (70 - tw) / 2, y0 + 17, on ? TEXT : MUTED, false);
@@ -529,14 +553,14 @@ public class ClickGuiScreenLegacy extends Screen {
         int chipW = shardChipW();
         int chipX = x1 - 16 - 20 - 8 - chipW;
         boolean chipH = inside(mx, my, chipX, y0 + 10, chipW, 22);
-        UiDraw.roundRect(context, chipX, y0 + 10, chipW, 22, 11, chipH ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
-        UiDraw.roundBorder(context, chipX, y0 + 10, chipW, 22, 11, 0x14000000);
+        UiDraw.roundRect(context, chipX, y0 + 10, chipW, 22, 11, chipH ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+        UiDraw.roundBorder(context, chipX, y0 + 10, chipW, 22, 11, UiDraw.BORDER_SOFT);
         Shards.drawGem(context, chipX + 7, y0 + 15, 12);
         context.drawText(textRenderer, Text.literal(Shards.balanceLabel()), chipX + 22, y0 + 17, TEXT, false);
 
         int closeX = x1 - 16 - 20;
         boolean closeH = inside(mx, my, closeX, y0 + 11, 20, 20);
-        UiDraw.roundRect(context, closeX, y0 + 11, 20, 20, 10, closeH ? 0xFFFF5F57 : 0x12000000);
+        UiDraw.roundRect(context, closeX, y0 + 11, 20, 20, 10, closeH ? 0xFFFF5F57 : UiDraw.LIFT);
         context.drawText(textRenderer, Text.literal("×"), closeX + 7, y0 + 17, closeH ? 0xFFFFFFFF : MUTED, false);
         UiDraw.divider(context, x0 + 16, y0 + TOP, pw - 32);
     }
@@ -585,6 +609,494 @@ public class ClickGuiScreenLegacy extends Screen {
         return c.kind() == 1 ? 0xFF14B8A6 : c.kind() == 2 ? 0xFF6366F1 : catColor(c.category());
     }
 
+
+    // ---- Client tab: home cards, center panel, category carousel ---------------------------------
+
+    private static final int CARD_W = 92;
+    private static final int CARD_H = 104;
+    private static final int QUICK_W = 66;
+    private static final int QUICK_H = 50;
+    private static final int PANEL_W = 380;
+    private static final String[] QUICK = {"Wardrobe", "Search", "Friends", "Profiles", "HUD"};
+
+    private int vw() {
+        return Math.round(width / s);
+    }
+
+    private int vh() {
+        return Math.round(height / s);
+    }
+
+    /** Categories only (Profiles / HUD Editor live in the quick row). */
+    private List<Integer> categoryCards() {
+        List<Integer> out = new ArrayList<>();
+        for (int i = 0; i < CARDS.size(); i++) {
+            if (CARDS.get(i).kind() == 0) {
+                out.add(i);
+            }
+        }
+        return out;
+    }
+
+    private boolean panelOpen() {
+        return openCard >= 0 || searchView;
+    }
+
+    private int panelX() {
+        return (vw() - PANEL_W) / 2;
+    }
+
+    private int panelY() {
+        return Math.round(vh() * 0.15f);
+    }
+
+    private int panelH() {
+        return Math.round(vh() * 0.66f);
+    }
+
+    private int titleY() {
+        return panelOpen() ? Math.round(vh() * 0.04f) : Math.round(vh() * 0.17f);
+    }
+
+    /** Home: one row of category cards. Open: the categories around the selected one, two on each side. */
+    private int[] homeCard(int slot, int count) {
+        int gap = 14;
+        int total = count * CARD_W + (count - 1) * gap;
+        int x = (vw() - total) / 2 + slot * (CARD_W + gap);
+        return new int[]{x, Math.round(vh() * 0.36f), CARD_W, CARD_H};
+    }
+
+    /** Side card k (-2, -1, 1, 2) next to the center panel. */
+    private int[] sideCard(int k) {
+        int gap = 16;
+        int y = panelY() + (panelH() - CARD_H) / 2;
+        int x = k < 0 ? panelX() - gap - (-k) * (CARD_W + gap) + gap : panelX() + PANEL_W + gap + (k - 1) * (CARD_W + gap);
+        return new int[]{x, y, CARD_W, CARD_H};
+    }
+
+    private int[] quickCard(int i) {
+        int gap = 10;
+        int total = QUICK.length * QUICK_W + (QUICK.length - 1) * gap;
+        int y = panelOpen() ? panelY() + panelH() + 12 : Math.round(vh() * 0.36f) + CARD_H + 34;
+        return new int[]{(vw() - total) / 2 + i * (QUICK_W + gap), y, QUICK_W, QUICK_H};
+    }
+
+    private void glassCard(DrawContext c, int x, int y, int w, int h, int r, float hover, boolean active) {
+        UiDraw.frost(c, x, y, w, h, r, hover, active);
+    }
+
+    // Live rectangles: every card eases toward where it belongs (home slot, side slot or the open panel) each
+    // frame. That one rule gives the card-to-panel morph, the carousel slide and the hover grow.
+    private final java.util.Map<Integer, float[]> anim = new java.util.HashMap<>(); // x, y, w, h, alpha, hover
+    private long animNanos;
+    private float animK;
+
+    private void animStep() {
+        long now = System.nanoTime();
+        float dt = animNanos == 0 ? 0f : Math.min(0.1f, (now - animNanos) / 1e9f);
+        animNanos = now;
+        animK = 1f - (float) Math.exp(-dt * 13f);
+    }
+
+    /** Moves key toward the target; the first time it starts a little lower and invisible, so the menu fades in. */
+    private float[] ease(int key, float x, float y, float w, float h, float alpha, boolean hover) {
+        float[] a = anim.get(key);
+        if (a == null) {
+            a = new float[]{x, y + 14, w, h, 0f, 0f};
+            anim.put(key, a);
+        }
+        float[] t = {x, y, w, h, alpha, hover ? 1f : 0f};
+        for (int i = 0; i < 6; i++) {
+            a[i] += (t[i] - a[i]) * (i == 5 ? Math.min(1f, animK * 1.5f) : animK);
+            if (Math.abs(t[i] - a[i]) < 0.02f) {
+                a[i] = t[i];
+            }
+        }
+        return a;
+    }
+
+    private float[] ease(int key, int[] r, float alpha, boolean hover) {
+        return ease(key, r[0], r[1], r[2], r[3], alpha, hover);
+    }
+
+    /** Scales everything drawn until popMatrix around the middle of a (the hover grow). */
+    private void pushGrow(DrawContext c, float[] a, float amount) {
+        float g = 1f + amount * a[5];
+        float cx = a[0] + a[2] / 2f;
+        float cy = a[1] + a[3] / 2f;
+        c.getMatrices().pushMatrix();
+        c.getMatrices().translate(cx, cy);
+        c.getMatrices().scale(g, g);
+        c.getMatrices().translate(-cx, -cy);
+    }
+
+    /** Pixel icon drawn k times larger, centered on (cx, cy). */
+    private void bigIcon(DrawContext c, CardDef card, int cx, int cy, float k, int col) {
+        c.getMatrices().pushMatrix();
+        c.getMatrices().translate(cx - 5 * k, cy - 5 * k);
+        c.getMatrices().scale(k, k);
+        drawCardIcon(c, card, 0, 0, col);
+        c.getMatrices().popMatrix();
+    }
+
+    private void quickIcon(DrawContext c, int i, int cx, int cy, float k, int col) {
+        c.getMatrices().pushMatrix();
+        c.getMatrices().translate(cx - 5 * k, cy - 5 * k);
+        c.getMatrices().scale(k, k);
+        FillBatch b = new FillBatch(c);
+        switch (i) {
+            case 0 -> iconPerson(b, 0, 0, col);
+            case 1 -> iconMagnifier(b, 0, 0, col);
+            case 2 -> {
+                iconPerson(b, -3, 1, UiDraw.withAlpha(col, 0x99));
+                iconPerson(b, 2, 0, col);
+            }
+            case 3 -> {
+                b.fill(0, 1, 10, 2, col);
+                b.fill(0, 5, 10, 6, col);
+                b.fill(0, 9, 10, 10, col);
+                b.fill(6, -1, 8, 4, col);
+                b.fill(2, 3, 4, 8, col);
+                b.fill(5, 7, 7, 12, col);
+            }
+            default -> iconMonitor(b, 0, 0, col);
+        }
+        b.flush();
+        c.getMatrices().popMatrix();
+    }
+
+    private void drawCategoryCard(DrawContext c, int cardIndex, float[] a, boolean active) {
+        if (a[4] < 0.03f) {
+            return;
+        }
+        CardDef card = CARDS.get(cardIndex);
+        int x = Math.round(a[0]);
+        int y = Math.round(a[1]);
+        int w = Math.round(a[2]);
+        int h = Math.round(a[3]);
+        UiDraw.fade = a[4];
+        pushGrow(c, a, 0.1f);
+        try {
+            glassCard(c, x, y, w, h, 14, a[5], active);
+            int col = UiDraw.fa(TEXT);
+            bigIcon(c, card, x + w / 2, y + h / 2 - 14, 2.6f, col);
+            if ((col >>> 24) >= 8) {
+                String t = card.title();
+                c.drawText(textRenderer, Text.literal(t), x + (w - textRenderer.getWidth(t)) / 2, y + h / 2 + 14, col, false);
+                c.fill(x + w / 2 - 8, y + h / 2 + 27, x + w / 2 + 8, y + h / 2 + 28, UiDraw.fa(active ? UiDraw.accent() : 0x66FFFFFF));
+            }
+        } finally {
+            c.getMatrices().popMatrix();
+            UiDraw.fade = 1f;
+        }
+    }
+
+    /** Where category slot i sits: home row, a side slot (-2..2, +-3 = parked out of sight) or the open panel. */
+    private int sideSlot(List<Integer> cats, int i) {
+        int n = cats.size();
+        if (searchView) {
+            return i < 2 ? i - 2 : i < 4 ? i - 1 : 3;
+        }
+        int d = Math.floorMod(i - cats.indexOf(openCard), n);
+        if (d == 0) {
+            return 0;
+        }
+        return d <= 2 ? d : d >= n - 2 ? d - n : d <= n / 2 ? 3 : -3;
+    }
+
+    private void drawHome(DrawContext context, int mx, int my) {
+        animStep();
+        // Big title: the mark and the name, centered.
+        String name = "Aero";
+        float k = 4f;
+        int tw = Math.round(textRenderer.getWidth(name) * k);
+        int markW = Math.round(9 * k);
+        float[] ta = ease(-3, (vw() - tw - markW - 10) / 2f, titleY(), 0, 0, 1f, false);
+        int tx = Math.round(ta[0]);
+        int ty = Math.round(ta[1]);
+        UiDraw.fade = ta[4];
+        UiDraw.aeroMark(context, tx, ty - 2, markW, UiDraw.fa(UiDraw.accent()));
+        if (ta[4] > 0.05f) {
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(tx + markW + 10, ty);
+            context.getMatrices().scale(k, k);
+            context.drawText(textRenderer, Text.literal(name), 0, 0, UiDraw.fa(TEXT), true);
+            context.getMatrices().popMatrix();
+        }
+        UiDraw.fade = 1f;
+
+        List<Integer> cats = categoryCards();
+        float[] panel = null;
+        for (int i = 0; i < cats.size(); i++) {
+            int idx = cats.get(i);
+            if (!panelOpen()) {
+                int[] r = homeCard(i, cats.size());
+                drawCategoryCard(context, idx, ease(idx, r, 1f, inside(mx, my, r[0], r[1], r[2], r[3])), false);
+                continue;
+            }
+            int slot = sideSlot(cats, i);
+            if (slot == 0) {
+                panel = ease(idx, panelX(), panelY(), PANEL_W, panelH(), 1f, false);
+                continue;
+            }
+            int[] r = sideCard(slot);
+            boolean parked = Math.abs(slot) > 2;
+            drawCategoryCard(context, idx, ease(idx, r, parked ? 0f : 1f, !parked && inside(mx, my, r[0], r[1], r[2], r[3])), false);
+        }
+        if (searchView) {
+            if (!anim.containsKey(-2)) {
+                int[] q = quickCard(1);
+                anim.put(-2, new float[]{q[0], q[1], q[2], q[3], 1f, 0f});
+            }
+            panel = ease(-2, panelX(), panelY(), PANEL_W, panelH(), 1f, false);
+        } else {
+            anim.remove(-2);
+        }
+        if (panel != null) {
+            drawCenterPanel(context, mx, my, panel);
+        }
+
+        for (int i = 0; i < QUICK.length; i++) {
+            int[] r = quickCard(i);
+            boolean active = (i == 1 && searchView);
+            float[] a = ease(100 + i, r, 1f, inside(mx, my, r[0], r[1], r[2], r[3]));
+            int x = Math.round(a[0]);
+            int y = Math.round(a[1]);
+            UiDraw.fade = a[4];
+            pushGrow(context, a, 0.08f);
+            try {
+                glassCard(context, x, y, r[2], r[3], 12, a[5], active);
+                int col = UiDraw.fa(TEXT);
+                quickIcon(context, i, x + r[2] / 2, y + 18, 1.7f, col);
+                if ((col >>> 24) >= 8) {
+                    String lab = QUICK[i];
+                    context.drawText(textRenderer, Text.literal(lab), x + (r[2] - textRenderer.getWidth(lab)) / 2, y + 34, col, false);
+                }
+            } finally {
+                context.getMatrices().popMatrix();
+                UiDraw.fade = 1f;
+            }
+        }
+    }
+
+    /** The open category (list or one module's settings) or Search, in one glass panel. */
+    private void drawCenterPanel(DrawContext context, int mx, int my, float[] a) {
+        // a = the live rect: it grows out of the clicked card, so the header slides from the card's icon spot
+        // to the panel's and the content is revealed by the growing clip.
+        float p = Math.max(0f, Math.min(1f, (a[2] - CARD_W) / (float) (PANEL_W - CARD_W)));
+        int ax = Math.round(a[0]);
+        int ay = Math.round(a[1]);
+        int aw = Math.round(a[2]);
+        int ah = Math.round(a[3]);
+        UiDraw.fade = a[4];
+        try {
+            drawCenterPanelBody(context, mx, my, ax, ay, aw, ah, p);
+        } finally {
+            UiDraw.fade = 1f;
+        }
+    }
+
+    private void drawCenterPanelBody(DrawContext context, int mx, int my, int ax, int ay, int aw, int ah, float p) {
+        UiDraw.glass(context, ax, ay, aw, ah, 0, 16);
+        int x = panelX();
+        int y = panelY();
+        int w = PANEL_W;
+        int h = panelH();
+        int cx = ax + aw / 2;
+        int hy = ay + Math.round((1f - p) * (ah / 2f - 14 - 17));
+        String title;
+        if (searchView) {
+            title = "Search";
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(cx - 9, hy + 8);
+            context.getMatrices().scale(1.8f, 1.8f);
+            FillBatch b = new FillBatch(context);
+            iconMagnifier(b, 0, 0, TEXT);
+            b.flush();
+            context.getMatrices().popMatrix();
+        } else {
+            CardDef card = CARDS.get(openCard);
+            title = card.title();
+            bigIcon(context, card, cx, hy + 17, 1.8f, TEXT);
+        }
+        context.drawText(textRenderer, Text.literal(title), cx - textRenderer.getWidth(title) / 2, hy + 32, TEXT, false);
+        context.fill(cx - 10, hy + 44, cx + 10, hy + 45, UiDraw.accent());
+        if (p < 0.85f) {
+            return;
+        }
+        // the last few pixels of travel: the content rides along with the panel instead of waiting at its final spot
+        int dx = cx - (x + w / 2);
+        int dy = ay - y;
+        context.enableScissor(ax, ay, ax + aw, ay + ah);
+        context.getMatrices().pushMatrix();
+        context.getMatrices().translate(dx, dy);
+        try {
+            drawCenterContent(context, mx - dx, my - dy, x, y, w, h, x + w / 2);
+        } finally {
+            context.getMatrices().popMatrix();
+            context.disableScissor();
+        }
+    }
+
+    private void drawCenterContent(DrawContext context, int mx, int my, int x, int y, int w, int h, int cx) {
+        int top = y + 52;
+
+        if (searchView) {
+            UiDraw.field(context, x + 12, top, w - 24, 20, searchFocus);
+            String q = search.isEmpty() && !searchFocus ? "Type to search modules and settings" : search + (searchFocus && (System.currentTimeMillis() / 500) % 2 == 0 ? "_" : "");
+            context.drawText(textRenderer, Text.literal(fitLeft(q, w - 44)), x + 22, top + 6, search.isEmpty() ? MUTED : TEXT, false);
+            top += 28;
+        }
+
+        if (moduleView && selected != null && !searchView) {
+            String back = "Back to " + CARDS.get(openCard).title();
+            boolean bh = inside(mx, my, x + 12, top, w - 24, 18);
+            UiDraw.pill(context, x + 12, top, w - 24, 18, bh);
+            context.drawText(textRenderer, Text.literal(back), cx - textRenderer.getWidth(back) / 2, top + 5, TEXT, false);
+            paneX = x + 2;
+            paneY = top + 22;
+            RIGHT_W = w - 4;
+            paneBottom = y + h - 4;
+            drawRight(context, mx, my);
+            return;
+        }
+        listX0 = x + 10;
+        listY0 = top;
+        listW0 = w - 16;
+        listH0 = y + h - 10 - top;
+        if (searchView && search.isBlank()) {
+            return;
+        }
+        drawList(context, mx, my);
+    }
+
+    private void openCategory(int cardIndex) {
+        searchView = false;
+        search = "";
+        searchFocus = false;
+        moduleView = false;
+        openCardAt(cardIndex);
+    }
+
+    private boolean clickHome(int mx, int my) {
+        for (int i = 0; i < QUICK.length; i++) {
+            int[] r = quickCard(i);
+            if (inside(mx, my, r[0], r[1], r[2], r[3])) {
+                switch (i) {
+                    case 0 -> {
+                        topTab = 1;
+                        youTab = 0;
+                    }
+                    case 1 -> {
+                        searchView = !searchView;
+                        searchFocus = searchView;
+                        search = "";
+                        moduleView = false;
+                        if (searchView) {
+                            openCard = -1;
+                        }
+                        rebuild();
+                    }
+                    case 2 -> topTab = 2;
+                    case 3 -> client.setScreen(new ProfilesScreen(this));
+                    default -> client.setScreen(new HudLayoutScreen(this));
+                }
+                return true;
+            }
+        }
+        List<Integer> cats = categoryCards();
+        if (!panelOpen()) {
+            for (int i = 0; i < cats.size(); i++) {
+                int[] r = homeCard(i, cats.size());
+                if (inside(mx, my, r[0], r[1], r[2], r[3])) {
+                    openCategory(cats.get(i));
+                    return true;
+                }
+            }
+            return false;
+        }
+        for (int k2 : new int[]{-2, -1, 1, 2}) {
+            int[] r = sideCard(k2);
+            if (inside(mx, my, r[0], r[1], r[2], r[3])) {
+                int idx;
+                if (searchView) {
+                    idx = cats.get(Math.floorMod((k2 < 0 ? k2 + 2 : k2 + 1), cats.size()));
+                } else {
+                    idx = cats.get(Math.floorMod(Math.max(0, cats.indexOf(openCard)) + k2, cats.size()));
+                }
+                openCategory(idx);
+                return true;
+            }
+        }
+        int x = panelX();
+        int y = panelY();
+        if (!inside(mx, my, x, y, PANEL_W, panelH())) {
+            return false;
+        }
+        int top = y + 52;
+        if (searchView) {
+            if (inside(mx, my, x + 12, top, PANEL_W - 24, 20)) {
+                searchFocus = true;
+                return true;
+            }
+        }
+        if (moduleView && selected != null && !searchView) {
+            if (inside(mx, my, x + 12, top, PANEL_W - 24, 18)) {
+                moduleView = false;
+                return true;
+            }
+            if (inside(mx, my, paneX + RIGHT_W - 42, paneY + 10, 28, 16)) {
+                selected.toggle();
+                AeroClient.CONFIG.save();
+                return true;
+            }
+            if (inside(mx, my, paneX + RIGHT_W - 42 - 46, paneY + 9, 40, 16)) {
+                resetModule(selected);
+                AeroClient.CONFIG.save();
+                return true;
+            }
+            if (clickSelectedSettings(mx, my)) {
+                AeroClient.CONFIG.save();
+            }
+            return true;
+        }
+        int rowY = listY0 - scroll;
+        Category last = null;
+        for (Module module : visible) {
+            if (searching() && module.category != last) {
+                last = module.category;
+                rowY += 20;
+            }
+            if (inside(mx, my, listX0, rowY, listW0, ROW_H - 2) && my >= listY0 && my <= listY0 + listH0) {
+                if (mx >= listX0 + listW0 - 48) {
+                    module.toggle();
+                    AeroClient.CONFIG.save();
+                    Notifications.toggled(module);
+                    return true;
+                }
+                if (selected != module) {
+                    focusedTextSetting = null;
+                    accentFocus = false;
+                    capturingKeybind = null;
+                    settingsScroll = 0;
+                }
+                selected = module;
+                if (searchView) { // jump to the module's category with its settings open
+                    for (int i = 0; i < CARDS.size(); i++) {
+                        if (CARDS.get(i).category() == module.category) {
+                            openCategory(i);
+                        }
+                    }
+                    selected = module;
+                }
+                moduleView = true;
+                return true;
+            }
+            rowY += ROW_H;
+        }
+        return true;
+    }
+
     private void drawClient(DrawContext context, int mx, int my) {
         drawSidebar(context, mx, my);
         UiDraw.innerCard(context, bodyX(), contentY(), bodyW(), contentH0());
@@ -609,7 +1121,7 @@ public class ClickGuiScreenLegacy extends Screen {
             CardDef c = CARDS.get(i);
             int[] r = sideRow(i);
             if (c.kind() != 0 && CARDS.get(i - 1).kind() == 0) {
-                context.fill(r[0] + 6, r[1] - 7, r[0] + r[2] - 6, r[1] - 6, 0x12000000);
+                context.fill(r[0] + 6, r[1] - 7, r[0] + r[2] - 6, r[1] - 6, 0x1FFFFFFF);
             }
             boolean sel = c.kind() == 0 && i == openCard && !searching();
             if (sel) {
@@ -620,7 +1132,7 @@ public class ClickGuiScreenLegacy extends Screen {
             int col = cardColor(c);
             UiDraw.roundRect(context, r[0] + 4, r[1] + 3, 18, 18, 9, UiDraw.withAlpha(col, 0x22));
             drawCardIcon(context, c, r[0] + 8, r[1] + 7, col);
-            context.drawText(textRenderer, Text.literal(c.title()), r[0] + 28, r[1] + 8, sel ? TEXT : 0xFF3F4552, false);
+            context.drawText(textRenderer, Text.literal(c.title()), r[0] + 28, r[1] + 8, sel ? TEXT : UiDraw.SOFT, false);
             if (c.kind() == 0) {
                 int on = 0;
                 for (Module m : AeroClient.MODULES.all) {
@@ -667,7 +1179,7 @@ public class ClickGuiScreenLegacy extends Screen {
             iconForCategory(context, category, x + 16, y + 15, catColor(category));
         } else { // search results: the round button clears the search
             boolean backH = inside(mx, my, x + 10, y + 9, 22, 22);
-            UiDraw.roundRect(context, x + 10, y + 9, 22, 22, 11, backH ? 0xFFFFFFFF : 0x10000000);
+            UiDraw.roundRect(context, x + 10, y + 9, 22, 22, 11, backH ? UiDraw.HOVER_FILL : UiDraw.LIFT);
             context.drawText(textRenderer, Text.literal("‹"), x + 18, y + 16, backH ? UiDraw.accent() : TEXT, false);
         }
         int tx = x + 38;
@@ -682,7 +1194,7 @@ public class ClickGuiScreenLegacy extends Screen {
         paneY = y + 4;
         RIGHT_W = x + w - 6 - paneX;
         paneBottom = y + h - 2;
-        context.fill(paneX - 5, y + 12, paneX - 4, y + h - 12, 0x12000000);
+        context.fill(paneX - 5, y + 12, paneX - 4, y + h - 12, 0x1FFFFFFF);
         drawList(context, mx, my);
         drawRight(context, mx, my);
     }
@@ -732,12 +1244,12 @@ public class ClickGuiScreenLegacy extends Screen {
                     String kl = keyLabel(key);
                     chipW = textRenderer.getWidth(kl) + 8;
                     int kx = x + w - 50 - chipW;
-                    UiDraw.roundRect(context, kx, y + 5, chipW, 12, 4, 0x0E000000);
+                    UiDraw.roundRect(context, kx, y + 5, chipW, 12, 4, UiDraw.LIFT);
                     context.drawText(textRenderer, Text.literal(kl), kx + 4, y + 7, MUTED, false);
                     chipW += 6;
                 }
                 context.drawText(textRenderer, Text.literal(fit(module.name, w - 84 - chipW)), x + 28, y + 7,
-                        module.enabled() ? TEXT : 0xFF3F4552, false);
+                        module.enabled() ? TEXT : UiDraw.SOFT, false);
                 drawSwitch(context, x + w - 42, y + 3, module.enabled());
                 y += ROW_H;
             }
@@ -858,7 +1370,7 @@ public class ClickGuiScreenLegacy extends Screen {
             } else if (setting.kind == Module.Setting.Kind.TEXT) {
                 context.drawText(textRenderer, Text.literal(setting.name), tx, y, MUTED, false);
                 boolean focused = setting == focusedTextSetting;
-                UiDraw.inset(context, tx, y + 12, RIGHT_W - 28 - indent, 18, focused ? 0xFFFFFFFF : CARD);
+                UiDraw.inset(context, tx, y + 12, RIGHT_W - 28 - indent, 18, focused ? 0x55000000 : CARD);
                 String shown = focused ? textDraft + "|" : setting.choiceGet.get();
                 if (shown == null || shown.isBlank()) {
                     shown = "Empty";
@@ -891,7 +1403,7 @@ public class ClickGuiScreenLegacy extends Screen {
                         int hc = java.awt.Color.HSBtoRGB(i / (float) barW, 0.85f, 1f) & 0xFFFFFF;
                         context.fill(barX + i, y, barX + i + 1, y + 10, 0xFF000000 | hc);
                     }
-                    UiDraw.roundBorder(context, barX - 1, y - 1, barW + 2, 12, 3, 0x22000000);
+                    UiDraw.roundBorder(context, barX - 1, y - 1, barW + 2, 12, 3, 0x40FFFFFF);
                     int sw2 = Math.min(16, (barW - 4) / PRESETS.length - 3);
                     for (int i = 0; i < PRESETS.length; i++) {
                         int px2 = barX + i * (sw2 + 3);
@@ -1074,7 +1586,7 @@ public class ClickGuiScreenLegacy extends Screen {
             } else if (SkinPreview.ready(picked.toLowerCase())) {
                 SkinPreview.drawBody(context, picked.toLowerCase(), rx + 20, y0 + 50, 3);
             } else {
-                UiDraw.roundRect(context, rx + 28, y0 + 54, 36, 90, 8, 0x14000000);
+                UiDraw.roundRect(context, rx + 28, y0 + 54, 36, 90, 8, UiDraw.LIFT);
             }
             boolean remH = inside(mx, my, rx, y1 - 38, RIGHT_W - 28, 22);
             UiDraw.pill(context, rx, y1 - 38, RIGHT_W - 28, 22, remH);
@@ -1197,7 +1709,7 @@ public class ClickGuiScreenLegacy extends Screen {
     /** Single keycap - Keystrokes. */
     private static void iconKey(FillBatch context, int x, int y, int col) {
         context.fill(x + 1, y + 1, x + 9, y + 9, col);
-        context.fill(x + 3, y + 3, x + 7, y + 7, 0xFFFFFFFF);
+        context.fill(x + 3, y + 3, x + 7, y + 7, 0xFF15161B);
     }
     /** Flask - Potion HUD. */
     private static void iconFlask(FillBatch context, int x, int y, int col) {
@@ -1219,7 +1731,7 @@ public class ClickGuiScreenLegacy extends Screen {
     private static void iconTag(FillBatch context, int x, int y, int col) {
         context.fill(x + 1, y + 2, x + 7, y + 8, col);
         context.fill(x + 7, y + 3, x + 9, y + 7, col);
-        context.fill(x + 3, y + 4, x + 5, y + 6, 0xFFFFFFFF);
+        context.fill(x + 3, y + 4, x + 5, y + 6, 0xFF15161B);
     }
     /** Magnifying glass - Zoom. */
     private static void iconMagnifier(FillBatch context, int x, int y, int col) {
@@ -1297,6 +1809,14 @@ public class ClickGuiScreenLegacy extends Screen {
         int my = lm(rawY);
         if (button != 0) {
             return false;
+        }
+        if (topTab == 0) {
+            wardrobe.searchFocus = false;
+            friendFocus = false;
+            if (!clickHome(mx, my)) {
+                searchFocus = false;
+            }
+            return true;
         }
         if (inside(mx, my, ox + pw - 16 - 20, oy + 11, 20, 20)) {
             closeMenu();
@@ -1689,7 +2209,7 @@ public class ClickGuiScreenLegacy extends Screen {
             friendScroll = (int) Math.max(0, friendScroll - verticalAmount * 16);
             return true;
         }
-        if (selected != null && mouseX >= paneX - 4) {
+        if (selected != null && (topTab == 0 ? moduleView && !searchView : mouseX >= paneX - 4)) {
             int view = settingsViewBottom() - (settingsStartY() - 6);
             settingsScroll = (int) Math.max(0, Math.min(Math.max(0, settingsContentH - view), settingsScroll - verticalAmount * 16));
             return true;
@@ -1807,11 +2327,18 @@ public class ClickGuiScreenLegacy extends Screen {
         }
         if (key == GLFW.GLFW_KEY_F && (GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_CONTROL) == GLFW.GLFW_PRESS)) {
             topTab = 0;
+            searchView = true;
+            openCard = -1;
+            moduleView = false;
             searchFocus = true;
             return true;
         }
         if (key == GLFW.GLFW_KEY_ESCAPE) {
-            if (topTab == 0 && searching()) {
+            if (topTab == 0 && moduleView) {
+                moduleView = false;
+            } else if (topTab == 0 && (openCard >= 0 || searchView)) {
+                openCard = -1;
+                searchView = false;
                 search = "";
                 rebuild();
             } else if (topTab != 0) {

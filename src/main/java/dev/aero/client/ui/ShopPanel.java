@@ -146,7 +146,7 @@ public final class ShopPanel {
         // Featured
         int fw = w * 40 / 100;
         boolean fh = in(mx, my, x, y, fw, h);
-        UiDraw.roundRect(ctx, x, y, fw, h, 16, fh ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
+        UiDraw.roundRect(ctx, x, y, fw, h, 16, fh ? UiDraw.HOVER_FILL : UiDraw.LIFT);
         UiDraw.roundBorder(ctx, x, y, fw, h, 16, UiDraw.withAlpha(rarityColor(f.rarity()), fh ? 0xAA : 0x55));
         ctx.fillGradient(x + 8, y + 6, x + fw - 8, y + h / 2, UiDraw.withAlpha(rarityColor(f.rarity()), 0x22), 0x00FFFFFF);
         ctx.drawText(tr, Text.literal("FEATURED THIS WEEK"), x + 12, y + 10, rarityColor(f.rarity()), false);
@@ -192,8 +192,8 @@ public final class ShopPanel {
             Shards.Offer o = newest.get(i);
             int tx = rx + i * (tw + 6);
             boolean hv = in(mx, my, tx, ry, tw, th);
-            UiDraw.roundRect(ctx, tx, ry, tw, th, 10, hv ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
-            UiDraw.roundBorder(ctx, tx, ry, tw, th, 10, hv ? UiDraw.withAlpha(rarityColor(o.rarity()), 0x99) : 0x10000000);
+            UiDraw.roundRect(ctx, tx, ry, tw, th, 10, hv ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+            UiDraw.roundBorder(ctx, tx, ry, tw, th, 10, hv ? UiDraw.withAlpha(rarityColor(o.rarity()), 0x99) : UiDraw.BORDER_SOFT);
             Cosmetics.Item it = itemFor(o.id());
             if (it != null && th > 30) {
                 CosmeticIcons.draw(ctx, it.kind(), it, it.color(), tx, ry + 2, tw, th - 24, t);
@@ -207,8 +207,8 @@ public final class ShopPanel {
 
     private void drawOfferRow(DrawContext ctx, TextRenderer tr, int mx, int my, Shards.Offer o, int x, int y, int w, int h, float t, boolean sale) {
         boolean hv = in(mx, my, x, y, w, h);
-        UiDraw.roundRect(ctx, x, y, w, h, 12, hv ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
-        UiDraw.roundBorder(ctx, x, y, w, h, 12, hv ? UiDraw.withAlpha(rarityColor(o.rarity()), 0x99) : 0x10000000);
+        UiDraw.roundRect(ctx, x, y, w, h, 12, hv ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+        UiDraw.roundBorder(ctx, x, y, w, h, 12, hv ? UiDraw.withAlpha(rarityColor(o.rarity()), 0x99) : UiDraw.BORDER_SOFT);
         Cosmetics.Item it = itemFor(o.id());
         if (it != null) {
             ctx.enableScissor(x + 4, y + 2, x + 50, y + h - 2);
@@ -301,7 +301,7 @@ public final class ShopPanel {
         int colW = (w - 16) / 3;
         // Streak
         UiDraw.roundRect(ctx, x, y, colW, h, 14, UiDraw.surface(0xFFFFFF));
-        UiDraw.roundBorder(ctx, x, y, colW, h, 14, 0x10000000);
+        UiDraw.roundBorder(ctx, x, y, colW, h, 14, UiDraw.BORDER);
         ctx.drawText(tr, Text.literal("Login streak"), x + 12, y + 10, TEXT, false);
         int streak = wlt.get("streak").getAsInt();
         boolean canClaim = wlt.get("canClaim").getAsBoolean();
@@ -319,7 +319,7 @@ public final class ShopPanel {
             int dy = y + 30;
             boolean done = i < Math.min(7, doneDays);
             boolean today = canClaim && i == Math.min(7, nextDay) - 1;
-            int bg = done ? 0xFFFED7AA : today ? UiDraw.withAlpha(UiDraw.accent(), 0x30) : 0x0C000000;
+            int bg = done ? 0xFFFED7AA : today ? UiDraw.withAlpha(UiDraw.accent(), 0x30) : UiDraw.LIFT;
             UiDraw.roundRect(ctx, dx, dy, dw, 40, 8, bg);
             if (today) {
                 UiDraw.roundBorder(ctx, dx, dy, dw, 40, 8, UiDraw.accent());
@@ -340,7 +340,7 @@ public final class ShopPanel {
         // Playtime + milestones
         int px = x + colW + 8;
         UiDraw.roundRect(ctx, px, y, colW, h, 14, UiDraw.surface(0xFFFFFF));
-        UiDraw.roundBorder(ctx, px, y, colW, h, 14, 0x10000000);
+        UiDraw.roundBorder(ctx, px, y, colW, h, 14, UiDraw.BORDER);
         ctx.drawText(tr, Text.literal("Playtime"), px + 12, y + 10, TEXT, false);
         long playMs = wlt.get("playMs").getAsLong();
         String hours = String.format(java.util.Locale.ROOT, "%.1f h", playMs / 3_600_000.0);
@@ -381,7 +381,7 @@ public final class ShopPanel {
         int lx = px + colW + 8;
         int lw = x + w - lx;
         UiDraw.roundRect(ctx, lx, y, lw, h, 14, UiDraw.surface(0xFFFFFF));
-        UiDraw.roundBorder(ctx, lx, y, lw, h, 14, 0x10000000);
+        UiDraw.roundBorder(ctx, lx, y, lw, h, 14, UiDraw.BORDER);
         ctx.drawText(tr, Text.literal("Where your shards went"), lx + 12, y + 10, TEXT, false);
         var ledger = wlt.getAsJsonArray("ledger");
         int maxScroll = Math.max(0, ledger.size() * 22 - (h - 36));
@@ -484,8 +484,8 @@ public final class ShopPanel {
                 boolean has = Shards.earnedBadge(b.id());
                 boolean on = eq.equals(b.id());
                 boolean hv = in(mx, my, c[0], c[1], c[2], c[3]) && my >= y + 14;
-                UiDraw.roundRect(ctx, c[0], c[1], c[2], c[3], 12, on ? UiDraw.withAlpha(UiDraw.accent(), 0x1E) : hv ? 0xFFFFFFFF : 0xC0FFFFFF);
-                UiDraw.roundBorder(ctx, c[0], c[1], c[2], c[3], 12, on ? UiDraw.withAlpha(UiDraw.accent(), 0xAA) : 0x10000000);
+                UiDraw.roundRect(ctx, c[0], c[1], c[2], c[3], 12, on ? UiDraw.withAlpha(UiDraw.accent(), 0x1E) : hv ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+                UiDraw.roundBorder(ctx, c[0], c[1], c[2], c[3], 12, on ? UiDraw.withAlpha(UiDraw.accent(), 0xAA) : UiDraw.BORDER_SOFT);
                 int col = has ? b.color() : 0xFFB8BEC9;
                 UiDraw.roundRect(ctx, c[0] + 8, c[1] + 8, 28, 28, 14, UiDraw.withAlpha(col, has ? 0x30 : 0x20));
                 String g = Cosmetics.glyph(Cosmetics.Kind.BADGE, b.id());

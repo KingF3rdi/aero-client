@@ -110,8 +110,8 @@ public class PauseMenuScreen extends Screen {
             if (h) {
                 hover = i;
             }
-            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? UiDraw.withAlpha(UiDraw.accent(), 0x26) : 0x0C000000);
-            drawIcon(context, i, ix + 13, iconY + 9, h ? UiDraw.accent() : 0xFF4B5563);
+            UiDraw.roundRect(context, ix, iconY, 44, 36, 8, h ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+            drawIcon(context, i, ix + 13, iconY + 9, h ? UiDraw.TEXT : UiDraw.SOFT);
             String cap = LABELS[i];
             context.drawText(textRenderer, Text.literal(cap),
                     ix + (44 - textRenderer.getWidth(cap)) / 2, iconY + 38, h ? TEXT : MUTED, false);

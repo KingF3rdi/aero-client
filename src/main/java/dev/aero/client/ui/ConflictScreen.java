@@ -108,7 +108,7 @@ public class ConflictScreen extends Screen {
 
         int ry = y + 46;
         for (var c : conflicts) {
-            UiDraw.roundRect(context, x + 12, ry, W - 24, ROW - 4, 7, 0x0C000000);
+            UiDraw.roundRect(context, x + 12, ry, W - 24, ROW - 4, 7, UiDraw.LIFT);
             int idW = textRenderer.getWidth(c.id);
             context.drawText(textRenderer, Text.literal(fit(c.name, W - 48 - idW)), x + 20, ry + 5, c.disabled ? MUTED : TEXT, false);
             context.drawText(textRenderer, Text.literal(c.id), x + W - 20 - idW, ry + 5, MUTED, false);
@@ -135,8 +135,8 @@ public class ConflictScreen extends Screen {
             if (i == 2) {
                 UiDraw.roundRect(context, bx, by, btnW(), 20, 10, hv ? UiDraw.accent() : UiDraw.withAlpha(UiDraw.accent(), 0xDD));
             } else {
-                UiDraw.roundRect(context, bx, by, btnW(), 20, 10, hv ? 0xFFFFFFFF : 0xA6FFFFFF);
-                UiDraw.roundBorder(context, bx, by, btnW(), 20, 10, 0x18000000);
+                UiDraw.roundRect(context, bx, by, btnW(), 20, 10, hv ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+                UiDraw.roundBorder(context, bx, by, btnW(), 20, 10, UiDraw.BORDER);
             }
             String l = fit(labels[i], btnW() - 8);
             context.drawText(textRenderer, Text.literal(l), bx + (btnW() - textRenderer.getWidth(l)) / 2, by + 6,

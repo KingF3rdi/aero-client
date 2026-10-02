@@ -238,7 +238,7 @@ public final class WardrobePanel {
     }
 
     private static void context(DrawContext ctx, int x, int y, int w) {
-        ctx.fill(x, y, x + w, y + 1, 0x12000000);
+        ctx.fill(x, y, x + w, y + 1, 0x1FFFFFFF);
     }
 
     /** Small padlock glyph (8x8). */
@@ -332,8 +332,8 @@ public final class WardrobePanel {
 
     private void arrow(DrawContext ctx, TextRenderer tr, int mx, int my, int x, int y, String s) {
         boolean h = in(mx, my, x, y, 22, 22);
-        UiDraw.roundRect(ctx, x, y, 22, 22, 11, h ? 0xFFFFFFFF : 0x99FFFFFF);
-        UiDraw.roundBorder(ctx, x, y, 22, 22, 11, 0x14000000);
+        UiDraw.roundRect(ctx, x, y, 22, 22, 11, h ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+        UiDraw.roundBorder(ctx, x, y, 22, 22, 11, UiDraw.BORDER_SOFT);
         ctx.drawText(tr, Text.literal(s), x + 9, y + 7, TEXT, false);
     }
 
@@ -341,8 +341,8 @@ public final class WardrobePanel {
         int y = top + height - 40;
         int x = cx + 8;
         int w = cw - 16;
-        UiDraw.roundRect(ctx, x, y, w, 32, 10, 0xE6FFFFFF);
-        UiDraw.roundBorder(ctx, x, y, w, 32, 10, 0x12000000);
+        UiDraw.roundRect(ctx, x, y, w, 32, 10, 0x40000000);
+        UiDraw.roundBorder(ctx, x, y, w, 32, 10, UiDraw.BORDER_SOFT);
         String eq = Cosmetics.equipped(kind);
         Cosmetics.Item item = "none".equals(eq) ? null : Cosmetics.named(kind, eq);
         ctx.drawText(tr, Text.literal("Equipped"), x + 10, y + 7, MUTED, false);
@@ -458,8 +458,8 @@ public final class WardrobePanel {
                 boolean sel = eq.equals(item.id());
                 boolean owned = Cosmetics.owns(item);
                 boolean hover = in(mx, my, x, y, cwd, ch) && my >= gy && my < gy + gh && pendingBuy == null;
-                UiDraw.roundRect(ctx, x, y, cwd, ch, 12, sel ? UiDraw.withAlpha(UiDraw.accent(), 0x30) : hover ? 0xFFFFFFFF : UiDraw.surface(0xFFFFFF));
-                UiDraw.roundBorder(ctx, x, y, cwd, ch, 12, !sel && hover ? UiDraw.withAlpha(item.rarity().color, 0x99) : 0x10000000);
+                UiDraw.roundRect(ctx, x, y, cwd, ch, 12, sel ? UiDraw.withAlpha(UiDraw.accent(), 0x30) : hover ? UiDraw.HOVER_FILL : UiDraw.LIFT);
+                UiDraw.roundBorder(ctx, x, y, cwd, ch, 12, !sel && hover ? UiDraw.withAlpha(item.rarity().color, 0x99) : UiDraw.BORDER_SOFT);
                 int vi = Cosmetics.variantIndex(kind, item.id());
                 int color = Cosmetics.variantColor(item, vi);
                 int iconH = ch - (Cosmetics.hasVariants(kind) ? 44 : 30);
@@ -528,7 +528,13 @@ public final class WardrobePanel {
             ctx.disableScissor();
         }
         if (!Shards.status.isEmpty() && !customCapesTab() && pendingBuy == null) {
-            ctx.drawText(tr, Text.literal(fit(tr, Shards.status, rw - 16)), rx + 8, top + height - 12, MUTED, false);
+            // a toast pill: the line sits over the bottom of the scrolling grid
+            String st = fit(tr, Shards.status, rw - 24);
+            int sw = tr.getWidth(st) + 16;
+            int sx = rx + (rw - sw) / 2;
+            UiDraw.roundRect(ctx, sx, top + height - 18, sw, 15, 7, 0xE60B0C10);
+            UiDraw.roundBorder(ctx, sx, top + height - 18, sw, 15, 7, 0x40FFFFFF);
+            ctx.drawText(tr, Text.literal(st), sx + 8, top + height - 14, MUTED, false);
         }
     }
 
@@ -565,7 +571,7 @@ public final class WardrobePanel {
         UiDraw.glass(ctx, r[0], r[1], r[2], r[3], 0, 16);
         Cosmetics.Item item = pendingBuy;
         int pvW = 120;
-        UiDraw.roundRect(ctx, r[0] + 10, r[1] + 10, pvW, r[3] - 20, 12, 0x99FFFFFF);
+        UiDraw.roundRect(ctx, r[0] + 10, r[1] + 10, pvW, r[3] - 20, 12, 0x33000000);
         ctx.enableScissor(r[0] + 10, r[1] + 10, r[0] + 10 + pvW, r[1] + r[3] - 10);
         try {
             CosmeticPreview.showSelf(ctx, r[0] + 10, r[1] + 10, r[0] + 10 + pvW, r[1] + r[3] - 10, (r[3] - 20) * 0.34f,

@@ -94,8 +94,8 @@ public class HudLayoutScreen extends Screen {
             if (hover) {
                 hoveredElem = e;
             }
-            UiDraw.roundRect(context, x, y, w, 16, 8, on ? (hover ? 0xFFFFFFFF : 0xE6FFFFFF) : 0x99FFFFFF);
-            UiDraw.roundBorder(context, x, y, w, 16, 8, hover ? UiDraw.withAlpha(UiDraw.accent(), 0xAA) : 0x22000000);
+            UiDraw.roundRect(context, x, y, w, 16, 8, on ? (hover ? 0x33FFFFFF : UiDraw.HOVER_FILL) : UiDraw.LIFT);
+            UiDraw.roundBorder(context, x, y, w, 16, 8, hover ? UiDraw.withAlpha(UiDraw.accent(), 0xAA) : UiDraw.BORDER);
             UiDraw.roundRect(context, x + 5, y + 5, 6, 6, 3, on ? 0xFF22C55E : 0xFFB0B6C2);
             context.drawText(textRenderer, Text.literal(e.label()), x + 15, y + 4, on ? TEXT : MUTED, false);
             if (lock) {

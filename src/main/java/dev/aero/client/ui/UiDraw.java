@@ -3,17 +3,26 @@ package dev.aero.client.ui;
 import net.minecraft.client.gui.DrawContext;
 
 /**
- * Clean frosted-white glass UI with coverage-antialiased rounded corners (no stair-step pixels).
+ * Dark glass UI: black see-through panels with a bright white rim, white text, coverage-antialiased
+ * rounded corners (no stair-step pixels).
  */
 public final class UiDraw {
-    public static final int BORDER = 0x1C000000;
-    public static final int BORDER_SOFT = 0x12000000;
-    /** Dark ink on the white glass. */
-    public static final int TEXT = 0xFF161922;
-    public static final int MUTED = 0xFF6A7182;
-    /** Row / button hover wash on white surfaces. */
-    public static final int HOVER = 0x0E1A2340;
-    public static final int SURFACE = 0xB8FFFFFF;
+    public static final int BORDER = 0x40FFFFFF;
+    public static final int BORDER_SOFT = 0x24FFFFFF;
+    /** White text on the dark glass. */
+    public static final int TEXT = 0xFFF2F3F5;
+    public static final int MUTED = 0xFF9AA0AB;
+    /** Secondary text that still reads as content (inactive rows). */
+    public static final int SOFT = 0xFFC9CDD4;
+    /** Row / button hover wash on dark surfaces. */
+    public static final int HOVER = 0x16FFFFFF;
+    /** Hovered card or button. */
+    public static final int HOVER_FILL = 0x26FFFFFF;
+    /** Idle card or button lifted a little off the dark glass. */
+    public static final int LIFT = 0x12FFFFFF;
+    /** Rim of a selected pill / tab, as in the reference design. */
+    public static final int SELECT_RIM = 0xB3FFFFFF;
+    public static final int SURFACE = 0x5A0A0B0F;
 
     /** Multiplies the alpha of every UiDraw fill (fading cards in/out); 1 = normal. */
     public static float fade = 1f;
@@ -30,20 +39,27 @@ public final class UiDraw {
         return (a << 24) | (rgb & 0xFFFFFF);
     }
 
-    /** Idle background fill at the Menu background opacity (Interface Color); hover and selected states stay solid. */
-    public static int surface(int rgb) {
+    /** Menu background opacity (Interface Color), 0..1. */
+    private static float glassOpacity() {
         var c = dev.aero.client.AeroClient.CONFIG;
-        float o = c == null ? 0.3f : Math.max(0.1f, Math.min(1f, c.menuGlass / 100f));
-        return withAlpha(rgb, Math.round(255 * o));
+        return c == null ? 0.3f : Math.max(0.1f, Math.min(1f, c.menuGlass / 100f));
+    }
+
+    /**
+     * Idle background of an inner panel or card: dark glass whose darkness follows the Menu background
+     * opacity. The rgb argument is kept for the callers but the surface is always the dark glass tone.
+     */
+    public static int surface(int rgb) {
+        return withAlpha(0x0A0B0F, Math.round(255 * Math.min(0.85f, 0.18f + glassOpacity())));
     }
 
     public static int accent() {
         var c = dev.aero.client.AeroClient.CONFIG;
         return c == null ? 0xFF4F8EFF : (c.uiAccent | 0xFF000000);
     }
-    public static final int FILL = 0xC8FFFFFF;
-    public static final int FILL_DEEP = 0xD8F1F3F8;
-    public static final int FILL_LIFT = 0xE8FFFFFF;
+    public static final int FILL = 0x18FFFFFF;
+    public static final int FILL_DEEP = 0x40000000;
+    public static final int FILL_LIFT = 0x22FFFFFF;
 
     private static final int MAX_R = 28;
     /** Per-radius top-left coverage, 0–255, row-major r*r. */
@@ -113,7 +129,7 @@ public final class UiDraw {
     }
 
     /** One GUI element for the whole shape (see RoundRectState); false = atlas missing, draw it piece by piece. */
-    private static boolean single(DrawContext c, int x, int y, int w, int h, int r, int color, boolean border) {
+    private static boolean single(DrawContext c, int x, int y, int w, int h, int r, int color, int color2, boolean border) {
         if (!atlas()) {
             return false;
         }
@@ -122,7 +138,7 @@ public final class UiDraw {
         float av = (MAX_R - 0.5f) / ATLAS_H;
         c.state.addSimpleElement(RoundRectState.of(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED,
                 net.minecraft.client.texture.TextureSetup.of(tex.getGlTextureView(), tex.getSampler()),
-                new org.joml.Matrix3x2f(c.getMatrices()), x, y, w, h, r, color, border, au, av,
+                new org.joml.Matrix3x2f(c.getMatrices()), x, y, w, h, r, color, color2, border, au, av,
                 border ? EDGE_UV[r] : FILL_UV[r], c.scissorStack.peekLast()));
         return true;
     }
@@ -224,7 +240,7 @@ public final class UiDraw {
             c.fill(x, y, x + w, y + h, color);
             return;
         }
-        if (single(c, x, y, w, h, r, color, false)) {
+        if (single(c, x, y, w, h, r, color, color, false)) {
             return;
         }
         c.fill(x + r, y, x + w - r, y + h, color);
@@ -250,7 +266,7 @@ public final class UiDraw {
             c.fill(x + w - 1, y, x + w, y + h, color);
             return;
         }
-        if (single(c, x, y, w, h, r, color, true)) {
+        if (single(c, x, y, w, h, r, color, color, true)) {
             return;
         }
         c.fill(x + r, y, x + w - r, y + 1, color);
@@ -262,6 +278,49 @@ public final class UiDraw {
         corner(c, x + w - r, y, r, color, cov, true, false);
         corner(c, x, y + h - r, r, color, cov, false, true);
         corner(c, x + w - r, y + h - r, r, color, cov, true, true);
+    }
+
+    /** Rounded rect (or its outline) fading from top to bottom in one element; flat top color without the atlas. */
+    public static void roundGradient(DrawContext c, int x, int y, int w, int h, int radius, int top, int bottom, boolean border) {
+        top = fa(top);
+        bottom = fa(bottom);
+        int r = Math.max(0, Math.min(radius, Math.min(MAX_R, Math.min(w, h) / 2)));
+        if (w <= 0 || h <= 0 || r <= 1 || !single(c, x, y, w, h, r, top, bottom, border)) {
+            if (border) {
+                roundBorder(c, x, y, w, h, radius, top);
+            } else {
+                roundRect(c, x, y, w, h, radius, top);
+            }
+        }
+    }
+
+    /**
+     * Frosted glass card: a light white tint over the blurred world (lighter at the top), a crisp white rim and
+     * a faint shadow. lit 0..1 (hover, eased by the caller) brightens fill and rim.
+     */
+    public static void frost(DrawContext c, int x, int y, int w, int h, int r, float lit, boolean active) {
+        float l = active ? 1f : Math.max(0f, Math.min(1f, lit));
+        softShadow(c, x, y, w, h, r, Math.round(0x14 + 0x10 * l), 6);
+        float o = glassOpacity();
+        if (o > 0f) {
+            roundRect(c, x, y, w, h, r, withAlpha(0x000000, Math.round(255 * o * 0.45f))); // readability over bright worlds
+        }
+        roundGradient(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x1E + 0x26 * l)),
+                withAlpha(0xFFFFFF, Math.round(0x0A + 0x1A * l)), false);
+        roundBorder(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x70 + 0x80 * l)));
+        roundBorder(c, x + 1, y + 1, w - 2, h - 2, r - 1, withAlpha(0xFFFFFF, Math.round(0x12 + 0x12 * l)));
+    }
+
+    /** Blurred-looking drop shadow from 1px rings outside the shape, deeper below than above. */
+    public static void softShadow(DrawContext c, int x, int y, int w, int h, int r, int strength, int spread) {
+        for (int g = 1; g <= spread; g++) {
+            float f = 1f - (g - 1f) / spread;
+            int a = Math.round(strength * f * f);
+            if (a > 0) {
+                int up = g - g / 3;
+                roundBorder(c, x - g, y - up, w + g * 2, h + up + g + g / 2, r + g, a << 24);
+            }
+        }
     }
 
     public static void shadow(DrawContext c, int x, int y, int w, int h) {
@@ -304,7 +363,7 @@ public final class UiDraw {
 
     public static void inset(DrawContext c, int x, int y, int w, int h, int fill, int radius) {
         roundRect(c, x, y, w, h, radius, fill);
-        roundBorder(c, x, y, w, h, radius, 0x22000000);
+        roundBorder(c, x, y, w, h, radius, 0x33FFFFFF);
     }
 
     public static void glass(DrawContext c, int x, int y, int w, int h, int fill) {
@@ -312,23 +371,18 @@ public final class UiDraw {
     }
 
     public static void glass(DrawContext c, int x, int y, int w, int h, int fill, int radius) {
-        int r = Math.max(12, radius);
-        shadow(c, x, y, w, h, r);
-        // Frosted white body (the screen blurs the world behind it). No inset gradient: on a see-through
-        // body its square corners were visible inside the rounded panel.
-        roundRect(c, x, y, w, h, r, surface(0xF6F8FC));
-        roundBorder(c, x, y, w, h, r, 0xE6FFFFFF);
+        frost(c, x, y, w, h, Math.max(12, radius), 0f, false);
     }
 
     public static void innerCard(DrawContext c, int x, int y, int w, int h) {
         roundRect(c, x, y, w, h, 14, surface(0xFFFFFF));
-        roundBorder(c, x, y, w, h, 14, 0x12000000);
+        roundBorder(c, x, y, w, h, 14, 0x40FFFFFF);
     }
 
     public static void field(DrawContext c, int x, int y, int w, int h, boolean focused) {
         int r = Math.min(h / 2, 10);
-        roundRect(c, x, y, w, h, r, focused ? 0xFFFFFFFF : 0xA6FFFFFF);
-        roundBorder(c, x, y, w, h, r, focused ? withAlpha(accent(), 0xAA) : 0x16000000);
+        roundRect(c, x, y, w, h, r, focused ? 0x55000000 : 0x33000000);
+        roundBorder(c, x, y, w, h, r, focused ? 0xCCFFFFFF : 0x40FFFFFF);
     }
 
     public static void scrollbar(DrawContext c, int x, int y, int h, int scroll, int content, int view) {
@@ -339,7 +393,7 @@ public final class UiDraw {
         int thumb = Math.max(18, (int) (track * (view / (float) content)));
         int max = Math.max(1, content - view);
         int ty = y + 4 + (int) ((track - thumb) * (scroll / (float) max));
-        roundRect(c, x, y + 4, 4, track, 2, 0x10000000);
+        roundRect(c, x, y + 4, 4, track, 2, 0x18FFFFFF);
         roundRect(c, x, ty, 4, thumb, 2, withAlpha(accent(), 0x88));
     }
 
@@ -351,24 +405,24 @@ public final class UiDraw {
     }
 
     public static void pill(DrawContext c, int x, int y, int w, int h, boolean on) {
-        // Selected = accent tint only; a colored outline on top read as a stray blue frame.
-        roundRect(c, x, y, w, h, h / 2, on ? UiDraw.withAlpha(UiDraw.accent(), 0x3C) : 0x9CFFFFFF);
-        roundBorder(c, x, y, w, h, h / 2, 0x14000000);
+        // Selected = light fill with a white rim; idle = a faint chip on the dark glass.
+        roundRect(c, x, y, w, h, h / 2, on ? 0x2EFFFFFF : 0x0FFFFFFF);
+        roundBorder(c, x, y, w, h, h / 2, on ? SELECT_RIM : 0x1FFFFFFF);
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {
-        roundRect(c, x, y + 1, 28, 14, 7, on ? accent() : 0xFFD5DAE4);
+        roundRect(c, x, y + 1, 28, 14, 7, on ? accent() : 0x33FFFFFF);
+        roundBorder(c, x, y + 1, 28, 14, 7, on ? 0x66FFFFFF : 0x40FFFFFF);
         int knobX = on ? x + 15 : x + 2;
-        roundRect(c, knobX, y + 3, 10, 10, 5, 0xFFFFFFFF);
-        roundBorder(c, knobX, y + 3, 10, 10, 5, 0x1A000000);
+        roundRect(c, knobX, y + 3, 10, 10, 5, on ? 0xFFFFFFFF : 0xFF9AA0AB);
     }
 
     public static void slider(DrawContext c, int x, int y, int w, float t) {
-        roundRect(c, x, y, w, 6, 3, 0xFFDCE0E9);
+        roundRect(c, x, y, w, 6, 3, 0x33FFFFFF);
         int filled = Math.max(4, (int) (w * Math.max(0f, Math.min(1f, t))));
         roundRect(c, x, y, filled, 6, 3, accent());
         roundRect(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0xFFFFFFFF);
-        roundBorder(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0x26000000);
+        roundBorder(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0x40000000);
     }
 
     public static void scan(DrawContext c, int x, int y, int w, int h) {
@@ -381,7 +435,7 @@ public final class UiDraw {
     }
 
     public static void divider(DrawContext c, int x, int y, int w) {
-        c.fill(x, y, x + w, y + 1, fa(0x12000000));
+        c.fill(x, y, x + w, y + 1, fa(0x1FFFFFFF));
     }
 
     /** The brand mark: a plain bold blue "A". */

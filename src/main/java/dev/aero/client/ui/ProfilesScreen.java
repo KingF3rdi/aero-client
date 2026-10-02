@@ -225,7 +225,7 @@ public class ProfilesScreen extends Screen {
                 }
                 for (String name : profiles) {
                     boolean rowHover = inside(mx, my, x + 12, ry, PW - 24, 22) && my >= top && my < bottom;
-                    UiDraw.roundRect(context, x + 12, ry, PW - 24, 22, 10, rowHover ? 0xFFFFFFFF : 0x80FFFFFF);
+                    UiDraw.roundRect(context, x + 12, ry, PW - 24, 22, 10, rowHover ? UiDraw.HOVER_FILL : UiDraw.LIFT);
                     context.drawText(textRenderer, Text.literal(name), x + 20, ry + 7, TEXT, false);
                     boolean delHover = inside(mx, my, x + PW - 34, ry + 2, 18, 18);
                     context.drawText(textRenderer, Text.literal("×"), x + PW - 28, ry + 7, delHover ? 0xFFDC2626 : MUTED, false);
@@ -236,7 +236,7 @@ public class ProfilesScreen extends Screen {
                 if (list != null) {
                     for (Preset p : list) {
                         boolean rowHover = inside(mx, my, x + 12, ry, PW - 24, 26) && my >= top && my < bottom;
-                        UiDraw.roundRect(context, x + 12, ry, PW - 24, 26, 10, rowHover ? 0xFFFFFFFF : 0x80FFFFFF);
+                        UiDraw.roundRect(context, x + 12, ry, PW - 24, 26, 10, rowHover ? UiDraw.HOVER_FILL : UiDraw.LIFT);
                         context.drawText(textRenderer, Text.literal(p.name()), x + 20, ry + 4, TEXT, false);
                         context.drawText(textRenderer, Text.literal("by " + p.owner()), x + 20, ry + 14, MUTED, false);
                         if (mine(p)) {

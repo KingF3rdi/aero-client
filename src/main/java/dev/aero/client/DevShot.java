@@ -448,7 +448,7 @@ public final class DevShot {
 
     private static int stage = -1;
     private static ClickGuiModern gui;
-    private static final String[] NAMES = {"a_home", "b_card_pvp", "c_search", "d_wardrobe", "d2_wings", "w_bat", "w_butterfly", "w_mech", "w_crystal",
+    private static final String[] NAMES = {"a_home", "a2_morph", "b_card_pvp", "c_search", "d_wardrobe", "d2_wings", "w_bat", "w_butterfly", "w_mech", "w_crystal",
             "w_neon", "w_phoenix", "w_seraph", "w_phantom", "x_kasa", "x_wizard", "x_tophat", "x_santa", "x_headphones", "d3_trails", "e_store", "f_rewards",
             "g_badges", "h_friends", "i_profiles", "j_title", "k_conflicts"};
 
@@ -471,7 +471,10 @@ public final class DevShot {
     }
 
     private static void guiTick(MinecraftClient mc) {
-        if (++ticks < 300) {
+        if (++ticks == 20 && System.getProperty("aero.big") != null) {
+            mc.getWindow().setWindowedSize(1600, 900);
+        }
+        if (ticks < 300) {
             return;
         }
         if (System.getProperty("aero.packs") != null) { // Options -> Resource Packs, as a player clicks it
@@ -514,7 +517,11 @@ public final class DevShot {
             return;
         }
         switch (step) {
-            case "b_card_pvp" -> gui.debugSelectByName("Totem Counter");
+            case "a2_morph" -> { // mid-animation: the PvP card growing into the panel
+                gui.debugSelectByName("Totem Counter");
+                wait = 1;
+            }
+            case "b_card_pvp" -> { } // the a2_morph panel, settled
             case "c_search" -> gui.debugSearch("totem");
             case "d_wardrobe" -> gui.debugTab(1, 0);
             case "d2_wings" -> {
