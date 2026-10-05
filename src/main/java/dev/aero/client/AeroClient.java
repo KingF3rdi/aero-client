@@ -192,6 +192,9 @@ public class AeroClient implements ClientModInitializer {
             if (isVanillaPause(screen) && (CONFIG == null || CONFIG.aeroPauseMenu) && !Menus.isClickGui(screen) && !Menus.isPauseOverlay(screen)) {
                 client.setScreen(new PauseMenuScreen());
             }
+            if (screen != null && screen.getClass() == net.minecraft.client.gui.screen.TitleScreen.class && (CONFIG == null || CONFIG.aeroTitleScreen)) {
+                client.setScreen(new dev.aero.client.ui.AeroTitleScreen());
+            }
             if (client.currentScreen == null && client.options != null) {
                 boolean down = client.options.attackKey.isPressed();
                 if (down && !wasAttackDown) {

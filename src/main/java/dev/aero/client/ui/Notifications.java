@@ -5,7 +5,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 
-/** Module toggle notification: a white glass pill that drops in at the top center, then fades. */
+/** Module toggle notification: a dark glass pill that drops in at the top center, then fades. */
 public final class Notifications {
     private static final long LIFE_MS = 1600;
     private static String name;
@@ -41,16 +41,16 @@ public final class Notifications {
         int y = Math.round(-h + (8 + h) * k);
         UiDraw.fade = out;
         try {
-            UiDraw.roundRect(ctx, x, y + 2, w, h, 11, 0x14000000);
-            UiDraw.roundRect(ctx, x, y, w, h, 11, 0xF2FFFFFF);
-            UiDraw.roundBorder(ctx, x, y, w, h, 11, 0x14000000);
+            UiDraw.roundRect(ctx, x, y + 2, w, h, 11, 0x30000000);
+            UiDraw.roundRect(ctx, x, y, w, h, 11, 0xE60B0C10);
+            UiDraw.roundBorder(ctx, x, y, w, h, 11, 0x59FFFFFF);
             int dot = on ? 0xFF22C55E : 0xFF9CA3AF;
             UiDraw.roundRect(ctx, x + 8, y + 6, 10, 10, 5, UiDraw.withAlpha(dot, 0x40));
             UiDraw.roundRect(ctx, x + 10, y + 8, 6, 6, 3, dot);
             ctx.drawText(tr, Text.literal(name), x + 24, y + 7, UiDraw.fa(UiDraw.TEXT), false);
             int sx = x + w - 8 - stateW;
             UiDraw.roundRect(ctx, sx, y + 4, stateW, 14, 7, on ? 0x2622C55E : 0x149CA3AF);
-            ctx.drawText(tr, Text.literal(state), sx + 6, y + 7, UiDraw.fa(on ? 0xFF15803D : 0xFF6B7280), false);
+            ctx.drawText(tr, Text.literal(state), sx + 6, y + 7, UiDraw.fa(on ? 0xFF4ADE80 : 0xFFB0B6C0), false);
             int bar = Math.round((w - 22) * (1f - age / (float) LIFE_MS));
             UiDraw.roundRect(ctx, x + 11, y + h - 3, bar, 2, 1, UiDraw.withAlpha(UiDraw.accent(), 0x99));
         } finally {

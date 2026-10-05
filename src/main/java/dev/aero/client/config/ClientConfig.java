@@ -378,6 +378,7 @@ public class ClientConfig {
     public boolean smoothFont = true;
     /** Esc opens the Aero pause menu; off = the vanilla game menu. */
     public boolean aeroPauseMenu = true;
+    public boolean aeroTitleScreen = true;
     /** Menu panels and cards, % opaque (the rest shows the blurred game). Renamed from menuOpacity so the lower default reaches existing configs. */
     public float menuGlass = 30f;
     public int totemColGood = 0xFF55FF55;
@@ -751,6 +752,9 @@ public class ClientConfig {
             }
         }
         ClientConfig cfg = new ClientConfig();
+        if (!Files.isRegularFile(file)) {
+            ForeignConfigs.apply(cfg); // first start: take over settings from mods Aero replaces
+        }
         cfg.save();
         return cfg;
     }

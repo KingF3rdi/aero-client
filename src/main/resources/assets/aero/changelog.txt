@@ -1,0 +1,6 @@
+• New title screen with your player and the Wardrobe one click away
+• Frosted glass menu: cards grow into the panel when you open a category
+• Settings from TierTagger, Shield Status, Crosshair Addons, Block Overlay, Totem Counter, Hit Color and Zoomify are taken over on first start
+• Performance modules work again: No Beacons, No Chat BG, Hide Stars
+• Resource pack list works with No Resource Pack Warnings
+• Conflicting mods are disabled, not moved
