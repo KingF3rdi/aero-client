@@ -389,7 +389,8 @@ public final class Modules {
                 () -> c.optimizersModule, v -> c.optimizersModule = v)
                 .setting("Skip crystal particles", () -> c.crystalOptimizerParticles, v -> c.crystalOptimizerParticles = v)
                 .setting("Mute crystal sound", () -> c.crystalOptimizerSound, v -> c.crystalOptimizerSound = v)
-                .setting("Limit crystal range", () -> c.crystalOptimizerRange, v -> c.crystalOptimizerRange = v)
+                .setting("Crystal zero delay", () -> c.crystalZeroDelay, v -> c.crystalZeroDelay = v)
+                .setting("Limit crystal range",() -> c.crystalOptimizerRange, v -> c.crystalOptimizerRange = v)
                 .setting("Crystal range", () -> c.crystalOptimizerRangeValue, v -> c.crystalOptimizerRangeValue = v, 8, 64)
                 .setting("Anchor instant swing", () -> c.anchorOptimizerSwing, v -> c.anchorOptimizerSwing = v)
                 .setting("Pearl instant swing", () -> c.pearlOptimizerSwing, v -> c.pearlOptimizerSwing = v)
@@ -577,6 +578,8 @@ public final class Modules {
                 .setting("Fire", () -> c.ambienceFire, v -> c.ambienceFire = v));
         add(new Module("Emotes", "Hold a key for the emote wheel", Category.PREVIEW,
                 () -> c.emotes, v -> c.emotes = v));
+        add(new Module("No Esc Menu", "Alt-tab without the pause menu opening, keeps you sneaking", Category.MISC,
+                () -> c.noEscMenu, v -> c.noEscMenu = v));
         add(new Module("Discord RPC", "Show Aero Client on your Discord status", Category.MISC,
                 () -> c.discordRpc, v -> c.discordRpc = v)
                 .settingText("Client ID", () -> c.discordClientId, v -> c.discordClientId = v));

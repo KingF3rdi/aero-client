@@ -36,6 +36,7 @@ public class ClientConfig {
     public boolean noWeather = false;
     public boolean noFog = false;
     public boolean unfocusedCpu = false;
+    public boolean noEscMenu = false;
     public int unfocusedFps = 15;
     public boolean hideArmorStands = false;
     public boolean itemLimiter = false;
@@ -470,6 +471,7 @@ public class ClientConfig {
     public boolean crystalOptimizer = false;
     public boolean crystalOptimizerParticles = true;
     public boolean crystalOptimizerSound = true;
+    public boolean crystalZeroDelay = true;
     public boolean crystalOptimizerRange = false;
     public int crystalOptimizerRangeValue = 24;
 

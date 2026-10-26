@@ -11,6 +11,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = GameRenderer.class, priority = 2000)
 public class GameRendererMixin {
+    /** No Esc Menu: losing window focus (alt-tab) does not open the pause menu. */
+    @org.spongepowered.asm.mixin.injection.Redirect(method = "render", at = @At(value = "FIELD",
+            target = "Lnet/minecraft/client/option/GameOptions;pauseOnLostFocus:Z", opcode = org.objectweb.asm.Opcodes.GETFIELD), require = 0)
+    private boolean aero$noEscMenu(net.minecraft.client.option.GameOptions options) {
+        return options.pauseOnLostFocus && (AeroClient.CONFIG == null || !AeroClient.CONFIG.noEscMenu);
+    }
+
     @Inject(method = {"tiltViewWhenHurt", "bobViewWhenHurt", "tiltView"}, at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$noHurtcam(MatrixStack matrices, float tickDelta, CallbackInfo ci) {
         if (AeroClient.CONFIG == null) {
