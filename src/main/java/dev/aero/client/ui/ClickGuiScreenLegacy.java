@@ -40,7 +40,8 @@ public class ClickGuiScreenLegacy extends Screen {
     /** Client tab: category sidebar width. */
     private static final int SB = 132;
     private static final int TOP = 40;
-    private static final int ROW_H = 26;
+    private static final int ROW_H = 34;
+    private static final float NAME_SCALE = 1.2f;
 
     private int SIDE_W = 150;
     private int RIGHT_W = 210;
@@ -1237,20 +1238,25 @@ public class ClickGuiScreenLegacy extends Screen {
                 } else if (h) {
                     UiDraw.roundRect(context, x + 2, y, w - 8, rh, rh / 2, UiDraw.HOVER);
                 }
-                drawModIcon(context, module, x + 10, y + 6);
+                drawModIcon(context, module, x + 12, y + (rh - 10) / 2);
                 int key = module.style().toggleKey;
                 int chipW = 0;
                 if (key >= 0) {
                     String kl = keyLabel(key);
                     chipW = textRenderer.getWidth(kl) + 8;
                     int kx = x + w - 50 - chipW;
-                    UiDraw.roundRect(context, kx, y + 5, chipW, 12, 4, UiDraw.LIFT);
-                    context.drawText(textRenderer, Text.literal(kl), kx + 4, y + 7, MUTED, false);
+                    UiDraw.roundRect(context, kx, y + (rh - 12) / 2, chipW, 12, 4, UiDraw.LIFT);
+                    context.drawText(textRenderer, Text.literal(kl), kx + 4, y + (rh - 12) / 2 + 2, MUTED, false);
                     chipW += 6;
                 }
-                context.drawText(textRenderer, Text.literal(fit(module.name, w - 84 - chipW)), x + 28, y + 7,
+                // Module names a size up from the rest of the menu text, so the list reads at a glance.
+                context.getMatrices().pushMatrix();
+                context.getMatrices().translate(x + 32, y + (rh - 10) / 2f);
+                context.getMatrices().scale(NAME_SCALE, NAME_SCALE);
+                context.drawText(textRenderer, Text.literal(fit(module.name, Math.round((w - 90 - chipW) / NAME_SCALE))), 0, 0,
                         module.enabled() ? TEXT : UiDraw.SOFT, false);
-                drawSwitch(context, x + w - 42, y + 3, module.enabled());
+                context.getMatrices().popMatrix();
+                drawSwitch(context, x + w - 42, y + (rh - 16) / 2, module.enabled());
                 y += ROW_H;
             }
         } finally {

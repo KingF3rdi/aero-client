@@ -301,12 +301,12 @@ public final class UiDraw {
     public static void frost(DrawContext c, int x, int y, int w, int h, int r, float lit, boolean active) {
         float l = active ? 1f : Math.max(0f, Math.min(1f, lit));
         softShadow(c, x, y, w, h, r, Math.round(0x14 + 0x10 * l), 6);
+        // Mostly solid dark card (Aurora-like): the world only shows through faintly, so text stays readable
+        // over bright grass and sky. Menu background opacity still makes it darker.
         float o = glassOpacity();
-        if (o > 0f) {
-            roundRect(c, x, y, w, h, r, withAlpha(0x000000, Math.round(255 * o * 0.45f))); // readability over bright worlds
-        }
-        roundGradient(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x1E + 0x26 * l)),
-                withAlpha(0xFFFFFF, Math.round(0x0A + 0x1A * l)), false);
+        roundRect(c, x, y, w, h, r, withAlpha(0x0C0D12, Math.round(255 * Math.min(0.92f, 0.62f + o * 0.3f))));
+        roundGradient(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x0C + 0x14 * l)),
+                withAlpha(0xFFFFFF, Math.round(0x04 + 0x0C * l)), false);
         roundBorder(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x70 + 0x80 * l)));
         roundBorder(c, x + 1, y + 1, w - 2, h - 2, r - 1, withAlpha(0xFFFFFF, Math.round(0x12 + 0x12 * l)));
     }
