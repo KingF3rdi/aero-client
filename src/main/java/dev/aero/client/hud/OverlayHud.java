@@ -251,21 +251,8 @@ public final class OverlayHud {
         if (cfg.saturationOverlay && hungerBar) {
             float sat = splashSaturation(mc);
             if (!(cfg.satHideFull && sat >= 20f)) {
-                // Hunger icons run right to left starting at sw/2 + 82, one row above the hotbar (sh - 39).
-                int foodY = sh - 39;
                 int a = Math.max(40, Math.min(255, (int) (cfg.satOpacity / 100f * 255)));
-                int col = (cfg.satColor & 0x00FFFFFF) | (a << 24);
-                int rim = (cfg.satColor & 0x00FFFFFF) | (Math.min(255, a + 60) << 24);
-                for (int i = 0; i < 10; i++) {
-                    float fill = Math.max(0f, Math.min(2f, sat - i * 2f)) / 2f;
-                    if (fill <= 0f) {
-                        break;
-                    }
-                    int px = sw / 2 + 82 - i * 8;
-                    int w = Math.max(2, Math.round(7 * fill));
-                    context.fill(px + 1, foodY + 1, px + 1 + w, foodY + 8, col);
-                    context.fill(px + 1, foodY + 8, px + 1 + w, foodY + 9, rim);
-                }
+                drawSaturation(context, mc, sw, sh, 0f, sat, (cfg.satColor & 0x00FFFFFF) | (a << 24));
             }
         }
 
@@ -869,18 +856,81 @@ public final class OverlayHud {
         float sat = hunger.getSaturationLevel();
         float newSat = Math.min(next, sat + food.saturation());
         int col = (((int) (Math.max(0.1f, alpha) * 255)) << 24) | 0xFFD84A;
+        drawSaturation(context, mc, sw, sh, sat, newSat, col);
+    }
+
+    /**
+     * AppleSkin-style saturation: a gold outline around each hunger shank, 2 saturation points per shank,
+     * partial shanks outlined from the right. Only the part between from and to is drawn (from > 0 = the
+     * extra a held food would add).
+     */
+    private static void drawSaturation(DrawContext context, MinecraftClient mc, int sw, int sh, float from, float to, int color) {
+        net.minecraft.util.Identifier outline = shankOutline(mc);
+        int y = sh - 39;
         for (int i = 0; i < 10; i++) {
-            float from = Math.max(0f, Math.min(2f, sat - i * 2f));
-            float to = Math.max(0f, Math.min(2f, newSat - i * 2f));
-            if (to <= from) {
+            float a = Math.max(0f, Math.min(2f, from - i * 2f)) / 2f;
+            float b = Math.max(0f, Math.min(2f, to - i * 2f)) / 2f;
+            if (b <= a) {
                 continue;
             }
-            int px = sw / 2 + 82 - i * 8;
-            int x0 = px + 1 + Math.round(7 * from / 2f);
-            int x1 = px + 1 + Math.max(1, Math.round(7 * to / 2f));
-            context.fill(x0, y + 8, x1, y + 9, col);
-            context.fill(x0, y + 1, x1, y + 2, col);
+            int x = sw / 2 + 82 - i * 8;
+            // quarter steps, like the shank itself reads best
+            int x0 = Math.round(9 * (1f - Math.round(b * 4) / 4f));
+            int x1 = Math.round(9 * (1f - Math.round(a * 4) / 4f));
+            if (x1 <= x0) {
+                continue;
+            }
+            if (outline != null) {
+                context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, outline, x + x0, y, x0, 0, x1 - x0, 9, 9, 9, color);
+            } else {
+                context.fill(x + x0, y, x + x1, y + 1, color);
+                context.fill(x + x0, y + 8, x + x1, y + 9, color);
+            }
         }
+    }
+
+    private static net.minecraft.util.Identifier shankOutlineId;
+    private static boolean shankOutlineTried;
+
+    /**
+     * White outline of the hunger shank, made from the edge pixels of the game's own food_full sprite (so
+     * it fits the shape of the active resource pack) and tinted when drawn.
+     * ponytail: built once per session; a resource pack switched later keeps the first pack's outline.
+     */
+    private static net.minecraft.util.Identifier shankOutline(MinecraftClient mc) {
+        if (shankOutlineTried) {
+            return shankOutlineId;
+        }
+        shankOutlineTried = true;
+        try {
+            var res = mc.getResourceManager().getResource(net.minecraft.util.Identifier.ofVanilla("textures/gui/sprites/hud/food_full.png"));
+            if (res.isEmpty()) {
+                return null;
+            }
+            try (var in = res.get().getInputStream();
+                 var src = net.minecraft.client.texture.NativeImage.read(in)) {
+                boolean[][] on = new boolean[9][9];
+                for (int py = 0; py < 9; py++) {
+                    for (int px = 0; px < 9; px++) {
+                        int c = src.getColorArgb(px * src.getWidth() / 9, py * src.getHeight() / 9);
+                        on[px][py] = (c >>> 24) > 32;
+                    }
+                }
+                var out = new net.minecraft.client.texture.NativeImage(9, 9, true);
+                for (int py = 0; py < 9; py++) {
+                    for (int px = 0; px < 9; px++) {
+                        boolean edge = on[px][py] && (px == 0 || py == 0 || px == 8 || py == 8
+                                || !on[px - 1][py] || !on[px + 1][py] || !on[px][py - 1] || !on[px][py + 1]);
+                        out.setColorArgb(px, py, edge ? 0xFFFFFFFF : 0);
+                    }
+                }
+                net.minecraft.util.Identifier id = net.minecraft.util.Identifier.of("aero", "shank_outline");
+                mc.getTextureManager().registerTexture(id, new net.minecraft.client.texture.NativeImageBackedTexture(() -> "aero shank outline", out));
+                shankOutlineId = id;
+            }
+        } catch (Exception ignored) {
+        }
+        return shankOutlineId;
     }
 
     /** Durability 0..1 of a damageable stack, or -1 when it has none. */
@@ -900,44 +950,53 @@ public final class OverlayHud {
 
     private static final java.util.Map<EquipmentSlot, Boolean> WARNED = new java.util.EnumMap<>(EquipmentSlot.class);
 
-    /** Armor HUD: armor (+ held item) with durability as bars, percent text or nothing; warns once below 10 %. */
+    /**
+     * Armor HUD: one soft dark panel with the armor (+ held item); durability as a thin colored bar under each
+     * item, a small percent, or nothing. A piece under 10 % pulses red and dings once.
+     */
     private static void drawArmorHud(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
-        int x = Math.max(0, Math.min(cfg.armorHudX, sw - 24));
-        int y = Math.max(0, Math.min(cfg.armorHudY, sh - 24));
         boolean horiz = "Horizontal".equalsIgnoreCase(cfg.armorLayout);
         String style = cfg.armorDurabilityStyle == null ? "Bars" : cfg.armorDurabilityStyle;
-        java.util.List<EquipmentSlot> slots = new java.util.ArrayList<>(java.util.List.of(
-                EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET));
-        if (cfg.armorHeldItem) {
-            slots.add(EquipmentSlot.MAINHAND);
-        }
-        for (EquipmentSlot slot : slots) {
-            ItemStack stack = mc.player.getEquippedStack(slot);
-            float d = durability(stack);
-            if (slot == EquipmentSlot.MAINHAND && stack.isEmpty()) {
+        boolean bars = "Bars".equalsIgnoreCase(style);
+        boolean text = "Text".equalsIgnoreCase(style);
+        java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
+        java.util.List<EquipmentSlot> slots = new java.util.ArrayList<>();
+        for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET, EquipmentSlot.MAINHAND}) {
+            if (slot == EquipmentSlot.MAINHAND && !cfg.armorHeldItem) {
                 continue;
             }
-            context.fill(x - 2, y - 2, x + 18, y + 18, 0xB014121C);
+            ItemStack stack = mc.player.getEquippedStack(slot);
             if (!stack.isEmpty()) {
-                context.drawItem(stack, x, y);
-                if ("Bars".equalsIgnoreCase(style)) {
-                    context.drawStackOverlay(mc.textRenderer, stack, x, y);
-                } else if (stack.getCount() > 1) {
-                    context.drawStackOverlay(mc.textRenderer, stack, x, y, null);
-                }
+                stacks.add(stack);
+                slots.add(slot);
             }
-            if (d >= 0f && "Text".equalsIgnoreCase(style)) {
-                String pct = Math.round(d * 100f) + "%";
-                int col = cfg.armorDurabilityColor ? durabilityColor(d) : TEXT;
-                int tx = horiz ? x + 8 - mc.textRenderer.getWidth(pct) / 2 : x + 20;
-                int ty = horiz ? y + 20 : y + 5;
-                context.drawText(mc.textRenderer, Text.literal(pct), tx, ty, col, true);
-            }
-            // Break warning: a flash and a ding once when a piece drops under 10 %.
+        }
+        if (stacks.isEmpty()) {
+            return;
+        }
+        int n = stacks.size();
+        int extra = text ? (horiz ? 8 : 26) : bars ? (horiz ? 4 : 0) : 0;
+        int cellW = horiz ? 20 : 20 + extra;
+        int cellH = horiz ? 20 + extra : 20;
+        int w = horiz ? n * cellW + 4 : cellW + 4;
+        int h = horiz ? cellH + 4 : n * cellH + 4;
+        int x0 = Math.max(0, Math.min(cfg.armorHudX, sw - w));
+        int y0 = Math.max(0, Math.min(cfg.armorHudY, sh - h));
+        UiDraw.roundRect(context, x0, y0, w, h, 7, 0x70000000);
+        UiDraw.roundBorder(context, x0, y0, w, h, 7, 0x22FFFFFF);
+        var tr = mc.textRenderer;
+        for (int i = 0; i < n; i++) {
+            ItemStack stack = stacks.get(i);
+            EquipmentSlot slot = slots.get(i);
+            int cx = x0 + 2 + (horiz ? i * cellW : 0);
+            int cy = y0 + 2 + (horiz ? 0 : i * cellH);
+            int ix = cx + 2;
+            int iy = cy + 2;
+            float d = durability(stack);
             boolean low = d >= 0f && d < 0.1f;
             if (cfg.armorBreakWarning && low) {
                 if ((System.currentTimeMillis() / 300) % 2 == 0) {
-                    context.fill(x - 2, y - 2, x + 18, y + 18, 0x55FF3030);
+                    UiDraw.roundRect(context, cx, cy, cellW, cellH, 5, 0x55FF3030);
                 }
                 if (!Boolean.TRUE.equals(WARNED.get(slot))) {
                     WARNED.put(slot, true);
@@ -946,10 +1005,30 @@ public final class OverlayHud {
             } else if (!low) {
                 WARNED.remove(slot);
             }
-            if (horiz) {
-                x += "Text".equalsIgnoreCase(style) ? 26 : 22;
-            } else {
-                y += 20;
+            context.drawItem(stack, ix, iy);
+            if (stack.getCount() > 1) {
+                context.drawStackOverlay(tr, stack, ix, iy, null); // count only, our own durability below
+            }
+            if (d < 0f) {
+                continue;
+            }
+            int col = cfg.armorDurabilityColor ? durabilityColor(d) : TEXT;
+            if (bars) {
+                int bx = ix + 1;
+                int by = iy + 17;
+                UiDraw.roundRect(context, bx, by, 14, 2, 1, 0x40FFFFFF);
+                UiDraw.roundRect(context, bx, by, Math.max(1, Math.round(14 * d)), 2, 1, col);
+            } else if (text) {
+                String pct = Math.round(d * 100f) + "%";
+                float k = horiz ? 0.7f : 0.85f;
+                float tw = tr.getWidth(pct) * k;
+                float tx = horiz ? ix + 8 - tw / 2f : ix + 19;
+                float ty = horiz ? iy + 17 : iy + 4;
+                context.getMatrices().pushMatrix();
+                context.getMatrices().translate(tx, ty);
+                context.getMatrices().scale(k, k);
+                context.drawText(tr, Text.literal(pct), 0, 0, col, false);
+                context.getMatrices().popMatrix();
             }
         }
     }

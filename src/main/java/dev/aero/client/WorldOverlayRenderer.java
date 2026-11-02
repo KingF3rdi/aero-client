@@ -71,7 +71,7 @@ public final class WorldOverlayRenderer {
         }
     }
 
-    private record Pop(Vec3d pos, float yaw, long at) {}
+    private record Pop(Vec3d pos, float yaw, long at, boolean own) {}
 
     private static final java.util.List<Pop> POPS = new java.util.concurrent.CopyOnWriteArrayList<>();
 
@@ -82,7 +82,7 @@ public final class WorldOverlayRenderer {
         if (cfg == null || !cfg.popChams || !(e instanceof PlayerEntity) || (e == mc.player && !cfg.popChamsShowOwn)) {
             return;
         }
-        POPS.add(new Pop(e.getEntityPos(), e.bodyYaw, System.currentTimeMillis()));
+        POPS.add(new Pop(e.getEntityPos(), e.bodyYaw, System.currentTimeMillis(), e == mc.player));
     }
 
     /** Player-shaped outline (head, body, arms, legs) at each recent pop, fading out over the set duration. */
@@ -91,7 +91,12 @@ public final class WorldOverlayRenderer {
         long durationMs = (long) (Math.max(0.2f, cfg.popChamsSeconds) * 1000f);
         long now = System.currentTimeMillis();
         POPS.removeIf(p -> now - p.at() > durationMs);
+        // your own pop sits right on the camera in first person and only blocks the view
+        boolean firstPerson = MinecraftClient.getInstance().options.getPerspective().isFirstPerson();
         for (Pop p : POPS) {
+            if (p.own() && firstPerson) {
+                continue;
+            }
             float t = cfg.popChamsFadeOverTime ? 1f - ((now - p.at()) / (float) durationMs) : 1f;
             int alpha = Math.max(8, Math.min(255, (int) (255 * t)));
             int rgb = cfg.popChamsColor & 0xFFFFFF;

@@ -51,6 +51,8 @@ public final class CosmeticEffects {
                 WALKERS.clear();
             }
             boolean others = AeroClient.CONFIG == null || AeroClient.CONFIG.showOthersCosmetics;
+            // your own trail spawns around the camera in first person: keep tracking, just don't emit
+            boolean firstPerson = client.options.getPerspective().isFirstPerson();
             for (var p : client.world.getPlayers()) {
                 String id;
                 int color;
@@ -80,6 +82,10 @@ public final class CosmeticEffects {
                 w.z = p.getZ();
                 w.have = true;
                 double moved = Math.sqrt(dx * dx + dz * dz);
+                if (p == player && firstPerson) {
+                    w.ground = p.isOnGround();
+                    continue;
+                }
                 if ("aura".equals(id)) {
                     FxWorld.aura(color, w, p.getX(), p.getY(), p.getZ());
                 } else if ("rings".equals(id)) {
