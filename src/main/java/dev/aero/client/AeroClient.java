@@ -185,7 +185,13 @@ public class AeroClient implements ClientModInitializer {
         }
     }
 
+    /** The menu key (Right Shift by default), for the Settings page. */
+    public static KeyBinding menuKey() {
+        return guiKey;
+    }
+
     private static void tick(MinecraftClient client) {
+        dev.aero.client.social.FriendAlerts.tick(client);
         try {
             Screen screen = client.currentScreen;
             if (screen != null && screen.getClass() == net.minecraft.client.gui.screen.TitleScreen.class && (CONFIG == null || CONFIG.aeroTitleScreen)) {

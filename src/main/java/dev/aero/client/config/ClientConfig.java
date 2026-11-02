@@ -381,6 +381,12 @@ public class ClientConfig {
     public boolean aeroTitleScreen = true;
     /** Menu panels and cards, % opaque (the rest shows the blurred game). Renamed from menuOpacity so the lower default reaches existing configs. */
     public float menuGlass = 30f;
+    /** Settings page: menu theme (see ui/Themes), second accent color for gradient accents (0 = solid), menu size. */
+    public String uiTheme = "Aero";
+    public int uiAccent2 = 0;
+    public String menuSize = "Normal";
+    public boolean notifyFriendOnline = true;
+    public boolean notifySound = true;
     public int totemColGood = 0xFF55FF55;
     public int totemColWarn = 0xFFFFA030;
     public int totemColBad = 0xFFFF5555;

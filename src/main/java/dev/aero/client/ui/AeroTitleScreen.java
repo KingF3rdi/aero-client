@@ -223,7 +223,7 @@ public class AeroTitleScreen extends Screen {
         CosmeticPreview.showSelf(c, cx - 50, top - 2, cx + 50, top + 126, 58f, yaw);
     }
 
-    private static List<String> changelog() {
+    static List<String> changelog() {
         if (changelog == null) {
             changelog = new ArrayList<>();
             try (var in = AeroTitleScreen.class.getResourceAsStream("/assets/aero/changelog.txt")) {

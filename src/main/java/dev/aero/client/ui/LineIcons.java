@@ -212,6 +212,37 @@ public final class LineIcons {
                 g.draw(p);
                 g.fill(new Ellipse2D.Double(19, 19, 7, 7));
             }
+            case "grid" -> { // modules
+                g.draw(new RoundRectangle2D.Double(9, 9, 19, 19, 6, 6));
+                g.draw(new RoundRectangle2D.Double(36, 9, 19, 19, 6, 6));
+                g.draw(new RoundRectangle2D.Double(9, 36, 19, 19, 6, 6));
+                g.draw(new RoundRectangle2D.Double(36, 36, 19, 19, 6, 6));
+            }
+            case "layers" -> { // profiles
+                Path2D p = new Path2D.Double();
+                p.moveTo(32, 10);
+                p.lineTo(56, 22);
+                p.lineTo(32, 34);
+                p.lineTo(8, 22);
+                p.closePath();
+                g.draw(p);
+                Path2D q = new Path2D.Double();
+                q.moveTo(8, 33);
+                q.lineTo(32, 45);
+                q.lineTo(56, 33);
+                q.moveTo(8, 43);
+                q.lineTo(32, 55);
+                q.lineTo(56, 43);
+                g.draw(q);
+            }
+            case "gear" -> {
+                for (int i = 0; i < 8; i++) {
+                    double a = i * Math.PI / 4;
+                    g.draw(new Line2D.Double(32 + Math.cos(a) * 18, 32 + Math.sin(a) * 18, 32 + Math.cos(a) * 25, 32 + Math.sin(a) * 25));
+                }
+                g.draw(new Ellipse2D.Double(14, 14, 36, 36));
+                g.draw(new Ellipse2D.Double(25, 25, 14, 14));
+            }
             default -> g.draw(new Ellipse2D.Double(12, 12, 40, 40));
         }
     }

@@ -15,8 +15,13 @@ public final class Notifications {
     private Notifications() {}
 
     public static void toggled(Module module) {
-        name = module.name;
-        on = module.enabled();
+        show(module.name, module.enabled());
+    }
+
+    /** Any short message in the same pill (e.g. a friend came online); on = green dot and "On" tag. */
+    public static void show(String text, boolean isOn) {
+        name = text;
+        on = isOn;
         at = System.currentTimeMillis();
     }
 

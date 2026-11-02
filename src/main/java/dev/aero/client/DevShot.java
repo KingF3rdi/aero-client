@@ -459,7 +459,7 @@ public final class DevShot {
     private static ClickGuiModern gui;
     private static final String[] NAMES = {"a_home", "a2_morph", "b_card_pvp", "c_search", "d_wardrobe", "d2_wings", "w_bat", "w_butterfly", "w_mech", "w_crystal",
             "w_neon", "w_phoenix", "w_seraph", "w_phantom", "x_kasa", "x_wizard", "x_tophat", "x_santa", "x_headphones", "d3_trails", "e_store", "f_rewards",
-            "g_badges", "h_friends", "i_profiles", "j_title", "k_conflicts"};
+            "g_badges", "h_friends", "i_profiles", "i2_settings", "i3_settings_look", "i4_settings_about", "j_title", "k_conflicts"};
 
     private static void packsTick(MinecraftClient mc) {
         if (ticks == 300) {
@@ -549,6 +549,17 @@ public final class DevShot {
             case "g_badges" -> gui.debugTab(1, 103);
             case "h_friends" -> gui.debugTab(2, 0);
             case "i_profiles" -> mc.setScreen(new dev.aero.client.ui.ProfilesScreen(gui));
+            case "i2_settings" -> mc.setScreen(new dev.aero.client.ui.SettingsScreen(gui));
+            case "i3_settings_look" -> {
+                if (mc.currentScreen instanceof dev.aero.client.ui.SettingsScreen st) {
+                    st.debugSection(1);
+                }
+            }
+            case "i4_settings_about" -> {
+                if (mc.currentScreen instanceof dev.aero.client.ui.SettingsScreen st) {
+                    st.debugSection(2);
+                }
+            }
             case "j_title" -> mc.setScreen(new net.minecraft.client.gui.screen.TitleScreen());
             case "k_conflicts" -> {
                 java.nio.file.Path p = java.nio.file.Path.of("x.jar");

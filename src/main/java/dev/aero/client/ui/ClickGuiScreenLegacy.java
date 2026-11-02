@@ -224,6 +224,12 @@ public class ClickGuiScreenLegacy extends Screen {
 
     private void layoutPanel() {
         s = Math.max(0.4f, Math.min(3f, Math.min(width * 0.66f / PW, height * 0.64f / PH)));
+        var sizeCfg = AeroClient.CONFIG;
+        if (sizeCfg != null && "Small".equalsIgnoreCase(sizeCfg.menuSize)) {
+            s *= 0.86f;
+        } else if (sizeCfg != null && "Large".equalsIgnoreCase(sizeCfg.menuSize)) {
+            s *= 1.14f;
+        }
         int vw = Math.round(width / s);
         int vh = Math.round(height / s);
         pw = PW;
@@ -618,7 +624,7 @@ public class ClickGuiScreenLegacy extends Screen {
     private static final int QUICK_W = 80;
     private static final int QUICK_H = 70;
     private static final int PANEL_W = 380;
-    private static final String[] QUICK = {"Wardrobe", "Search", "Friends", "Profiles", "HUD"};
+    private static final String[] QUICK = {"Wardrobe", "Search", "Friends", "Profiles", "HUD", "Settings"};
 
     private int vw() {
         return Math.round(width / s);
@@ -748,8 +754,9 @@ public class ClickGuiScreenLegacy extends Screen {
             case 0 -> "wardrobe";
             case 1 -> "search";
             case 2 -> "friends";
-            case 3 -> "sliders";
-            default -> "hud";
+            case 3 -> "layers";
+            case 4 -> "hud";
+            default -> "gear";
         }, 0, 0, 10, col);
         c.getMatrices().popMatrix();
     }
@@ -986,7 +993,8 @@ public class ClickGuiScreenLegacy extends Screen {
                     }
                     case 2 -> topTab = 2;
                     case 3 -> client.setScreen(new ProfilesScreen(this));
-                    default -> client.setScreen(new HudLayoutScreen(this));
+                    case 4 -> client.setScreen(new HudLayoutScreen(this));
+                    default -> client.setScreen(new SettingsScreen(this));
                 }
                 return true;
             }

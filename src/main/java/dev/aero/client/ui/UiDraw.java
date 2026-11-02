@@ -50,12 +50,18 @@ public final class UiDraw {
      * opacity. The rgb argument is kept for the callers but the surface is always the dark glass tone.
      */
     public static int surface(int rgb) {
-        return withAlpha(0x0A0B0F, Math.round(255 * Math.min(0.85f, 0.18f + glassOpacity())));
+        return withAlpha(Themes.base(), Math.round(255 * Math.min(0.85f, 0.18f + glassOpacity() + Themes.current().solid())));
     }
 
     public static int accent() {
         var c = dev.aero.client.AeroClient.CONFIG;
         return c == null ? 0xFF4F8EFF : (c.uiAccent | 0xFF000000);
+    }
+
+    /** Second color of a gradient accent; the accent itself when the accent is solid. */
+    public static int accent2() {
+        var c = dev.aero.client.AeroClient.CONFIG;
+        return c == null || c.uiAccent2 == 0 ? accent() : (c.uiAccent2 | 0xFF000000);
     }
     public static final int FILL = 0x18FFFFFF;
     public static final int FILL_DEEP = 0x40000000;
@@ -304,7 +310,7 @@ public final class UiDraw {
         // Mostly solid dark card (Aurora-like): the world only shows through faintly, so text stays readable
         // over bright grass and sky. Menu background opacity still makes it darker.
         float o = glassOpacity();
-        roundRect(c, x, y, w, h, r, withAlpha(0x0C0D12, Math.round(255 * Math.min(0.92f, 0.62f + o * 0.3f))));
+        roundRect(c, x, y, w, h, r, withAlpha(Themes.base(), Math.round(255 * Math.min(0.97f, 0.62f + o * 0.3f + Themes.current().solid()))));
         roundGradient(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x0C + 0x14 * l)),
                 withAlpha(0xFFFFFF, Math.round(0x04 + 0x0C * l)), false);
         roundBorder(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x70 + 0x80 * l)));
@@ -411,7 +417,11 @@ public final class UiDraw {
     }
 
     public static void toggle(DrawContext c, int x, int y, boolean on) {
-        roundRect(c, x, y + 1, 28, 14, 7, on ? accent() : 0x33FFFFFF);
+        if (on) {
+            roundGradient(c, x, y + 1, 28, 14, 7, accent(), accent2(), false);
+        } else {
+            roundRect(c, x, y + 1, 28, 14, 7, 0x33FFFFFF);
+        }
         roundBorder(c, x, y + 1, 28, 14, 7, on ? 0x66FFFFFF : 0x40FFFFFF);
         int knobX = on ? x + 15 : x + 2;
         roundRect(c, knobX, y + 3, 10, 10, 5, on ? 0xFFFFFFFF : 0xFF9AA0AB);
@@ -420,7 +430,7 @@ public final class UiDraw {
     public static void slider(DrawContext c, int x, int y, int w, float t) {
         roundRect(c, x, y, w, 6, 3, 0x33FFFFFF);
         int filled = Math.max(4, (int) (w * Math.max(0f, Math.min(1f, t))));
-        roundRect(c, x, y, filled, 6, 3, accent());
+        roundGradient(c, x, y, filled, 6, 3, accent(), accent2(), false);
         roundRect(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0xFFFFFFFF);
         roundBorder(c, x + Math.max(0, filled - 6), y - 3, 12, 12, 6, 0x40000000);
     }
