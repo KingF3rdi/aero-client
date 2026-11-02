@@ -744,25 +744,13 @@ public class ClickGuiScreenLegacy extends Screen {
         c.getMatrices().pushMatrix();
         c.getMatrices().translate(cx - 5 * k, cy - 5 * k);
         c.getMatrices().scale(k, k);
-        FillBatch b = new FillBatch(c);
-        switch (i) {
-            case 0 -> iconPerson(b, 0, 0, col);
-            case 1 -> iconMagnifier(b, 0, 0, col);
-            case 2 -> {
-                iconPerson(b, -3, 1, UiDraw.withAlpha(col, 0x99));
-                iconPerson(b, 2, 0, col);
-            }
-            case 3 -> {
-                b.fill(0, 1, 10, 2, col);
-                b.fill(0, 5, 10, 6, col);
-                b.fill(0, 9, 10, 10, col);
-                b.fill(6, -1, 8, 4, col);
-                b.fill(2, 3, 4, 8, col);
-                b.fill(5, 7, 7, 12, col);
-            }
-            default -> iconMonitor(b, 0, 0, col);
-        }
-        b.flush();
+        LineIcons.draw(c, switch (i) {
+            case 0 -> "wardrobe";
+            case 1 -> "search";
+            case 2 -> "friends";
+            case 3 -> "sliders";
+            default -> "hud";
+        }, 0, 0, 10, col);
         c.getMatrices().popMatrix();
     }
 
@@ -911,9 +899,7 @@ public class ClickGuiScreenLegacy extends Screen {
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(cx - 9, hy + 8);
             context.getMatrices().scale(1.8f, 1.8f);
-            FillBatch b = new FillBatch(context);
-            iconMagnifier(b, 0, 0, TEXT);
-            b.flush();
+            LineIcons.draw(context, "search", 0, 0, 10, TEXT);
             context.getMatrices().popMatrix();
         } else {
             CardDef card = CARDS.get(openCard);
@@ -1151,19 +1137,9 @@ public class ClickGuiScreenLegacy extends Screen {
 
     private static void drawCardIcon(DrawContext context, CardDef c, int x, int y, int col) {
         if (c.kind() == 1) {
-            // sliders
-            FillBatch b = new FillBatch(context);
-            b.fill(x, y + 1, x + 10, y + 2, col);
-            b.fill(x, y + 5, x + 10, y + 6, col);
-            b.fill(x, y + 9, x + 10, y + 10, col);
-            b.fill(x + 6, y - 1, x + 8, y + 4, col);
-            b.fill(x + 2, y + 3, x + 4, y + 8, col);
-            b.fill(x + 5, y + 7, x + 7, y + 12, col);
-            b.flush();
+            LineIcons.draw(context, "sliders", x, y, 10, col);
         } else if (c.kind() == 2) {
-            FillBatch b = new FillBatch(context);
-            iconMonitor(b, x, y, col);
-            b.flush();
+            LineIcons.draw(context, "hud", x, y, 10, col);
         } else {
             iconForCategory(context, c.category(), x, y, col);
         }
@@ -1642,112 +1618,34 @@ public class ClickGuiScreenLegacy extends Screen {
      */
     private void drawModIcon(DrawContext context, Module module, int x, int y) {
         int col = catColor(module.category);
-        FillBatch b = new FillBatch(context);
-        switch (module.name) {
-            case "FPS" -> iconBolt(b, x, y, col);
-            case "Ping" -> iconBars(b, x, y, col);
-            case "Keystrokes" -> iconKey(b, x, y, col);
-            case "Potion HUD" -> iconFlask(b, x, y, col);
-            case "Crosshair", "Crosshair Addons" -> iconTarget(b, x, y, col);
-            case "Nametags" -> iconTag(b, x, y, col);
-            case "Zoom" -> iconMagnifier(b, x, y, col);
-            case "Watermark" -> UiDraw.aeroMark(context, x, y, 10, col);
-            default -> iconForCategory(context, module.category, x, y, col);
+        String icon = switch (module.name) {
+            case "FPS" -> "bolt";
+            case "Ping" -> "signal";
+            case "Keystrokes" -> "key";
+            case "Potion HUD" -> "flask";
+            case "Crosshair", "Crosshair Addons" -> "target";
+            case "Nametags" -> "tag";
+            case "Zoom" -> "search";
+            default -> null;
+        };
+        if ("Watermark".equals(module.name)) {
+            UiDraw.aeroMark(context, x, y, 10, col);
+        } else if (icon != null) {
+            LineIcons.draw(context, icon, x, y, 10, col);
+        } else {
+            iconForCategory(context, module.category, x, y, col);
         }
-        b.flush();
     }
     private static void iconForCategory(DrawContext ctx, Category category, int x, int y, int col) {
-        FillBatch context = new FillBatch(ctx); // the whole icon is one GUI element
-        switch (category) {
-            case PVP -> iconCross(context, x, y, col);
-            case HUD -> iconMonitor(context, x, y, col);
-            case RENDER -> iconSparkle(context, x, y, col);
-            case PLAYER -> iconPerson(context, x, y, col);
-            case MISC -> iconDots(context, x, y, col);
-            case PERFORMANCE -> iconBars(context, x, y, col);
-            case PREVIEW -> iconSparkle(context, x, y, col);
-        }
-        context.flush();
-    }
-    /** Crossed blades - PvP. */
-    private static void iconCross(FillBatch context, int x, int y, int col) {
-        for (int i = 0; i < 9; i++) {
-            context.fill(x + i, y + i, x + i + 2, y + i + 2, col);
-            context.fill(x + 8 - i, y + i, x + 10 - i, y + i + 2, col);
-        }
-    }
-    /** Screen + stand - HUD. */
-    private static void iconMonitor(FillBatch context, int x, int y, int col) {
-        context.fill(x + 1, y + 1, x + 9, y + 2, col);
-        context.fill(x + 1, y + 6, x + 9, y + 7, col);
-        context.fill(x + 1, y + 1, x + 2, y + 7, col);
-        context.fill(x + 8, y + 1, x + 9, y + 7, col);
-        context.fill(x + 4, y + 7, x + 6, y + 9, col);
-    }
-    /** Four-point sparkle - Visuals. */
-    private static void iconSparkle(FillBatch context, int x, int y, int col) {
-        context.fill(x + 4, y, x + 6, y + 10, col);
-        context.fill(x, y + 4, x + 10, y + 6, col);
-    }
-    /** Head + shoulders - Player. */
-    private static void iconPerson(FillBatch context, int x, int y, int col) {
-        context.fill(x + 3, y, x + 7, y + 4, col);
-        context.fill(x + 2, y + 5, x + 8, y + 10, col);
-    }
-    /** Vertical ellipsis - Misc. */
-    private static void iconDots(FillBatch context, int x, int y, int col) {
-        context.fill(x + 3, y + 1, x + 6, y + 3, col);
-        context.fill(x + 3, y + 4, x + 6, y + 6, col);
-        context.fill(x + 3, y + 7, x + 6, y + 9, col);
-    }
-    /** Ascending bars - Performance / Ping / signal strength. */
-    private static void iconBars(FillBatch context, int x, int y, int col) {
-        context.fill(x + 1, y + 7, x + 3, y + 10, col);
-        context.fill(x + 4, y + 4, x + 6, y + 10, col);
-        context.fill(x + 7, y + 1, x + 9, y + 10, col);
-    }
-    /** Lightning bolt - FPS. */
-    private static void iconBolt(FillBatch context, int x, int y, int col) {
-        context.fill(x + 5, y, x + 8, y + 4, col);
-        context.fill(x + 2, y + 4, x + 8, y + 6, col);
-        context.fill(x + 2, y + 6, x + 5, y + 10, col);
-    }
-    /** Single keycap - Keystrokes. */
-    private static void iconKey(FillBatch context, int x, int y, int col) {
-        context.fill(x + 1, y + 1, x + 9, y + 9, col);
-        context.fill(x + 3, y + 3, x + 7, y + 7, 0xFF15161B);
-    }
-    /** Flask - Potion HUD. */
-    private static void iconFlask(FillBatch context, int x, int y, int col) {
-        context.fill(x + 4, y, x + 6, y + 3, col);
-        context.fill(x + 2, y + 3, x + 8, y + 4, col);
-        context.fill(x + 1, y + 4, x + 9, y + 10, col);
-    }
-    /** Target ring + center dot - Crosshair. */
-    private static void iconTarget(FillBatch context, int x, int y, int col) {
-        for (int a = 0; a < 360; a += 30) {
-            double rad = Math.toRadians(a);
-            int px = x + 5 + (int) Math.round(Math.cos(rad) * 4);
-            int py = y + 5 + (int) Math.round(Math.sin(rad) * 4);
-            context.fill(px, py, px + 2, py + 2, col);
-        }
-        context.fill(x + 4, y + 4, x + 6, y + 6, col);
-    }
-    /** Luggage tag - Nametags. */
-    private static void iconTag(FillBatch context, int x, int y, int col) {
-        context.fill(x + 1, y + 2, x + 7, y + 8, col);
-        context.fill(x + 7, y + 3, x + 9, y + 7, col);
-        context.fill(x + 3, y + 4, x + 5, y + 6, 0xFF15161B);
-    }
-    /** Magnifying glass - Zoom. */
-    private static void iconMagnifier(FillBatch context, int x, int y, int col) {
-        for (int a = 0; a < 360; a += 30) {
-            double rad = Math.toRadians(a);
-            int px = x + 4 + (int) Math.round(Math.cos(rad) * 3);
-            int py = y + 4 + (int) Math.round(Math.sin(rad) * 3);
-            context.fill(px, py, px + 2, py + 2, col);
-        }
-        context.fill(x + 6, y + 6, x + 9, y + 9, col);
+        LineIcons.draw(ctx, switch (category) {
+            case PVP -> "pvp";
+            case HUD -> "hud";
+            case RENDER -> "visuals";
+            case PLAYER -> "player";
+            case MISC -> "misc";
+            case PERFORMANCE -> "performance";
+            case PREVIEW -> "preview";
+        }, x, y, 10, col);
     }
     private void wrap(DrawContext context, String text, int x, int y, int max, int color) {
         wrap(context, text, x, y, max, color, Integer.MAX_VALUE);

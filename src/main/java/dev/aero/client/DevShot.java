@@ -490,7 +490,7 @@ public final class DevShot {
             packsTick(mc);
             return;
         }
-        if (stage == -1) {
+        if (stage == -1 && (mc.currentScreen instanceof TitleScreen || mc.currentScreen instanceof dev.aero.client.ui.AeroTitleScreen)) {
             String tk = System.getProperty("aero.token");
             if (tk != null) {
                 dev.aero.client.social.AeroApi.devToken(tk);
@@ -501,6 +501,9 @@ public final class DevShot {
             stage = 0;
             wait = 40;
             return;
+        }
+        if (stage == -1) {
+            return; // still loading
         }
         if (--wait > 0) {
             return;
