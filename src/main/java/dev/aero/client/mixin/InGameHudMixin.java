@@ -28,11 +28,6 @@ public class InGameHudMixin {
         dev.aero.client.ui.UiFont.active = AeroClient.CONFIG != null && AeroClient.CONFIG.vanillaUi && dev.aero.client.ui.UiFont.enabled();
     }
 
-    @Inject(method = "render", at = @At("TAIL"), require = 0)
-    private void aero$overlay(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        dev.aero.client.hud.OverlayHud.render(context, tickCounter);
-    }
-
     @Inject(method = "render", at = @At("RETURN"), require = 0)
     private void aero$fontOff(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
         dev.aero.client.ui.UiFont.active = false;
