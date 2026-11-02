@@ -7,7 +7,6 @@ import dev.aero.client.hud.HudStats;
 import dev.aero.client.hud.OverlayHud;
 import dev.aero.client.module.Modules;
 import dev.aero.client.ui.Menus;
-import dev.aero.client.ui.PauseMenuScreen;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
@@ -189,9 +188,6 @@ public class AeroClient implements ClientModInitializer {
     private static void tick(MinecraftClient client) {
         try {
             Screen screen = client.currentScreen;
-            if (isVanillaPause(screen) && (CONFIG == null || CONFIG.aeroPauseMenu) && !Menus.isClickGui(screen) && !Menus.isPauseOverlay(screen)) {
-                client.setScreen(new PauseMenuScreen());
-            }
             if (screen != null && screen.getClass() == net.minecraft.client.gui.screen.TitleScreen.class && (CONFIG == null || CONFIG.aeroTitleScreen)) {
                 client.setScreen(new dev.aero.client.ui.AeroTitleScreen());
             }
@@ -366,10 +362,6 @@ public class AeroClient implements ClientModInitializer {
             }
         } catch (Throwable ignored) {
         }
-    }
-
-    private static boolean isVanillaPause(Screen screen) {
-        return screen instanceof net.minecraft.client.gui.screen.GameMenuScreen;
     }
 
 }

@@ -614,8 +614,8 @@ public class ClickGuiScreenLegacy extends Screen {
 
     private static final int CARD_W = 92;
     private static final int CARD_H = 104;
-    private static final int QUICK_W = 66;
-    private static final int QUICK_H = 50;
+    private static final int QUICK_W = 80;
+    private static final int QUICK_H = 70;
     private static final int PANEL_W = 380;
     private static final String[] QUICK = {"Wardrobe", "Search", "Friends", "Profiles", "HUD"};
 
@@ -867,10 +867,10 @@ public class ClickGuiScreenLegacy extends Screen {
             try {
                 glassCard(context, x, y, r[2], r[3], 12, a[5], active);
                 int col = UiDraw.fa(TEXT);
-                quickIcon(context, i, x + r[2] / 2, y + 18, 1.7f, col);
+                quickIcon(context, i, x + r[2] / 2, y + 26, 2.6f, col);
                 if ((col >>> 24) >= 8) {
                     String lab = QUICK[i];
-                    context.drawText(textRenderer, Text.literal(lab), x + (r[2] - textRenderer.getWidth(lab)) / 2, y + 34, col, false);
+                    context.drawText(textRenderer, Text.literal(lab), x + (r[2] - textRenderer.getWidth(lab)) / 2, y + 50, col, false);
                 }
             } finally {
                 context.getMatrices().popMatrix();

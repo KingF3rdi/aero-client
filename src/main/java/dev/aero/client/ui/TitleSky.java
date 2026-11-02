@@ -6,10 +6,16 @@ import net.minecraft.client.gui.DrawContext;
 /**
  * Title screen / out-of-world menu backgrounds picked with the Sky button: Polar (aurora night),
  * Glacier (bright ice), Dusk (sunset hills) and Mono (soft greyscale). Drawn procedurally with plain
- * fills, so they cost next to nothing and need no image files.
+ * fills, so they cost next to nothing and need no image files. Drawn at screen resolution (not in
+ * blocky GUI pixels), so ridges, aurora and suns stay smooth at any GUI scale.
  */
 public final class TitleSky {
     public static final String[] NAMES = {"Polar", "Glacier", "Dusk", "Mono", "Panorama"};
+
+    /** Physical pixels per GUI pixel while drawing. */
+    private static float d = 1f;
+    /** Column width in physical pixels (2, wider on very large screens to keep the fill count down). */
+    private static int step = 2;
 
     private TitleSky() {}
 
@@ -45,23 +51,35 @@ public final class TitleSky {
 
     public static void draw(DrawContext c, int w, int h) {
         float t = (System.currentTimeMillis() % 1_000_000L) / 1000f;
+        d = Math.max(1f, (float) net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaleFactor());
+        int pw = Math.round(w * d);
+        int ph = Math.round(h * d);
+        step = Math.max(2, pw / 900);
+        c.getMatrices().pushMatrix();
+        c.getMatrices().scale(1f / d, 1f / d);
         switch (current()) {
-            case "Glacier" -> glacier(c, w, h, t);
-            case "Dusk" -> dusk(c, w, h, t);
-            case "Mono" -> mono(c, w, h, t);
-            default -> polar(c, w, h, t);
+            case "Glacier" -> glacier(c, pw, ph, t);
+            case "Dusk" -> dusk(c, pw, ph, t);
+            case "Mono" -> mono(c, pw, ph, t);
+            default -> polar(c, pw, ph, t);
         }
+        c.getMatrices().popMatrix();
+    }
+
+    /** A size given in GUI pixels, in physical pixels. */
+    private static int px(double guiPixels) {
+        return (int) Math.round(guiPixels * d);
     }
 
     private static double noise(double x, int seed) {
         return Math.sin(x * 0.011 + seed) * 0.55 + Math.sin(x * 0.027 + seed * 1.7) * 0.3 + Math.sin(x * 0.071 + seed * 2.3) * 0.15;
     }
 
-    /** Filled ridge line: for each 2px column the ground starts at base - amp * noise. */
+    /** Filled ridge line: for each column the ground starts at base - amp * noise. */
     private static void ridge(DrawContext c, int w, int h, int base, int amp, int seed, int top, int bottom) {
-        for (int x = 0; x < w; x += 2) {
-            int y = (int) (base - amp * (0.5 + 0.5 * noise(x, seed)));
-            c.fillGradient(x, y, x + 2, h, top, bottom);
+        for (int x = 0; x < w; x += step) {
+            int y = (int) (base - amp * (0.5 + 0.5 * noise(x / d, seed)));
+            c.fillGradient(x, y, x + step, h, top, bottom);
         }
     }
 
@@ -72,7 +90,7 @@ public final class TitleSky {
             int y = r.nextInt(Math.max(1, h));
             float tw = 0.55f + 0.45f * (float) Math.sin(t * (0.6 + r.nextFloat()) + i);
             int a = (int) (alphaMax * tw);
-            int s = r.nextFloat() < 0.12f ? 2 : 1;
+            int s = Math.max(1, px(r.nextFloat() < 0.12f ? 1.4 : 0.7));
             c.fill(x, y, x + s, y + s, (a << 24) | 0xFFFFFF);
         }
     }
@@ -84,15 +102,15 @@ public final class TitleSky {
         int[][] bands = {{0x2BE8A5, 0x3FA9F5}, {0x7C5CFF, 0x2BE8A5}};
         for (int b = 0; b < bands.length; b++) {
             double phase = t * (0.18 + b * 0.07);
-            for (int x = 0; x < w; x += 2) {
+            for (int x = 0; x < w; x += step) {
                 double k = x / (double) Math.max(1, w);
                 int yc = (int) (h * (0.22 + b * 0.1) + Math.sin(k * 5.0 + phase) * h * 0.06 + Math.sin(k * 11.0 - phase * 1.3) * h * 0.02);
                 int len = (int) (h * (0.16 + 0.08 * Math.sin(k * 7.0 + phase * 2)));
                 float glow = (float) (0.55 + 0.45 * Math.sin(k * 9.0 + phase * 3 + b));
                 int rgb = lerp(bands[b][0], bands[b][1], (float) (0.5 + 0.5 * Math.sin(k * 3 + phase)));
                 int a = (int) (0x58 * glow);
-                c.fillGradient(x, yc - len, x + 2, yc, rgb & 0xFFFFFF, (a << 24) | rgb);
-                c.fillGradient(x, yc, x + 2, yc + len / 3, (a << 24) | rgb, rgb & 0xFFFFFF);
+                c.fillGradient(x, yc - len, x + step, yc, rgb & 0xFFFFFF, (a << 24) | rgb);
+                c.fillGradient(x, yc, x + step, yc + len / 3, (a << 24) | rgb, rgb & 0xFFFFFF);
             }
         }
         ridge(c, w, h, h * 82 / 100, h / 5, 3, 0xFF2A3A5C, 0xFF1A2440);
@@ -107,13 +125,13 @@ public final class TitleSky {
         int sy = h / 4;
         for (int r = 64; r > 0; r -= 8) {
             int a = (int) (0x14 + (64 - r) * 0.9);
-            disc(c, sx, sy, r, (a << 24) | 0xFFFBEA);
+            disc(c, sx, sy, px(r), (a << 24) | 0xFFFBEA);
         }
         // drifting haze
         for (int i = 0; i < 4; i++) {
             int y = h / 6 + i * h / 12;
-            int x = (int) ((t * (6 + i * 3) + i * 170) % (w + 300)) - 300;
-            UiDraw.roundRect(c, x, y, 260, 18, 9, 0x22FFFFFF);
+            int x = (int) ((t * (6 + i * 3) * d + px(i * 170)) % (w + px(300))) - px(300);
+            UiDraw.roundRect(c, x, y, px(260), px(18), px(9), 0x22FFFFFF);
         }
         ridge(c, w, h, h * 72 / 100, h / 4, 5, 0xFFB9D6EE, 0xFF8DB7DB);
         ridge(c, w, h, h * 84 / 100, h / 6, 13, 0xFFEAF4FB, 0xFFC9E0F2);
@@ -127,9 +145,9 @@ public final class TitleSky {
         int sx = w / 2;
         int sy = h * 64 / 100;
         for (int r = 72; r > 38; r -= 8) {
-            disc(c, sx, sy, r, ((0x12 + (72 - r)) << 24) | 0xFFD58A);
+            disc(c, sx, sy, px(r), ((0x12 + (72 - r)) << 24) | 0xFFD58A);
         }
-        disc(c, sx, sy, 36, 0xFFFFE0A8);
+        disc(c, sx, sy, px(36), 0xFFFFE0A8);
         ridge(c, w, h, h * 74 / 100, h / 6, 7, 0xFF6B2E55, 0xFF4A1F45);
         ridge(c, w, h, h * 86 / 100, h / 7, 17, 0xFF3A1838, 0xFF2A1030);
         ridge(c, w, h, h * 96 / 100, h / 12, 29, 0xFF1D0B22, 0xFF14071A);
@@ -138,26 +156,27 @@ public final class TitleSky {
     private static void mono(DrawContext c, int w, int h, float t) {
         c.fillGradient(0, 0, w, h, 0xFF2A2B30, 0xFF121316);
         for (int i = 0; i < 5; i++) {
-            int x = (int) ((w * (0.15 + i * 0.18)) + Math.sin(t * 0.2 + i) * 30);
-            int y = (int) ((h * (0.3 + (i % 2) * 0.35)) + Math.cos(t * 0.17 + i) * 20);
-            disc(c, x, y, 50 + i * 14, 0x0CFFFFFF);
+            int x = (int) ((w * (0.15 + i * 0.18)) + Math.sin(t * 0.2 + i) * px(30));
+            int y = (int) ((h * (0.3 + (i % 2) * 0.35)) + Math.cos(t * 0.17 + i) * px(20));
+            disc(c, x, y, px(50 + i * 14), 0x0CFFFFFF);
         }
         // diagonal light sweep
-        for (int x = -h; x < w; x += 2) {
+        for (int x = -h; x < w; x += step) {
             double k = (x + h) / (double) (w + h);
             int a = (int) (0x10 * Math.max(0, Math.sin(k * Math.PI * 2 + t * 0.15)));
             if (a > 0) {
-                c.fill(x + h / 2, 0, x + h / 2 + 2, h, (a << 24) | 0xFFFFFF);
+                c.fill(x + h / 2, 0, x + h / 2 + step, h, (a << 24) | 0xFFFFFF);
             }
         }
         c.fillGradient(0, h * 3 / 4, w, h, 0x00000000, 0x55000000);
     }
 
-    /** Filled circle from 2px scanlines. */
+    /** Filled circle from scanlines one column step tall. */
     private static void disc(DrawContext c, int cx, int cy, int r, int color) {
-        for (int dy = -r; dy < r; dy += 2) {
-            int half = (int) Math.sqrt(Math.max(0, r * r - (dy + 1) * (dy + 1)));
-            c.fill(cx - half, cy + dy, cx + half, cy + dy + 2, color);
+        for (int dy = -r; dy < r; dy += step) {
+            int m = dy + step / 2;
+            int half = (int) Math.sqrt(Math.max(0, r * r - m * m));
+            c.fill(cx - half, cy + dy, cx + half, cy + dy + step, color);
         }
     }
 

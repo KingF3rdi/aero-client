@@ -100,8 +100,7 @@ public final class Modules {
                 () -> true, v -> { })
                 .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v)
                 .setting("Style vanilla UI (hotbar, inventories, buttons)", () -> c.vanillaUi, v -> c.vanillaUi = v)
-                .setting("Smooth menu font", () -> c.smoothFont, v -> c.smoothFont = v)
-                .setting("Aero Esc menu (off = vanilla)", () -> c.aeroPauseMenu, v -> c.aeroPauseMenu = v)
+                .setting("Smooth font (menus and HUD)", () -> c.smoothFont, v -> c.smoothFont = v)
                 .setting("Aero title screen (off = vanilla)", () -> c.aeroTitleScreen, v -> c.aeroTitleScreen = v)
                 .settingF("Menu background opacity %", () -> (double) c.menuGlass, v -> c.menuGlass = (float) v, 10, 100));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,

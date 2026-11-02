@@ -201,6 +201,7 @@ public final class Shards {
                     if (w.statusCode() == 200) {
                         wallet = JsonParser.parseString(w.body()).getAsJsonObject();
                         walletAt = System.currentTimeMillis();
+                        wearRankBadge();
                         if (status.startsWith("Shards need") || status.startsWith("Aero server")) {
                             status = "";
                         }
@@ -216,6 +217,20 @@ public final class Shards {
         }, "aero-shards");
         t.setDaemon(true);
         t.start();
+    }
+
+    /** A rank (Owner, Staff...) is worn as the name badge as long as no other badge was picked. */
+    private static void wearRankBadge() {
+        String r = rank();
+        if (r.isEmpty() || dev.aero.client.cosmetic.Cosmetics.named(dev.aero.client.cosmetic.Cosmetics.Kind.BADGE, r) == null) {
+            return;
+        }
+        net.minecraft.client.MinecraftClient.getInstance().execute(() -> {
+            String eq = dev.aero.client.cosmetic.Cosmetics.equipped(dev.aero.client.cosmetic.Cosmetics.Kind.BADGE);
+            if ("none".equals(eq) || "beta".equals(eq)) {
+                dev.aero.client.cosmetic.Cosmetics.equip(dev.aero.client.cosmetic.Cosmetics.Kind.BADGE, r);
+            }
+        });
     }
 
     /** Called when the logged-in account changes, so nothing from the previous account is shown. */

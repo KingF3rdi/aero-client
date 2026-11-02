@@ -29,7 +29,7 @@ public final class Menus {
     }
 
     public static boolean isPauseOverlay(Screen screen) {
-        return screen != null && screen.getClass().getName().contains("PauseMenu");
+        return screen instanceof net.minecraft.client.gui.screen.GameMenuScreen;
     }
 
     private static boolean exists(String name) {

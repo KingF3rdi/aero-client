@@ -378,7 +378,6 @@ public class ClientConfig {
     public boolean vanillaUi = true;
     public boolean smoothFont = true;
     /** Esc opens the Aero pause menu; off = the vanilla game menu. */
-    public boolean aeroPauseMenu = true;
     public boolean aeroTitleScreen = true;
     /** Menu panels and cards, % opaque (the rest shows the blurred game). Renamed from menuOpacity so the lower default reaches existing configs. */
     public float menuGlass = 30f;

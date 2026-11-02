@@ -13,6 +13,7 @@ import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -138,14 +139,19 @@ public final class OverlayHud {
         }
         if (cfg.totemCounter && cfg.totemHud) {
             int totems = countTotems(mc);
-            int iconX = cfg.totemX > 0 ? cfg.totemX : sw / 2 - 8;
-            int iconY = cfg.totemY > 0 ? cfg.totemY : sh - 70;
-            context.drawItem(new ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING), iconX, iconY);
+            // Default spot: right of the hotbar, level with the hotbar items, count to the right of the icon.
+            int iconX = cfg.totemX > 0 ? cfg.totemX : sw / 2 + 98;
+            int iconY = cfg.totemY > 0 ? cfg.totemY : sh - 19;
+            Identifier tex = vanillaTotem(mc);
+            if (tex != null) {
+                context.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, tex, iconX, iconY, 0f, 0f, 16, 16, 16, 16);
+            } else {
+                context.drawItem(new ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING), iconX, iconY);
+            }
             String count = String.valueOf(totems);
-            int cw = mc.textRenderer.getWidth(count);
             int col = cfg.totemAutoColor ? (totems >= 3 ? cfg.totemColGood : totems == 2 ? cfg.totemColWarn : cfg.totemColBad) | 0xFF000000
                     : cfg.totemUseColor ? (cfg.totemColor | 0xFF000000) : TEXT;
-            context.drawText(mc.textRenderer, Text.literal(count), iconX + 8 - cw / 2, iconY + 18, col, true);
+            context.drawText(mc.textRenderer, Text.literal(count), iconX + 19, iconY + 4, col, true);
         }
 
         if (cfg.arraylist && AeroClient.MODULES != null) {
@@ -595,6 +601,28 @@ public final class OverlayHud {
         int filled = Math.max(1, (int) (barW * progress));
         int col = (a << 24) | (cfg.crossbowArrowColor & 0x00FFFFFF);
         context.fill(x + 1, y + 1, x + filled, y + 4, col);
+    }
+
+    private static Identifier vanillaTotemId;
+    private static boolean vanillaTotemTried;
+
+    /** Minecraft's own totem texture (read from the game's built-in pack), so resource packs don't change the counter icon. */
+    private static Identifier vanillaTotem(MinecraftClient mc) {
+        if (!vanillaTotemTried) {
+            vanillaTotemTried = true;
+            var in = mc.getDefaultResourcePack().open(net.minecraft.resource.ResourceType.CLIENT_RESOURCES,
+                    Identifier.ofVanilla("textures/item/totem_of_undying.png"));
+            if (in != null) {
+                try (var s = in.get()) {
+                    var img = net.minecraft.client.texture.NativeImage.read(s);
+                    Identifier id = Identifier.of("aero", "vanilla_totem");
+                    mc.getTextureManager().registerTexture(id, new net.minecraft.client.texture.NativeImageBackedTexture(() -> "aero vanilla totem", img));
+                    vanillaTotemId = id;
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return vanillaTotemId;
     }
 
     private static int countTotems(MinecraftClient mc) {

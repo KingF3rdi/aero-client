@@ -202,7 +202,6 @@ public final class DevShot {
             gui.debugTab(1, 2);
         }, 140));
         STEPS.add(new Step("still_store", () -> gui.debugTab(1, 101), 30));
-        STEPS.add(new Step("still_pause", () -> MinecraftClient.getInstance().setScreen(new dev.aero.client.ui.PauseMenuScreen()), 30));
     }
 
     private static final String[] REC_MENU = {"Totem Counter", "Keystrokes", "Fullbright", "Freelook", "Chat", "Optimizer"};
@@ -310,6 +309,16 @@ public final class DevShot {
     }
 
     private static void buildWorldSteps() {
+        STEPS.add(new Step("hud_survival", () -> {
+            var mc = MinecraftClient.getInstance();
+            mc.player.networkHandler.sendChatCommand("gamemode survival");
+            var c = AeroClient.CONFIG;
+            c.saturationOverlay = true;
+            c.totemCounter = true;
+            c.armorHud = true;
+            mc.player.getInventory().setStack(1, new net.minecraft.item.ItemStack(net.minecraft.item.Items.OBSIDIAN, 64));
+            mc.player.getInventory().setStack(2, new net.minecraft.item.ItemStack(net.minecraft.item.Items.ENDER_PEARL, 16));
+        }, 60));
         STEPS.add(new Step("fp_default", () -> {
             var mc = MinecraftClient.getInstance();
             mc.player.getInventory().setStack(0, new net.minecraft.item.ItemStack(net.minecraft.item.Items.DIAMOND_SWORD));
@@ -385,7 +394,7 @@ public final class DevShot {
             mc.getWindow().setWindowedSize(1600, 900); // website previews
         }
         if (!worldStarted) {
-            if (ticks >= 300 && mc.currentScreen instanceof TitleScreen) {
+            if (ticks >= 300 && (mc.currentScreen instanceof TitleScreen || mc.currentScreen instanceof dev.aero.client.ui.AeroTitleScreen)) {
                 worldStarted = true;
                 var info = new net.minecraft.world.level.LevelInfo("AeroDev" + (System.currentTimeMillis() % 100000),
                         net.minecraft.world.GameMode.CREATIVE, false, net.minecraft.world.Difficulty.PEACEFUL, true,
