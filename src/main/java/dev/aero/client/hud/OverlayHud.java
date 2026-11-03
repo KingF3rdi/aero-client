@@ -262,10 +262,6 @@ public final class OverlayHud {
             }
         }
 
-        if (cfg.itemHighlighter && cfg.highlightHotbar) {
-            highlightHotbar(context, mc, cfg, sw, sh);
-        }
-
         boolean first = true;
         try {
             first = mc.options.getPerspective().isFirstPerson();
@@ -662,24 +658,17 @@ public final class OverlayHud {
         if (stack.isEmpty()) {
             return 0;
         }
-        String name = stack.getItem().toString().toLowerCase(java.util.Locale.ROOT);
-        try {
-            name = net.minecraft.registry.Registries.ITEM.getId(stack.getItem()).getPath();
-        } catch (Throwable ignored) {
-        }
+        var ident = net.minecraft.registry.Registries.ITEM.getId(stack.getItem());
+        String full = ident.toString();
+        String path = ident.getPath();
         int rgb = cfg.highlightColor & 0xFFFFFF;
         boolean hit = false;
-        if (cfg.highlightCustom != null) {
-            for (String part : cfg.highlightCustom.split(",")) {
-                String[] kv = part.trim().split("=");
-                if (kv.length == 2 && !kv[0].trim().isEmpty() && name.contains(kv[0].trim().toLowerCase(java.util.Locale.ROOT))) {
-                    try {
-                        rgb = Integer.parseInt(kv[1].trim().replace("#", ""), 16) & 0xFFFFFF;
-                        hit = true;
-                        break;
-                    } catch (NumberFormatException ignored) {
-                    }
-                }
+        for (var e : customHighlights(cfg.highlightCustom).entrySet()) {
+            String key = e.getKey();
+            if (key.contains(":") ? key.equals(full) : path.contains(key)) { // older entries were free-text names
+                rgb = e.getValue();
+                hit = true;
+                break;
             }
         }
         if (!hit && !cfg.highlightAllItems && !matchesHighlight(cfg, stack)) {
@@ -687,6 +676,18 @@ public final class OverlayHud {
         }
         int a = Math.max(5, Math.min(100, cfg.highlightAlpha)) * 255 / 100;
         return (a << 24) | rgb;
+    }
+
+    private static String customRaw;
+    private static java.util.Map<String, Integer> customMap = java.util.Map.of();
+
+    /** Parsed "id=RRGGBB,..." list, re-parsed only when the setting changes (this runs for every slot every frame). */
+    private static java.util.Map<String, Integer> customHighlights(String raw) {
+        if (!java.util.Objects.equals(raw, customRaw)) {
+            customMap = dev.aero.client.ui.ItemHighlightScreen.parse(raw);
+            customRaw = raw;
+        }
+        return customMap;
     }
 
     public static boolean matchesHighlight(ClientConfig cfg, ItemStack stack) {
@@ -756,44 +757,6 @@ public final class OverlayHud {
             return true;
         }
         return false;
-    }
-
-    private static void highlightHotbar(DrawContext context, MinecraftClient mc, ClientConfig cfg, int sw, int sh) {
-        try {
-            int selected = selectedHotbar(mc);
-            if (selected < 0 || selected > 8) {
-                selected = ((selected % 9) + 9) % 9;
-            }
-            int x0 = sw / 2 - 91;
-            int y = sh - 23;
-            for (int i = 0; i < 9; i++) {
-                ItemStack stack = mc.player.getInventory().getStack(i);
-                int bg = highlightBg(cfg, stack);
-                if (bg == 0) {
-                    continue;
-                }
-                int x = x0 + i * 20;
-                context.fill(x + 1, y + 1, x + 19, y + 19, bg);
-            }
-            // The offhand slot (e.g. a shield) isn't part of getInventory()'s 0-8 hotbar range, so
-            // without this a spare matching item sitting in the numbered hotbar got outlined
-            // instead of the one actually equipped and in use.
-            ItemStack off = mc.player.getOffHandStack();
-            int offBg = highlightBg(cfg, off);
-            if (offBg != 0) {
-                boolean mainLeft = mc.player.getMainArm() == net.minecraft.util.Arm.LEFT;
-                int ox = mainLeft ? x0 + 9 * 20 + 8 : x0 - 28;
-                context.fill(ox + 1, y + 1, ox + 19, y + 19, offBg);
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private static void outlineSlot(DrawContext context, int x, int y, int color) {
-        context.fill(x, y, x + 20, y + 1, color);
-        context.fill(x, y + 19, x + 20, y + 20, color);
-        context.fill(x, y, x + 1, y + 20, color);
-        context.fill(x + 19, y, x + 20, y + 20, color);
     }
 
     private static void hudLine(DrawContext context, MinecraftClient mc, ClientConfig cfg, int x, int y, String line) {

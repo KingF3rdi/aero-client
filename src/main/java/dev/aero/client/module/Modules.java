@@ -532,14 +532,16 @@ public final class Modules {
                 .settingF("Effect speed", () -> (double) c.totemPopSpeed, v -> c.totemPopSpeed = (float) v, 0.2, 3)
                 .settingF("Effect lifetime", () -> (double) c.totemPopLife, v -> c.totemPopLife = (float) v, 0.3, 3));
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.TOTEM_COUNTER);
-        add(new Module("Item Highlighter", "Outline standard PvP items in hotbar and inv", Category.HUD,
+        add(new Module("Item Highlighter", "Colors PvP items and any item you pick in your inventories", Category.HUD,
                 () -> c.itemHighlighter, v -> c.itemHighlighter = v)
                 .settingColor("Background color", () -> c.highlightColor, v -> c.highlightColor = v)
                 .setting("Opacity %", () -> c.highlightAlpha, v -> c.highlightAlpha = v, 5, 100)
                 .setting("Every item", () -> c.highlightAllItems, v -> c.highlightAllItems = v)
-                .settingText("Per-item colors (name=RRGGBB,...)", () -> c.highlightCustom, v -> c.highlightCustom = v)
+                .settingAction("Your items and colors", "Edit", () -> {
+                    var mc = net.minecraft.client.MinecraftClient.getInstance();
+                    mc.setScreen(new dev.aero.client.ui.ItemHighlightScreen(mc.currentScreen));
+                })
                 .setting("In inventories", () -> c.highlightInventories, v -> c.highlightInventories = v)
-                .setting("In hotbar", () -> c.highlightHotbar, v -> c.highlightHotbar = v)
                 .setting("Totem", () -> c.highlightTotem, v -> c.highlightTotem = v)
                 .setting("End crystal", () -> c.highlightCrystal, v -> c.highlightCrystal = v)
                 .setting("Gapple", () -> c.highlightGapple, v -> c.highlightGapple = v)

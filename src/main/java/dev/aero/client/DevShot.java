@@ -459,7 +459,7 @@ public final class DevShot {
     private static ClickGuiModern gui;
     private static final String[] NAMES = {"a_home", "a2_morph", "b_card_pvp", "c_search", "d_wardrobe", "d2_wings", "w_bat", "w_butterfly", "w_mech", "w_crystal",
             "w_neon", "w_phoenix", "w_seraph", "w_phantom", "x_kasa", "x_wizard", "x_tophat", "x_santa", "x_headphones", "d3_trails", "e_store", "f_rewards",
-            "g_badges", "h_friends", "i_profiles", "i2_settings", "i3_settings_look", "i4_settings_about", "j_title", "k_conflicts"};
+            "g_badges", "h_friends", "i_profiles", "i2_settings", "i3_settings_look", "i4_settings_about", "j_title", "k_conflicts", "l_items"};
 
     private static void packsTick(MinecraftClient mc) {
         if (ticks == 300) {
@@ -569,6 +569,10 @@ public final class DevShot {
                         new ModConflicts.Conflict("Shield Status", "shieldstatus", "Shield Tweaks", p),
                         new ModConflicts.Conflict("TierTagger", "tier-tagger", "TierTagger", p),
                         new ModConflicts.Conflict("AppleSkin", "appleskin", "Saturation Overlay", p))));
+            }
+            case "l_items" -> {
+                AeroClient.CONFIG.highlightCustom = "minecraft:totem_of_undying=FFD93D,minecraft:end_crystal=FF6BD5,minecraft:diamond_sword=4FD8FF,minecraft:cobweb=FFFFFF";
+                mc.setScreen(new dev.aero.client.ui.ItemHighlightScreen(null));
             }
             default -> {
             }

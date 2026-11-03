@@ -169,7 +169,6 @@ public class ClientConfig {
     public boolean alwaysSprint = false;
     public boolean itemHighlighter = false;
     public boolean highlightInventories = true;
-    public boolean highlightHotbar = true;
     public boolean highlightTotem = true;
     public boolean highlightCrystal = true;
     public boolean highlightGapple = true;
