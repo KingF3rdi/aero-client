@@ -14,7 +14,7 @@ public final class TitleSky {
 
     /** Physical pixels per GUI pixel while drawing. */
     private static float d = 1f;
-    /** Column width in physical pixels (2, wider on very large screens to keep the fill count down). */
+    /** Column width in physical pixels for the animated aurora and light sweep, kept to a few hundred columns. */
     private static int step = 2;
 
     private TitleSky() {}
@@ -54,7 +54,7 @@ public final class TitleSky {
         d = Math.max(1f, (float) net.minecraft.client.MinecraftClient.getInstance().getWindow().getScaleFactor());
         int pw = Math.round(w * d);
         int ph = Math.round(h * d);
-        step = Math.max(2, pw / 900);
+        step = Math.max(2, pw / 360); // aurora and light-sweep columns: ~360 at most
         c.getMatrices().pushMatrix();
         c.getMatrices().scale(1f / d, 1f / d);
         switch (current()) {
@@ -75,12 +75,59 @@ public final class TitleSky {
         return Math.sin(x * 0.011 + seed) * 0.55 + Math.sin(x * 0.027 + seed * 1.7) * 0.3 + Math.sin(x * 0.071 + seed * 2.3) * 0.15;
     }
 
-    /** Filled ridge line: for each column the ground starts at base - amp * noise. */
-    private static void ridge(DrawContext c, int w, int h, int base, int amp, int seed, int top, int bottom) {
-        for (int x = 0; x < w; x += step) {
-            int y = (int) (base - amp * (0.5 + 0.5 * noise(x / d, seed)));
-            c.fillGradient(x, y, x + step, h, top, bottom);
+    // Ridges never move, so each sky's ridges are painted once (smooth, anti-aliased) into a texture at half
+    // screen resolution and drawn as one quad. Drawn as hundreds of thin columns they were the most expensive
+    // thing on the title screen: every GUI rectangle is overlap-tested against all earlier ones.
+    private static final net.minecraft.util.Identifier RIDGES = net.minecraft.util.Identifier.of("aero", "title_sky_ridges");
+    private static final net.minecraft.util.Identifier DISC = net.minecraft.util.Identifier.of("aero", "title_sky_disc");
+    private static String ridgesKey = "";
+    private static boolean discReady;
+
+    /** Ridge spec: {base % of height, height divisor for amplitude, noise seed, top color, bottom color}. */
+    private static void ridges(DrawContext c, int w, int h, String style, int[][] specs) {
+        int bw = Math.max(1, w / 2);
+        int bh = Math.max(1, h / 2);
+        String key = style + bw + "x" + bh + "@" + d;
+        if (!key.equals(ridgesKey)) {
+            ridgesKey = key;
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(bw, bh, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g = img.createGraphics();
+            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            float sx = (float) w / bw;
+            for (int[] s : specs) {
+                int base = bh * s[0] / 100;
+                int amp = bh / s[1];
+                java.awt.geom.Path2D p = new java.awt.geom.Path2D.Float();
+                p.moveTo(0, bh);
+                for (int x = 0; x <= bw; x++) {
+                    p.lineTo(x, base - amp * (0.5 + 0.5 * noise(x * sx / d, s[2])));
+                }
+                p.lineTo(bw, bh);
+                p.closePath();
+                g.setPaint(new java.awt.GradientPaint(0, base - amp, new java.awt.Color(s[3], true), 0, bh, new java.awt.Color(s[4], true)));
+                g.fill(p);
+            }
+            g.dispose();
+            upload(RIDGES, img);
         }
+        c.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, RIDGES, 0, 0, 0f, 0f, w, h, bw, bh, bw, bh);
+    }
+
+    private static void upload(net.minecraft.util.Identifier id, java.awt.image.BufferedImage img) {
+        int iw = img.getWidth();
+        int ih = img.getHeight();
+        var ni = new net.minecraft.client.texture.NativeImage(iw, ih, false);
+        for (int y = 0; y < ih; y++) {
+            for (int x = 0; x < iw; x++) {
+                ni.setColorArgb(x, y, img.getRGB(x, y));
+            }
+        }
+        var tex = new net.minecraft.client.texture.NativeImageBackedTexture(() -> "aero " + id.getPath(), ni) {
+            {
+                sampler = com.mojang.blaze3d.systems.RenderSystem.getSamplerCache().get(com.mojang.blaze3d.textures.FilterMode.LINEAR);
+            }
+        };
+        net.minecraft.client.MinecraftClient.getInstance().getTextureManager().registerTexture(id, tex);
     }
 
     private static void stars(DrawContext c, int w, int h, float t, int count, int alphaMax) {
@@ -113,8 +160,7 @@ public final class TitleSky {
                 c.fillGradient(x, yc, x + step, yc + len / 3, (a << 24) | rgb, rgb & 0xFFFFFF);
             }
         }
-        ridge(c, w, h, h * 82 / 100, h / 5, 3, 0xFF2A3A5C, 0xFF1A2440);
-        ridge(c, w, h, h * 92 / 100, h / 8, 11, 0xFFDCE6F5, 0xFF9FB2CF);
+        ridges(c, w, h, "Polar", new int[][]{{82, 5, 3, 0xFF2A3A5C, 0xFF1A2440}, {92, 8, 11, 0xFFDCE6F5, 0xFF9FB2CF}});
     }
 
     private static void glacier(DrawContext c, int w, int h, float t) {
@@ -133,9 +179,7 @@ public final class TitleSky {
             int x = (int) ((t * (6 + i * 3) * d + px(i * 170)) % (w + px(300))) - px(300);
             UiDraw.roundRect(c, x, y, px(260), px(18), px(9), 0x22FFFFFF);
         }
-        ridge(c, w, h, h * 72 / 100, h / 4, 5, 0xFFB9D6EE, 0xFF8DB7DB);
-        ridge(c, w, h, h * 84 / 100, h / 6, 13, 0xFFEAF4FB, 0xFFC9E0F2);
-        ridge(c, w, h, h * 95 / 100, h / 12, 21, 0xFFFFFFFF, 0xFFE4EFF8);
+        ridges(c, w, h, "Glacier", new int[][]{{72, 4, 5, 0xFFB9D6EE, 0xFF8DB7DB}, {84, 6, 13, 0xFFEAF4FB, 0xFFC9E0F2}, {95, 12, 21, 0xFFFFFFFF, 0xFFE4EFF8}});
     }
 
     private static void dusk(DrawContext c, int w, int h, float t) {
@@ -148,9 +192,7 @@ public final class TitleSky {
             disc(c, sx, sy, px(r), ((0x12 + (72 - r)) << 24) | 0xFFD58A);
         }
         disc(c, sx, sy, px(36), 0xFFFFE0A8);
-        ridge(c, w, h, h * 74 / 100, h / 6, 7, 0xFF6B2E55, 0xFF4A1F45);
-        ridge(c, w, h, h * 86 / 100, h / 7, 17, 0xFF3A1838, 0xFF2A1030);
-        ridge(c, w, h, h * 96 / 100, h / 12, 29, 0xFF1D0B22, 0xFF14071A);
+        ridges(c, w, h, "Dusk", new int[][]{{74, 6, 7, 0xFF6B2E55, 0xFF4A1F45}, {86, 7, 17, 0xFF3A1838, 0xFF2A1030}, {96, 12, 29, 0xFF1D0B22, 0xFF14071A}});
     }
 
     private static void mono(DrawContext c, int w, int h, float t) {
@@ -171,13 +213,19 @@ public final class TitleSky {
         c.fillGradient(0, h * 3 / 4, w, h, 0x00000000, 0x55000000);
     }
 
-    /** Filled circle from scanlines one column step tall. */
+    /** Filled circle: one tinted quad of a smooth white disc texture. */
     private static void disc(DrawContext c, int cx, int cy, int r, int color) {
-        for (int dy = -r; dy < r; dy += step) {
-            int m = dy + step / 2;
-            int half = (int) Math.sqrt(Math.max(0, r * r - m * m));
-            c.fill(cx - half, cy + dy, cx + half, cy + dy + step, color);
+        if (!discReady) {
+            discReady = true;
+            java.awt.image.BufferedImage img = new java.awt.image.BufferedImage(256, 256, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.Graphics2D g = img.createGraphics();
+            g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setColor(java.awt.Color.WHITE);
+            g.fill(new java.awt.geom.Ellipse2D.Float(1, 1, 254, 254));
+            g.dispose();
+            upload(DISC, img);
         }
+        c.drawTexture(net.minecraft.client.gl.RenderPipelines.GUI_TEXTURED, DISC, cx - r, cy - r, 0f, 0f, r * 2, r * 2, 256, 256, 256, 256, color);
     }
 
     private static int lerp(int a, int b, float t) {

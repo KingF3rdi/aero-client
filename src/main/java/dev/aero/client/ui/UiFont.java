@@ -41,6 +41,21 @@ public final class UiFont {
             return text;
         }
         return visitor -> text.accept((index, style, codePoint) ->
-                visitor.accept(index, StyleSpriteSource.DEFAULT.equals(style.getFont()) ? style.withFont(FONT) : style, codePoint));
+                visitor.accept(index, StyleSpriteSource.DEFAULT.equals(style.getFont()) ? withFont(style) : style, codePoint));
+    }
+
+    // Consecutive glyphs almost always share one Style, so remembering the last conversion avoids a new Style
+    // per character per frame (that garbage showed up as GC stutter).
+    private record Mapped(net.minecraft.text.Style in, net.minecraft.text.Style out) {}
+
+    private static volatile Mapped last = new Mapped(null, null);
+
+    private static net.minecraft.text.Style withFont(net.minecraft.text.Style style) {
+        Mapped m = last;
+        if (m.in() != style) {
+            m = new Mapped(style, style.withFont(FONT));
+            last = m;
+        }
+        return m.out();
     }
 }

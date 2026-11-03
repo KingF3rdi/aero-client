@@ -159,7 +159,14 @@ public final class WorldOverlayRenderer {
 
     private static void line(MatrixStack.Entry e, net.minecraft.client.render.VertexConsumer b, float x1, float y1, float z1,
                              float x2, float y2, float z2, float nx, float ny, float nz, int color, float width) {
-        b.vertex(e, x1, y1, z1).color(color).normal(e, nx, ny, nz).lineWidth(width);
-        b.vertex(e, x2, y2, z2).color(color).normal(e, nx, ny, nz).lineWidth(width);
+        // Scratch vectors instead of the per-vertex Vector3f the MatrixStack.Entry overloads allocate (render thread only).
+        e.transformNormal(nx, ny, nz, NRM);
+        e.getPositionMatrix().transformPosition(x1, y1, z1, POS);
+        b.vertex(POS.x, POS.y, POS.z).color(color).normal(NRM.x, NRM.y, NRM.z).lineWidth(width);
+        e.getPositionMatrix().transformPosition(x2, y2, z2, POS);
+        b.vertex(POS.x, POS.y, POS.z).color(color).normal(NRM.x, NRM.y, NRM.z).lineWidth(width);
     }
+
+    private static final org.joml.Vector3f POS = new org.joml.Vector3f();
+    private static final org.joml.Vector3f NRM = new org.joml.Vector3f();
 }

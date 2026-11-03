@@ -35,6 +35,8 @@ public final class DevShot {
         if (System.getProperty("aero.world") != null) {
             if (System.getProperty("aero.rec") != null) {
                 buildRecSteps();
+            } else if (System.getProperty("aero.fight") != null) {
+                buildFightSteps();
             } else if (System.getProperty("aero.bench") != null) {
                 buildBenchSteps();
             } else if (System.getProperty("aero.hats") != null) {
@@ -283,6 +285,106 @@ public final class DevShot {
     }
 
     /** -Daero.bench=1: FPS in a world with no menu, then with the client menu open (logged to devshot.log). */
+    /** -Daero.fight=1: armored totem-holding mobs around the player, hit every tick and popped every 15 ticks; logs FPS per step. */
+    private static void buildFightSteps() {
+        STEPS.add(new Step("fight_setup", () -> {
+            var mc = MinecraftClient.getInstance();
+            mc.options.getInactivityFpsLimit().setValue(net.minecraft.client.option.InactivityFpsLimit.MINIMIZED);
+            mc.options.getMaxFps().setValue(260);
+            mc.options.setPerspective(Perspective.FIRST_PERSON);
+            var c = AeroClient.CONFIG;
+            c.popChams = true;
+            c.damageTint = true;
+            c.nametags = true;
+            c.totemCounter = true;
+            c.totemPopsOnNametag = true;
+            c.totemPopFx = "Burst";
+            for (int i = 0; i < 6; i++) {
+                double a = i * Math.PI / 3;
+                mc.player.networkHandler.sendChatCommand(String.format(java.util.Locale.ROOT,
+                        "summon zombie ~%.1f ~ ~%.1f {NoAI:1b,PersistenceRequired:1b,equipment:{mainhand:{id:\"minecraft:totem_of_undying\"},"
+                                + "head:{id:\"minecraft:diamond_helmet\"},chest:{id:\"minecraft:diamond_chestplate\"},legs:{id:\"minecraft:diamond_leggings\"},feet:{id:\"minecraft:diamond_boots\"}}}",
+                        Math.cos(a) * 2.2, Math.sin(a) * 2.2));
+            }
+        }, 60));
+        STEPS.add(new Step("fight_idle", () -> {}, 200));
+        STEPS.add(new Step("fight_on", () -> FIGHT = true, 300));
+        STEPS.add(new Step("fight_players", () -> {
+            // Client-side fake players listed as Aero users with cosmetics: nametags, badges, capes, wings,
+            // hats, trails, pop chams and damage tint all run like against real players.
+            var mc = MinecraftClient.getInstance();
+            mc.player.networkHandler.sendChatCommand("kill @e[type=zombie]");
+            String[][] fits = {{"blossom", "dragon", "tophat", "rainbow"}, {"samurai", "phoenix", "santa", "helix"},
+                    {"frost", "angel", "wizard", "sakura"}};
+            for (int i = 0; i < 6; i++) {
+                var id = java.util.UUID.randomUUID();
+                var e = new net.minecraft.client.network.OtherClientPlayerEntity(mc.world, new com.mojang.authlib.GameProfile(id, "Fighter" + i));
+                double a = i * Math.PI / 3;
+                e.refreshPositionAndAngles(mc.player.getX() + Math.cos(a) * 2.4, mc.player.getY(), mc.player.getZ() + Math.sin(a) * 2.4, 0f, 0f);
+                e.equipStack(net.minecraft.entity.EquipmentSlot.HEAD, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_HELMET));
+                e.equipStack(net.minecraft.entity.EquipmentSlot.CHEST, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_CHESTPLATE));
+                e.equipStack(net.minecraft.entity.EquipmentSlot.LEGS, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_LEGGINGS));
+                e.equipStack(net.minecraft.entity.EquipmentSlot.FEET, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_BOOTS));
+                e.equipStack(net.minecraft.entity.EquipmentSlot.MAINHAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.NETHERITE_SWORD));
+                e.equipStack(net.minecraft.entity.EquipmentSlot.OFFHAND, new net.minecraft.item.ItemStack(net.minecraft.item.Items.TOTEM_OF_UNDYING));
+                String[] f = fits[i % fits.length];
+                dev.aero.client.social.ClientUsers.devAdd(id, "Fighter" + i, "beta",
+                        java.util.Map.of("cape", f[0], "wings", f[1], "head", f[2], "trail", f[3]));
+                mc.world.addEntity(e);
+                FAKES.add(e);
+            }
+        }, 300));
+        STEPS.add(new Step("fight_players_fx_off", () -> {
+            var c = AeroClient.CONFIG;
+            c.popChams = false;
+            c.damageTint = false;
+            c.nametags = false;
+            c.totemPopFx = "Off";
+        }, 300));
+    }
+
+    private static final List<net.minecraft.client.network.OtherClientPlayerEntity> FAKES = new ArrayList<>();
+
+    private static boolean FIGHT;
+    private static double fpsSum;
+    private static int fpsN;
+
+    private static void fightTick(MinecraftClient mc) {
+        var p = mc.player;
+        if (!FAKES.isEmpty()) {
+            for (int i = 0; i < FAKES.size(); i++) {
+                var e = FAKES.get(i);
+                e.hurtTime = 8;
+                e.maxHurtTime = 10;
+                e.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+                e.setYaw(e.getYaw() + 9f); // strafing in place, so trails and wings move
+                mc.particleManager.addEmitter(e, net.minecraft.particle.ParticleTypes.CRIT);
+                if ((ticks + i * 5) % 30 == 0) {
+                    mc.particleManager.addEmitter(e, net.minecraft.particle.ParticleTypes.TOTEM_OF_UNDYING, 30);
+                }
+            }
+            p.lookAt(net.minecraft.command.argument.EntityAnchorArgumentType.EntityAnchor.EYES, FAKES.get((ticks / 20) % FAKES.size()).getEyePos());
+            return;
+        }
+        net.minecraft.entity.Entity target = null;
+        double best = 16;
+        for (var e : mc.world.getEntities()) {
+            if (e instanceof net.minecraft.entity.mob.ZombieEntity && e.isAlive() && e.squaredDistanceTo(p) < best) {
+                best = e.squaredDistanceTo(p);
+                target = e;
+            }
+        }
+        if (target != null) {
+            p.lookAt(net.minecraft.command.argument.EntityAnchorArgumentType.EntityAnchor.EYES, target.getEyePos());
+            mc.interactionManager.attackEntity(p, target);
+            p.swingHand(net.minecraft.util.Hand.MAIN_HAND);
+        }
+        if (ticks % 15 == 0) {
+            p.networkHandler.sendChatCommand("item replace entity @e[type=zombie] weapon.mainhand with totem_of_undying");
+            p.networkHandler.sendChatCommand("damage @e[type=zombie,limit=2,sort=random] 1000 minecraft:generic");
+        }
+    }
+
     private static void buildBenchSteps() {
         STEPS.add(new Step("bench_world", () -> {
             var mc = MinecraftClient.getInstance();
@@ -426,6 +528,13 @@ public final class DevShot {
         if (WALK && mc.player != null) {
             walk(mc);
         }
+        if (FIGHT && mc.player != null) {
+            fightTick(mc);
+        }
+        if (STEPS.get(index).name().startsWith("fight")) {
+            fpsSum += mc.getCurrentFps();
+            fpsN++;
+        }
         if (HURT && mc.player != null) {
             mc.player.hurtTime = 8;
             mc.player.maxHurtTime = 10;
@@ -439,6 +548,11 @@ public final class DevShot {
         recFrame = 0;
         Step cur = STEPS.get(index);
         log(mc, "shot " + cur.name() + " armorBegin=" + DamageTintState.armorBegin + " equipHits=" + DamageTintState.equipHits + " equipHurt=" + DamageTintState.equipHurtHits);
+        if (cur.name().startsWith("fight")) {
+            log(mc, "FIGHT " + cur.name() + " avgFps=" + Math.round(fpsSum / Math.max(1, fpsN)));
+            fpsSum = 0;
+            fpsN = 0;
+        }
         if (cur.name().startsWith("bench")) {
             log(mc, "BENCH " + cur.name() + " fps=" + mc.getCurrentFps());
         }

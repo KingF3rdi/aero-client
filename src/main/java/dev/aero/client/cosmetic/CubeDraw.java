@@ -60,9 +60,17 @@ public final class CubeDraw {
         vertex(e, vc, x4, y4, z4, 0, 1, col, light, nx, ny, nz);
     }
 
+    // vc.vertex(entry, ...) and normal(entry, ...) each allocate a Vector3f per vertex; with wings and capes on
+    // several players that was hundreds of MB per minute of garbage (GC stutter in fights). Geometry is only
+    // built on the render thread, so two shared scratch vectors are enough.
+    private static final org.joml.Vector3f POS = new org.joml.Vector3f();
+    private static final org.joml.Vector3f NRM = new org.joml.Vector3f();
+
     private static void vertex(MatrixStack.Entry e, VertexConsumer vc, float x, float y, float z, float u, float v,
                                int col, int light, float nx, float ny, float nz) {
-        vc.vertex(e, x, y, z).color(col).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(e, nx, ny, nz);
+        e.getPositionMatrix().transformPosition(x, y, z, POS);
+        e.transformNormal(nx, ny, nz, NRM);
+        vc.vertex(POS.x, POS.y, POS.z).color(col).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(NRM.x, NRM.y, NRM.z);
     }
 
     /** Cape box in the standard cape layout (outside = px (1,1)-(11,17), inside = (12,1)-(22,17)) for a texW x texH texture. */

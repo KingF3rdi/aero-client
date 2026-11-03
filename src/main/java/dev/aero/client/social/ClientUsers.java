@@ -35,6 +35,14 @@ public final class ClientUsers {
         return m == null ? "none" : m.getOrDefault(kind, "none");
     }
 
+    /** DevShot fight test: makes a fake player look like a listed Aero user with cosmetics. */
+    public static void devAdd(UUID id, String name, String badge, Map<String, String> cosmetics) {
+        USERS.add(id);
+        NAMES.put(id, name);
+        BADGES.put(id, badge);
+        COSMETICS.put(id, cosmetics);
+    }
+
     public static boolean hasCosmetics(UUID id) {
         return id != null && COSMETICS.containsKey(id);
     }
