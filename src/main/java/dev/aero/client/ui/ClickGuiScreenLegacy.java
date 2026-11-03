@@ -619,8 +619,8 @@ public class ClickGuiScreenLegacy extends Screen {
 
     // ---- Client tab: home cards, center panel, category carousel ---------------------------------
 
-    private static final int CARD_W = 92;
-    private static final int CARD_H = 104;
+    private static final int CARD_W = 112;
+    private static final int CARD_H = 128;
     private static final int QUICK_W = 80;
     private static final int QUICK_H = 70;
     private static final int PANEL_W = 380;
@@ -771,15 +771,15 @@ public class ClickGuiScreenLegacy extends Screen {
         int w = Math.round(a[2]);
         int h = Math.round(a[3]);
         UiDraw.fade = a[4];
-        pushGrow(c, a, 0.1f);
+        pushGrow(c, a, 0.16f);
         try {
-            glassCard(c, x, y, w, h, 14, a[5], active);
+            glassCard(c, x, y, w, h, 16, a[5], active);
             int col = UiDraw.fa(TEXT);
-            bigIcon(c, card, x + w / 2, y + h / 2 - 14, 2.6f, col);
+            bigIcon(c, card, x + w / 2, y + h / 2 - 16, 3.2f, col);
             if ((col >>> 24) >= 8) {
                 String t = card.title();
-                c.drawText(textRenderer, Text.literal(t), x + (w - textRenderer.getWidth(t)) / 2, y + h / 2 + 14, col, false);
-                c.fill(x + w / 2 - 8, y + h / 2 + 27, x + w / 2 + 8, y + h / 2 + 28, UiDraw.fa(active ? UiDraw.accent() : 0x66FFFFFF));
+                c.drawText(textRenderer, Text.literal(t), x + (w - textRenderer.getWidth(t)) / 2, y + h / 2 + 17, col, false);
+                c.fill(x + w / 2 - 9, y + h / 2 + 30, x + w / 2 + 9, y + h / 2 + 31, UiDraw.fa(active ? UiDraw.accent() : 0x66FFFFFF));
             }
         } finally {
             c.getMatrices().popMatrix();
