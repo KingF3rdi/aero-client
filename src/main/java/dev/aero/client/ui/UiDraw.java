@@ -68,6 +68,8 @@ public final class UiDraw {
     public static final int FILL_LIFT = 0x22FFFFFF;
 
     private static final int MAX_R = 28;
+    /** Every rounded shape is capped at this radius: crisp, near-square corners instead of soft blobs. */
+    private static final int CORNER = 3;
     /** Per-radius top-left coverage, 0–255, row-major r*r. */
     private static final byte[][] FILL_COV = new byte[MAX_R + 1][];
     private static final byte[][] EDGE_COV = new byte[MAX_R + 1][];
@@ -241,7 +243,7 @@ public final class UiDraw {
         if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
             return;
         }
-        int r = Math.max(0, Math.min(radius, Math.min(MAX_R, Math.min(w, h) / 2)));
+        int r = Math.max(0, Math.min(Math.min(radius, CORNER), Math.min(MAX_R, Math.min(w, h) / 2)));
         if (r <= 1) {
             c.fill(x, y, x + w, y + h, color);
             return;
@@ -264,7 +266,7 @@ public final class UiDraw {
         if (w <= 0 || h <= 0 || (color >>> 24) == 0) {
             return;
         }
-        int r = Math.max(0, Math.min(radius, Math.min(MAX_R, Math.min(w, h) / 2)));
+        int r = Math.max(0, Math.min(Math.min(radius, CORNER), Math.min(MAX_R, Math.min(w, h) / 2)));
         if (r <= 1) {
             c.fill(x, y, x + w, y + 1, color);
             c.fill(x, y + h - 1, x + w, y + h, color);
@@ -290,7 +292,7 @@ public final class UiDraw {
     public static void roundGradient(DrawContext c, int x, int y, int w, int h, int radius, int top, int bottom, boolean border) {
         top = fa(top);
         bottom = fa(bottom);
-        int r = Math.max(0, Math.min(radius, Math.min(MAX_R, Math.min(w, h) / 2)));
+        int r = Math.max(0, Math.min(Math.min(radius, CORNER), Math.min(MAX_R, Math.min(w, h) / 2)));
         if (w <= 0 || h <= 0 || r <= 1 || !single(c, x, y, w, h, r, top, bottom, border)) {
             if (border) {
                 roundBorder(c, x, y, w, h, radius, top);
@@ -301,45 +303,28 @@ public final class UiDraw {
     }
 
     /**
-     * Frosted glass card: a light white tint over the blurred world (lighter at the top), a crisp white rim and
-     * a faint shadow. lit 0..1 (hover, eased by the caller) brightens fill and rim.
+     * Card: a flat, mostly solid dark fill with one 1px rim and a crisp dark edge outside it. lit 0..1 (hover,
+     * eased by the caller) lifts the fill a little and brightens the rim; active puts the accent on the rim.
      */
     public static void frost(DrawContext c, int x, int y, int w, int h, int r, float lit, boolean active) {
-        float l = active ? 1f : Math.max(0f, Math.min(1f, lit));
-        softShadow(c, x, y, w, h, r, Math.round(0x14 + 0x10 * l), 6);
-        // Mostly solid dark card (Aurora-like): the world only shows through faintly, so text stays readable
-        // over bright grass and sky. Menu background opacity still makes it darker.
+        float l = Math.max(0f, Math.min(1f, lit));
+        roundBorder(c, x - 1, y - 1, w + 2, h + 2, r + 1, 0x55000000);
+        // The world only shows through faintly, so text stays readable over bright grass and sky.
         float o = glassOpacity();
         roundRect(c, x, y, w, h, r, withAlpha(Themes.base(), Math.round(255 * Math.min(0.97f, 0.62f + o * 0.3f + Themes.current().solid()))));
-        roundGradient(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x0C + 0x14 * l)),
-                withAlpha(0xFFFFFF, Math.round(0x04 + 0x0C * l)), false);
-        roundBorder(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x70 + 0x80 * l)));
-        roundBorder(c, x + 1, y + 1, w - 2, h - 2, r - 1, withAlpha(0xFFFFFF, Math.round(0x12 + 0x12 * l)));
-    }
-
-    /** Blurred-looking drop shadow from 1px rings outside the shape, deeper below than above. */
-    public static void softShadow(DrawContext c, int x, int y, int w, int h, int r, int strength, int spread) {
-        for (int g = 1; g <= spread; g++) {
-            float f = 1f - (g - 1f) / spread;
-            int a = Math.round(strength * f * f);
-            if (a > 0) {
-                int up = g - g / 3;
-                roundBorder(c, x - g, y - up, w + g * 2, h + up + g + g / 2, r + g, a << 24);
-            }
+        if (l > 0f) {
+            roundRect(c, x, y, w, h, r, withAlpha(0xFFFFFF, Math.round(0x0A * l)));
         }
+        roundBorder(c, x, y, w, h, r, active ? withAlpha(accent(), 0xE0) : withAlpha(0xFFFFFF, Math.round(0x22 + 0x40 * l)));
     }
 
     public static void shadow(DrawContext c, int x, int y, int w, int h) {
         shadow(c, x, y, w, h, 14);
     }
 
-    /** Soft drop shadow under a light panel: a few widening low-alpha layers, offset down. */
+    /** A crisp 1px dark edge just outside a panel (no blurry glow). */
     public static void shadow(DrawContext c, int x, int y, int w, int h, int radius) {
-        // Rings outside the panel only: panels are see-through, so filled (and offset) shadow layers showed
-        // through the body as extra rounded corners just inside the edge.
-        for (int g = 1; g <= 6; g++) {
-            roundBorder(c, x - g, y - g, w + g * 2, h + g * 2, radius + g, (16 - g * 2) << 24);
-        }
+        roundBorder(c, x - 1, y - 1, w + 2, h + 2, radius + 1, 0x55000000);
     }
 
     public static void sheen(DrawContext c, int x, int y, int w, int h, int radius) {

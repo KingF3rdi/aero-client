@@ -771,7 +771,7 @@ public class ClickGuiScreenLegacy extends Screen {
         int w = Math.round(a[2]);
         int h = Math.round(a[3]);
         UiDraw.fade = a[4];
-        pushGrow(c, a, 0.16f);
+        pushGrow(c, a, 0.04f);
         try {
             glassCard(c, x, y, w, h, 16, a[5], active);
             int col = UiDraw.fa(TEXT);
@@ -864,7 +864,7 @@ public class ClickGuiScreenLegacy extends Screen {
             int x = Math.round(a[0]);
             int y = Math.round(a[1]);
             UiDraw.fade = a[4];
-            pushGrow(context, a, 0.08f);
+            pushGrow(context, a, 0.03f);
             try {
                 glassCard(context, x, y, r[2], r[3], 12, a[5], active);
                 int col = UiDraw.fa(TEXT);

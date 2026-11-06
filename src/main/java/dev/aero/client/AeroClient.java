@@ -190,8 +190,13 @@ public class AeroClient implements ClientModInitializer {
         return guiKey;
     }
 
+    private static int externalConfigPoll;
+
     private static void tick(MinecraftClient client) {
         dev.aero.client.social.FriendAlerts.tick(client);
+        if (CONFIG != null && ++externalConfigPoll % 40 == 0) {
+            CONFIG.pollExternalCosmetics();
+        }
         try {
             Screen screen = client.currentScreen;
             if (screen != null && screen.getClass() == net.minecraft.client.gui.screen.TitleScreen.class && (CONFIG == null || CONFIG.aeroTitleScreen)) {

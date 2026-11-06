@@ -769,7 +769,50 @@ public class ClientConfig {
         try {
             Files.createDirectories(path().getParent());
             Files.writeString(path(), GSON.toJson(this));
+            knownMtime = mtime();
         } catch (IOException ignored) {
         }
+    }
+
+    private static long knownMtime;
+
+    private static long mtime() {
+        try {
+            return Files.getLastModifiedTime(path()).toMillis();
+        } catch (IOException e) {
+            return 0;
+        }
+    }
+
+    /**
+     * The launcher's Cosmetics page writes the equipped cosmetics straight into this file. Called every couple of
+     * seconds: when someone else changed the file since our last read or save, take over just those fields, so
+     * picking a cape in the launcher shows in-game right away (and our next save doesn't write the old one back).
+     */
+    public void pollExternalCosmetics() {
+        long m = mtime();
+        if (m == 0 || m == knownMtime) {
+            return;
+        }
+        boolean first = knownMtime == 0;
+        knownMtime = m;
+        if (first) {
+            return; // load() just read this very file
+        }
+        try {
+            com.google.gson.JsonObject raw = com.google.gson.JsonParser.parseString(Files.readString(path())).getAsJsonObject();
+            equippedCape = external(raw, "equippedCape", equippedCape);
+            equippedWings = external(raw, "equippedWings", equippedWings);
+            equippedHead = external(raw, "equippedHead", equippedHead);
+            equippedTrail = external(raw, "equippedTrail", equippedTrail);
+            equippedPet = external(raw, "equippedPet", equippedPet);
+        } catch (Exception ignored) {
+            // half-written or broken file: keep what we have, the next change is picked up again
+        }
+    }
+
+    private static String external(com.google.gson.JsonObject raw, String key, String current) {
+        var v = raw.get(key);
+        return v != null && v.isJsonPrimitive() ? v.getAsString() : current;
     }
 }
