@@ -35,6 +35,8 @@ public final class Modules {
                 .setting("Block entities", () -> c.cullBlockEntities, v -> c.cullBlockEntities = v)
                 .setting("Always show players", () -> c.cullKeepPlayers, v -> c.cullKeepPlayers = v)
                 .setting("Min distance", () -> c.cullMinDistance, v -> c.cullMinDistance = v, 4, 32));
+        add(new Module("Ping Boost", "Low-delay connection and a high-priority network thread (applies on the next server join)", Category.PERFORMANCE,
+                () -> c.pingBoost, v -> c.pingBoost = v));
         add(new Module("No Weather", "Skips rain and thunder rendering", Category.PERFORMANCE,
                 () -> c.noWeather, v -> c.noWeather = v));
         add(new Module("No Clouds", "Does not render clouds", Category.PERFORMANCE,

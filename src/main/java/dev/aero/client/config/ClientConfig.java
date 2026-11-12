@@ -425,6 +425,8 @@ public class ClientConfig {
     public boolean hideTileEntities = false;
     /** Aggressive Culling: skip entities and block entities hidden behind solid blocks. */
     public boolean aggressiveCulling = false;
+    /** Ping Boost: low-delay socket and a high-priority network thread (see ClientConnectionMixin). */
+    public boolean pingBoost = false;
     public boolean cullBlockEntities = true;
     public boolean cullKeepPlayers = true;
     public int cullMinDistance = 8;
