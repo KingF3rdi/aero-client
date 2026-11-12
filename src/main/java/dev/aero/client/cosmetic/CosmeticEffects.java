@@ -116,12 +116,4 @@ public final class CosmeticEffects {
         Entity at = lastAttacked != null && System.currentTimeMillis() - lastAttackedAt < 4000 ? lastAttacked : player;
         FxWorld.kill(id, Cosmetics.equippedColor(Cosmetics.Kind.KILL_EFFECT), at.getX(), at.getY(), at.getZ());
     }
-
-    public static void onTotemPop(LivingEntity entity) {
-        var cfg = AeroClient.CONFIG;
-        if (cfg == null || entity == null || "Off".equals(cfg.totemPopFx)) {
-            return;
-        }
-        FxWorld.totemPop(cfg.totemPopFx, cfg.totemPopFxColor, entity.getX(), entity.getY(), entity.getZ());
-    }
 }

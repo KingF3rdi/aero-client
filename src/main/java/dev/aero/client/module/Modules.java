@@ -105,7 +105,6 @@ public final class Modules {
                 () -> true, v -> { })
                 .settingColor("Accent", () -> c.uiAccent, v -> c.uiAccent = v)
                 .setting("Style vanilla UI (hotbar, inventories, buttons)", () -> c.vanillaUi, v -> c.vanillaUi = v)
-                .setting("Smooth font (menus and HUD)", () -> c.smoothFont, v -> c.smoothFont = v)
                 .setting("Aero title screen (off = vanilla)", () -> c.aeroTitleScreen, v -> c.aeroTitleScreen = v)
                 .settingF("Menu background opacity %", () -> (double) c.menuGlass, v -> c.menuGlass = (float) v, 10, 100));
         add(new Module("Fullbright", "Maximum gamma / night vision look", Category.RENDER,
@@ -527,15 +526,7 @@ public final class Modules {
                 .settingColor("Count color", () -> c.totemColor, v -> c.totemColor = v)
                 .nestLast("Use color")
                 .setting("Style", () -> c.totemStyle, v -> c.totemStyle = v, "Boxed", "Plain")
-                .setting("Pops next to name", () -> c.totemPopsOnNametag, v -> c.totemPopsOnNametag = v)
-                .setting("Pop effect", () -> c.totemPopFx, v -> c.totemPopFx = v, "Off", "Burst", "Spiral", "Rings", "Hearts", "Soul")
-                .settingColor("Pop effect color", () -> c.totemPopFxColor, v -> c.totemPopFxColor = v)
-                .setting("Second color", () -> c.totemPopTwoColors, v -> c.totemPopTwoColors = v)
-                .settingColor("Pop second color", () -> c.totemPopColor2, v -> c.totemPopColor2 = v)
-                .settingF("Effect amount", () -> (double) c.totemPopCount, v -> c.totemPopCount = (float) v, 0.1, 3)
-                .settingF("Effect size", () -> (double) c.totemPopFxSize, v -> c.totemPopFxSize = (float) v, 0.3, 3)
-                .settingF("Effect speed", () -> (double) c.totemPopSpeed, v -> c.totemPopSpeed = (float) v, 0.2, 3)
-                .settingF("Effect lifetime", () -> (double) c.totemPopLife, v -> c.totemPopLife = (float) v, 0.3, 3));
+                .setting("Pops next to name", () -> c.totemPopsOnNametag, v -> c.totemPopsOnNametag = v));
         dev.aero.client.OptimizerMods.attach(all.get(all.size() - 1), dev.aero.client.OptimizerMods.TOTEM_COUNTER);
         add(new Module("Item Highlighter", "Colors PvP items and any item you pick in your inventories", Category.HUD,
                 () -> c.itemHighlighter, v -> c.itemHighlighter = v)

@@ -22,16 +22,6 @@ public class InGameHudMixin {
         }
     }
 
-    /** Vanilla UI style: the whole HUD (item counts, XP level, chat, Aero HUD) uses the smooth font too. */
-    @Inject(method = "render", at = @At("HEAD"), require = 0)
-    private void aero$fontOn(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        dev.aero.client.ui.UiFont.active = AeroClient.CONFIG != null && AeroClient.CONFIG.vanillaUi && dev.aero.client.ui.UiFont.enabled();
-    }
-
-    @Inject(method = "render", at = @At("RETURN"), require = 0)
-    private void aero$fontOff(DrawContext context, RenderTickCounter tickCounter, CallbackInfo ci) {
-        dev.aero.client.ui.UiFont.active = false;
-    }
     @Inject(
             method = "renderScoreboardSidebar(Lnet/minecraft/client/gui/DrawContext;Lnet/minecraft/scoreboard/ScoreboardObjective;)V",
             at = @At("HEAD"),

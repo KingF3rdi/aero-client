@@ -223,7 +223,6 @@ public class SettingsScreen extends Screen {
         });
         y = toggleRow(x, y, w, "Other players' cosmetics", () -> c.showOthersCosmetics, v -> c.showOthersCosmetics = v, false);
         y = toggleRow(x, y, w, "Aero title screen", () -> c.aeroTitleScreen, v -> c.aeroTitleScreen = v, false);
-        y = toggleRow(x, y, w, "Smooth menu font", () -> c.smoothFont, v -> c.smoothFont = v, false);
 
         y += 18;
         anchors[1] = y - top - 6;

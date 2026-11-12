@@ -375,7 +375,6 @@ public class ClientConfig {
     /** Send equipped cosmetics to the Aero server so other players see them. */
     public boolean shareProfile = true;
     public boolean vanillaUi = true;
-    public boolean smoothFont = true;
     /** Esc opens the Aero pause menu; off = the vanilla game menu. */
     public boolean aeroTitleScreen = true;
     /** Menu panels and cards, % opaque (the rest shows the blurred game). Renamed from menuOpacity so the lower default reaches existing configs. */
@@ -403,14 +402,6 @@ public class ClientConfig {
     public float nametagYOffset = 0f;
     public boolean autoMaxFps = true;
     public java.util.Map<String, Integer> cosmeticVariant = new java.util.HashMap<>();
-    public String totemPopFx = "Burst";
-    public int totemPopFxColor = 0xFF4F8EFF;
-    public boolean totemPopTwoColors = false;
-    public int totemPopColor2 = 0xFFFF7BAA;
-    public float totemPopCount = 1f;
-    public float totemPopFxSize = 1f;
-    public float totemPopSpeed = 1f;
-    public float totemPopLife = 1f;
 
     public boolean fpsBoost = false;
     public boolean noShadows = false;

@@ -754,7 +754,6 @@ public final class Visuals {
             return;
         }
         TOTEM_POPS.merge(entity.getUuid(), 1, Integer::sum);
-        dev.aero.client.cosmetic.CosmeticEffects.onTotemPop(entity);
         WorldOverlayRenderer.onPop(entity);
     }
 

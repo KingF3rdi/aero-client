@@ -336,7 +336,6 @@ public final class DevShot {
             c.nametags = true;
             c.totemCounter = true;
             c.totemPopsOnNametag = true;
-            c.totemPopFx = "Burst";
             for (int i = 0; i < 6; i++) {
                 double a = i * Math.PI / 3;
                 mc.player.networkHandler.sendChatCommand(String.format(java.util.Locale.ROOT,
@@ -377,7 +376,6 @@ public final class DevShot {
             c.popChams = false;
             c.damageTint = false;
             c.nametags = false;
-            c.totemPopFx = "Off";
         }, 300));
     }
 

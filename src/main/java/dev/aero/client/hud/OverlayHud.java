@@ -65,9 +65,6 @@ public final class OverlayHud {
 
     /** Drawn once per frame from the Fabric HUD registry (AeroClient.registerHud). */
     public static void render(DrawContext context, RenderTickCounter tickCounter) {
-        // Fabric may draw HUD elements after InGameHud.render returned, so the font is set here, not by the mixin
-        boolean font = dev.aero.client.ui.UiFont.active;
-        dev.aero.client.ui.UiFont.active = AeroClient.CONFIG != null && AeroClient.CONFIG.vanillaUi && dev.aero.client.ui.UiFont.enabled();
         try {
             renderInner(context, tickCounter);
         } catch (Throwable ignored) {
@@ -75,8 +72,6 @@ public final class OverlayHud {
         try {
             dev.aero.client.ui.Notifications.render(context, context.getScaledWindowWidth());
         } catch (Throwable ignored) {
-        } finally {
-            dev.aero.client.ui.UiFont.active = font;
         }
     }
 
