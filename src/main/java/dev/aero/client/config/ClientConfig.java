@@ -432,6 +432,11 @@ public class ClientConfig {
     public boolean hideProjectiles = false;
     public boolean hidePassiveMobs = false;
     public boolean hideTileEntities = false;
+    /** Aggressive Culling: skip entities and block entities hidden behind solid blocks. */
+    public boolean aggressiveCulling = false;
+    public boolean cullBlockEntities = true;
+    public boolean cullKeepPlayers = true;
+    public int cullMinDistance = 8;
     public boolean hideSky = false;
     public boolean hideStars = false;
     public boolean noBreakParticles = false;

@@ -37,6 +37,8 @@ public final class DevShot {
                 buildRecSteps();
             } else if (System.getProperty("aero.fight") != null) {
                 buildFightSteps();
+            } else if (System.getProperty("aero.cull") != null) {
+                buildCullSteps();
             } else if (System.getProperty("aero.bench") != null) {
                 buildBenchSteps();
             } else if (System.getProperty("aero.hats") != null) {
@@ -286,6 +288,42 @@ public final class DevShot {
 
     /** -Daero.bench=1: FPS in a world with no menu, then with the client menu open (logged to devshot.log). */
     /** -Daero.fight=1: armored totem-holding mobs around the player, hit every tick and popped every 15 ticks; logs FPS per step. */
+    /** -Daero.cull=1: a cow 15 blocks ahead in the open must stay drawn, then hidden once a stone wall is between. */
+    private static void buildCullSteps() {
+        STEPS.add(new Step("cull_open", () -> {
+            var mc = MinecraftClient.getInstance();
+            AeroClient.CONFIG.aggressiveCulling = true;
+            mc.options.setPerspective(Perspective.FIRST_PERSON);
+            mc.player.setYaw(0f);
+            mc.player.setPitch(0f);
+            mc.player.networkHandler.sendChatCommand("fill ~-4 ~ ~1 ~4 ~5 ~18 air");
+            mc.player.networkHandler.sendChatCommand("fill ~-4 ~-1 ~1 ~4 ~-1 ~18 stone");
+            mc.player.networkHandler.sendChatCommand("summon cow ~ ~ ~15 {NoAI:1b,PersistenceRequired:1b}");
+            cullSpot = mc.player.getEntityPos().add(0, 0, 15);
+        }, 60));
+        STEPS.add(new Step("cull_wall", () -> {
+            var mc = MinecraftClient.getInstance();
+            log(mc, "CULL open hidden=" + cullTarget(mc));
+            mc.player.networkHandler.sendChatCommand("fill ~-4 ~-1 ~8 ~4 ~5 ~8 stone");
+        }, 40));
+        STEPS.add(new Step("cull_done", () -> {
+            var mc = MinecraftClient.getInstance();
+            log(mc, "CULL wall hidden=" + cullTarget(mc));
+        }, 20));
+    }
+
+    private static net.minecraft.util.math.Vec3d cullSpot;
+
+    /** The test cow: the one standing where it was summoned (the demo world has its own cows elsewhere). */
+    private static String cullTarget(MinecraftClient mc) {
+        for (var e : mc.world.getEntities()) {
+            if (e instanceof net.minecraft.entity.passive.CowEntity && e.getEntityPos().squaredDistanceTo(cullSpot) < 4) {
+                return String.valueOf(Culling.hideEntity(e));
+            }
+        }
+        return "no cow";
+    }
+
     private static void buildFightSteps() {
         STEPS.add(new Step("fight_setup", () -> {
             var mc = MinecraftClient.getInstance();

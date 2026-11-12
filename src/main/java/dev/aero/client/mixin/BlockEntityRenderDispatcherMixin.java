@@ -17,7 +17,7 @@ public class BlockEntityRenderDispatcherMixin {
             at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$hideTile(BlockEntityRenderState state, MatrixStack matrices, OrderedRenderCommandQueue queue,
                                CameraRenderState camera, CallbackInfo ci) {
-        if (AeroClient.CONFIG != null && AeroClient.CONFIG.hideTileEntities) {
+        if (AeroClient.CONFIG != null && (AeroClient.CONFIG.hideTileEntities || dev.aero.client.Culling.hideBlockEntity(state.pos))) {
             ci.cancel();
         }
     }

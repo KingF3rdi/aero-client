@@ -16,7 +16,7 @@ public class EntityRenderDispatcherMixin {
     @Inject(method = "shouldRender(Lnet/minecraft/entity/Entity;Lnet/minecraft/client/render/Frustum;DDD)Z",
             at = @At("HEAD"), cancellable = true, require = 0)
     private void aero$cull(Entity entity, Frustum frustum, double x, double y, double z, CallbackInfoReturnable<Boolean> cir) {
-        if (HudStats.skipEntity(entity) || Visuals.hideOtherPlayer(entity)) {
+        if (HudStats.skipEntity(entity) || Visuals.hideOtherPlayer(entity) || dev.aero.client.Culling.hideEntity(entity)) {
             cir.setReturnValue(false);
         }
     }

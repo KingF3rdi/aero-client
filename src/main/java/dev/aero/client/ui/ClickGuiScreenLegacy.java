@@ -771,7 +771,7 @@ public class ClickGuiScreenLegacy extends Screen {
         int w = Math.round(a[2]);
         int h = Math.round(a[3]);
         UiDraw.fade = a[4];
-        pushGrow(c, a, 0.04f);
+        pushGrow(c, a, 0.14f);
         try {
             glassCard(c, x, y, w, h, 16, a[5], active);
             int col = UiDraw.fa(TEXT);
@@ -821,18 +821,30 @@ public class ClickGuiScreenLegacy extends Screen {
             context.getMatrices().pushMatrix();
             context.getMatrices().translate(tx + markW + 10, ty);
             context.getMatrices().scale(k, k);
-            context.drawText(textRenderer, Text.literal(name), 0, 0, UiDraw.fa(TEXT), true);
+            context.drawText(textRenderer, Text.literal(name), 0, 0, UiDraw.fa(TEXT), false);
             context.getMatrices().popMatrix();
         }
         UiDraw.fade = 1f;
 
         List<Integer> cats = categoryCards();
         float[] panel = null;
+        // The most-hovered home card is drawn last, so its grow lies on top of its neighbours instead of under them.
+        int topIdx = -1;
+        float[] topA = null;
         for (int i = 0; i < cats.size(); i++) {
             int idx = cats.get(i);
             if (!panelOpen()) {
                 int[] r = homeCard(i, cats.size());
-                drawCategoryCard(context, idx, ease(idx, r, 1f, inside(mx, my, r[0], r[1], r[2], r[3])), false);
+                float[] a = ease(idx, r, 1f, inside(mx, my, r[0], r[1], r[2], r[3]));
+                if (a[5] > 0.01f && (topA == null || a[5] > topA[5])) {
+                    if (topA != null) {
+                        drawCategoryCard(context, topIdx, topA, false);
+                    }
+                    topIdx = idx;
+                    topA = a;
+                } else {
+                    drawCategoryCard(context, idx, a, false);
+                }
                 continue;
             }
             int slot = sideSlot(cats, i);
@@ -843,6 +855,9 @@ public class ClickGuiScreenLegacy extends Screen {
             int[] r = sideCard(slot);
             boolean parked = Math.abs(slot) > 2;
             drawCategoryCard(context, idx, ease(idx, r, parked ? 0f : 1f, !parked && inside(mx, my, r[0], r[1], r[2], r[3])), false);
+        }
+        if (topA != null) {
+            drawCategoryCard(context, topIdx, topA, false);
         }
         if (searchView) {
             if (!anim.containsKey(-2)) {

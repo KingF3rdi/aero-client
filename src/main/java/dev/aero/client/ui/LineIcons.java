@@ -73,6 +73,15 @@ public final class LineIcons {
 
     private static void paint(Graphics2D g, String name) {
         switch (name) {
+            case "mark" -> { // the Aero "A": two heavy legs and a crossbar
+                g.setStroke(new BasicStroke(9f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                Path2D p = new Path2D.Double();
+                p.moveTo(11, 56);
+                p.lineTo(32, 8);
+                p.lineTo(53, 56);
+                g.draw(p);
+                g.draw(new Line2D.Double(20, 41, 44, 41));
+            }
             case "pvp" -> { // shield
                 Path2D p = new Path2D.Double();
                 p.moveTo(32, 7);

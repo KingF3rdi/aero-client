@@ -68,8 +68,8 @@ public final class UiDraw {
     public static final int FILL_LIFT = 0x22FFFFFF;
 
     private static final int MAX_R = 28;
-    /** Every rounded shape is capped at this radius: crisp, near-square corners instead of soft blobs. */
-    private static final int CORNER = 3;
+    /** Every rounded shape is capped at this radius: smooth small corners instead of soft blobs. */
+    private static final int CORNER = 6;
     /** Per-radius top-left coverage, 0–255, row-major r*r. */
     private static final byte[][] FILL_COV = new byte[MAX_R + 1][];
     private static final byte[][] EDGE_COV = new byte[MAX_R + 1][];
@@ -433,16 +433,8 @@ public final class UiDraw {
         c.fill(x, y, x + w, y + 1, fa(0x1FFFFFFF));
     }
 
-    /** The brand mark: a plain bold blue "A". */
+    /** The brand mark: a smooth bold "A" (anti-aliased texture, not the pixel font). */
     public static void aeroMark(DrawContext c, int x, int y, int s, int color) {
-        int m = Math.max(8, s);
-        var tr = net.minecraft.client.MinecraftClient.getInstance().textRenderer;
-        float scale = m / 8f;
-        c.getMatrices().pushMatrix();
-        c.getMatrices().translate(x + (m - 6 * scale) / 2f, y + (m - 8 * scale) / 2f);
-        c.getMatrices().scale(scale, scale);
-        c.drawText(tr, net.minecraft.text.Text.literal("A").setStyle(net.minecraft.text.Style.EMPTY.withBold(true)
-                .withColor(color & 0xFFFFFF)), 0, 0, color | 0xFF000000, false);
-        c.getMatrices().popMatrix();
+        LineIcons.draw(c, "mark", x, y, Math.max(8, s), (color >>> 24) == 0 ? color | 0xFF000000 : color);
     }
 }

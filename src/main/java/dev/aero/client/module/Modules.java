@@ -30,6 +30,11 @@ public final class Modules {
         add(new Module("Entity Distance", "Stops rendering far entities", Category.PERFORMANCE,
                 () -> c.entityDistance, v -> c.entityDistance = v)
                 .setting("Range", () -> c.entityRange, v -> c.entityRange = v, 16, 128));
+        add(new Module("Aggressive Culling", "Skips entities and block entities hidden behind solid blocks", Category.PERFORMANCE,
+                () -> c.aggressiveCulling, v -> c.aggressiveCulling = v)
+                .setting("Block entities", () -> c.cullBlockEntities, v -> c.cullBlockEntities = v)
+                .setting("Always show players", () -> c.cullKeepPlayers, v -> c.cullKeepPlayers = v)
+                .setting("Min distance", () -> c.cullMinDistance, v -> c.cullMinDistance = v, 4, 32));
         add(new Module("No Weather", "Skips rain and thunder rendering", Category.PERFORMANCE,
                 () -> c.noWeather, v -> c.noWeather = v));
         add(new Module("No Clouds", "Does not render clouds", Category.PERFORMANCE,
